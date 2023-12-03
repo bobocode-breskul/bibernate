@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.github.bobocode-breskul</groupId>
+  <artifactId>bibernate</artifactId>
+  <version>1.0</version>
+  <packaging>jar</packaging>
+
+  <name>Bibernate</name>
+  <description>
+    Bibernate is an object–relational mapping tool for the Java programming language.
+  </description>
+  <url>https://github.com/bobocode-breskul/bring</url>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Ruslan Hladchenko</name>
+      <email>rugladchenko@gmail.com</email>
+      <organization>Hladchenko.com</organization>
+      <organizationUrl>https://hladchenko.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Volodymyr Holichenko</name>
+      <email>vladimirgolicenko154@gmail.com</email>
+      <organization>https://github.com/bobocode-breskul</organization>
+      <organizationUrl>https://www.linkedin.com/in/volodymyr-holichenko-1a1374174/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Roman Pryshchepa</name>
+      <email>roman.pryshchepa@gmail.com</email>
+      <organization>PE Roman Pryshchepa</organization>
+      <organizationUrl>https://www.linkedin.com/in/roman-pryshchepa/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Oleh Yakovenko</name>
+      <email>iakovenkoua@gmail.com</email>
+      <organization>https://github.com/bobocode-breskul</organization>
+      <organizationUrl>https://www.linkedin.com/in/oleh-yakovenko-8980289a/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Vitalii Katkov</name>
+      <email>katkovvitaliy@gmail.com</email>
+      <organization>https://github.com/bobocode-breskul</organization>
+      <organizationUrl>https://www.linkedin.com/in/vitalii-katkov-09643811a/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Serhii Barabash</name>
+      <email>s.barabaw@gmail.com</email>
+      <organization>https://github.com/bobocode-breskul</organization>
+      <organizationUrl>https://www.linkedin.com/in/sergey-barabash-365049b9/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Oleksandr Karpachov</name>
+      <email>xalexandrx9@gmail.com</email>
+      <organization>https://github.com/bobocode-breskul</organization>
+      <organizationUrl>https://www.linkedin.com/in/александр-карпачов-662aa5182/</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/bobocode-breskul/bibernate.git</connection>
+    <developerConnection>scm:git:ssh://github.com:bobocode-breskul/bibernate.git
+    </developerConnection>
+    <url>https://github.com/bobocode-breskul/bibernate/tree/master</url>
+  </scm>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <assertj.version>3.24.2</assertj.version>
+    <mockito.version>5.6.0</mockito.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.13</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.2.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9.1</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
