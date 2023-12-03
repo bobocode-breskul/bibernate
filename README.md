@@ -9,10 +9,9 @@ Bibernate implements JPA, the standard API for object/relational persistence in 
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Features](#features)
 - [Requirements](#requirements)
 - [Getting Started](#getting-started)
-- [Features Usage](#feature-usage)
+- [Features](#features)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -23,6 +22,24 @@ paradigm for mapping Java objects to relational database tables and vice versa. 
 framework that simplifies database programming in Java applications by handling the details of
 database interactions, allowing developers to focus on writing Java code without having to deal
 extensively with SQL and database-specific details.
+
+## Requirements
+Make sure that you are using Java 17
+
+## Getting Started
+Follow these steps to integrate Bring Framework into your project:
+
+1. Open your project's `pom.xml` file.
+2. Add the following Maven dependency:
+
+```xml
+<dependency>
+  <groupId>io.github.bobocode-breskul</groupId>
+  <artifactId>bibernate</artifactId>
+  <version>1.0</version>
+</dependency>
+```
+You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
 
 ## Features
 
@@ -69,26 +86,6 @@ extensively with SQL and database-specific details.
 
 
 15. **Validation:** Bibernate provides support for data validation using constraints and annotations, ensuring that the data stored in the database meets specified criteria.
-
-## Requirements
-Make sure that you are using Java 17
-
-## Getting Started
-Follow these steps to integrate Bring Framework into your project:
-
-1. Open your project's `pom.xml` file.
-2. Add the following Maven dependency:
-
-```xml
-<dependency>
-  <groupId>io.github.bobocode-breskul</groupId>
-  <artifactId>bibernate</artifactId>
-  <version>1.0</version>
-</dependency>
-```
-You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
-
-## Features Usage
 
 ## Contributing
 We welcome contributions!
