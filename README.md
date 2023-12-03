@@ -10,8 +10,9 @@ Bibernate implements JPA, the standard API for object/relational persistence in 
 
 - [Introduction](#introduction)
 - [Features](#features)
+- [Requirements](#requirements)
 - [Getting Started](#getting-started)
-- [Usage](#usage)
+- [Features Usage](#feature-usage)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -69,6 +70,8 @@ extensively with SQL and database-specific details.
 
 15. **Validation:** Bibernate provides support for data validation using constraints and annotations, ensuring that the data stored in the database meets specified criteria.
 
+## Requirements
+Make sure that you are using Java 17
 
 ## Getting Started
 Follow these steps to integrate Bring Framework into your project:
@@ -85,7 +88,7 @@ Follow these steps to integrate Bring Framework into your project:
 ```
 You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
 
-## Usage
+## Features Usage
 
 ## Contributing
 We welcome contributions!
