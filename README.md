@@ -1,4 +1,5 @@
 # Bibernate Framework ![Bobocode Breskul Team](https://img.shields.io/badge/Bobocode%20Breskul%20Team-8A2BE2) [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.bobocode-breskul/bibernate)
 
 ## What is Bibernate Framework?
 
