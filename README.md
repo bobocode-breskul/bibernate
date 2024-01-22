@@ -29,7 +29,7 @@ extensively with SQL and database-specific details.
 Make sure that you are using Java 17
 
 ## Getting Started
-Follow these steps to integrate Bring Framework into your project:
+Follow these steps to integrate Bibernate Framework into your project:
 
 1. Open your project's `pom.xml` file.
 2. Add the following Maven dependency:
