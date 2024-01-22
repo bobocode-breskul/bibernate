@@ -41,7 +41,7 @@ Follow these steps to integrate Bring Framework into your project:
   <version>1.0</version>
 </dependency>
 ```
-Now you are done to use Bibernate framework features.
+Now you are ready to use Bibernate framework features.
 
 You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
 
