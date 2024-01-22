@@ -215,7 +215,7 @@ You can find the example of a Bibernate application [here](https://github.com/bo
 
 ## Contributing
 We welcome contributions!
-If you'd like to contribute to Bring, please contact with the team Breskul.
+If you'd like to contribute to Bibernate, please contact with the team Breskul.
 
 ## License
 This project is licensed under the [Apache License](https://opensource.org/licenses/Apache-2.0).
