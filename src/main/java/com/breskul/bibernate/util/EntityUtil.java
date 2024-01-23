@@ -20,7 +20,8 @@ import javax.sql.DataSource;
 
 public class EntityUtil {
 
-  public static <T> T doQuery(String sql, Object id, EntityMapper<T> entityMapper, DataSource dataSource) {
+  public static <T> T doQuery(String sql, Object id, EntityMapper<T> entityMapper,
+      DataSource dataSource) {
     try (Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setObject(1, id);
@@ -80,6 +81,22 @@ public class EntityUtil {
       return idField.getAnnotation(Column.class).name();
     }
     return idField.getName();
+  }
+
+  public static Object getEntityId(Object entity) {
+    var idField = findEntityIdField(List.of(entity.getClass().getDeclaredFields()));
+    return readFieldValue(entity, idField);
+  }
+
+  public static Object readFieldValue(Object entity, Field idField) {
+    try {
+      idField.setAccessible(true);
+      return idField.get(entity);
+    } catch (IllegalAccessException e) {
+      throw new EntityParseException(
+          "Failed to access field '" + idField.getName() + "' of entity type '" + entity.getClass()
+              .getName() + "': Illegal access");
+    }
   }
 
   private static String getFieldColumnName(Field field) {
