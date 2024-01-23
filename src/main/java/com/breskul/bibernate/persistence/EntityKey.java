@@ -9,4 +9,10 @@ public class EntityKey {
         this.entityClass = entityClass;
         this.id = id;
     }
+
+    public static <T> EntityKey valueOf(T entity) {
+        Object id = null; //todo impl getId
+        var entityType = entity.getClass();
+        return new EntityKey(entityType, id);
+    }
 }
