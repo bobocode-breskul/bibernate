@@ -6,7 +6,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 
-// TODO: add javadocs
+/**
+ * Specifies a class whose instances are stored as an intrinsic
+ * part of an owning entity and share the identity of the entity.
+ * Each of the persistent properties or fields of the embedded
+ * object is mapped to the database table for the entity.
+ *
+ * <p> Note that the {@link Transient} annotation may be used to
+ * designate the non-persistent state of an embeddable class.
+ */
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Embeddable {
