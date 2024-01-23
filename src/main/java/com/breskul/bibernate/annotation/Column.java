@@ -13,5 +13,5 @@ public @interface Column {
 
     // TODO: add attributes
 
-    String name ();
+    String name () default "";
 }

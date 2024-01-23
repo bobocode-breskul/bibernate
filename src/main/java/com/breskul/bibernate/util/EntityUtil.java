@@ -5,38 +5,18 @@ import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
-import com.breskul.bibernate.exception.EntityQueryException;
-import com.breskul.bibernate.persistence.EntityMapper;
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 
 public class EntityUtil {
 
-  public static <T> T doQuery(String sql, Object id, EntityMapper<T> entityMapper, DataSource dataSource) {
-    try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql)) {
-      statement.setObject(1, id);
-      ResultSet resultSet = statement.executeQuery();
-      if (resultSet.next()) {
-        return entityMapper.mapResult(resultSet);
-      }
-    } catch (SQLException e) {
-      throw new EntityQueryException(
-          "Could not read entity data from database for entity [%s] with id [%s]"
-              .formatted(entityMapper.getEntityCls(), id), e);
-    }
-    return null;
-  }
-
-  public static <T> void validateIsEntity(Class<T> cls) {
+  // TODO: javadoc
+  public static void validateIsEntity(Class<?> cls) {
     if (!cls.isAnnotationPresent(Entity.class)) {
       throw new EntityParseException("Class should be marked with 'Entity' annotation");
     }
@@ -49,6 +29,7 @@ public class EntityUtil {
             "Class should be marked with 'Table' annotation and it should not be empty"));
   }
 
+  // TODO: javadoc
   public static List<Field> getClassColumnFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
         .filter(field -> field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(
@@ -56,6 +37,7 @@ public class EntityUtil {
         .toList();
   }
 
+  // TODO: javadoc
   public static Field findEntityIdField(List<Field> fields) {
     List<Field> idFields = fields.stream()
         .filter(field -> field.isAnnotationPresent(Id.class))
@@ -69,13 +51,15 @@ public class EntityUtil {
     return idFields.get(0);
   }
 
+  // TODO: javadoc
   public static String composeSelectBlockFromColumns(List<Field> columnNames) {
     return columnNames.stream()
         .map(EntityUtil::getFieldColumnName)
         .collect(Collectors.joining(", "));
   }
 
-  public static String getIdColumnName(Field idField) {
+  // TODO: javadoc
+  public static String resolveColumnName(Field idField) {
     if (idField.isAnnotationPresent(Column.class)) {
       return idField.getAnnotation(Column.class).name();
     }

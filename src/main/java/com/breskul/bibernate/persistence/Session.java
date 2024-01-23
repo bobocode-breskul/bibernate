@@ -5,6 +5,8 @@ import jakarta.persistence.EntityTransaction;
 import javax.sql.DataSource;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import jdk.jshell.spi.ExecutionControl;
+import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 
 public class Session implements AutoCloseable {
 
@@ -19,12 +21,15 @@ public class Session implements AutoCloseable {
 
     }
 
+    // TODO add test
+    // TODO add javadoc
     public <T> T findById(Class<T> entityClass, Object id) {
         return genericDao.findById(entityClass, id);
     }
 
     @Override
     public void close() throws Exception {
-
+        // TODO implement
+        throw new NotImplementedException("not implemented yet");
     }
 }
