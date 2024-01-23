@@ -8,6 +8,7 @@ import java.util.Queue;
 import jdk.jshell.spi.ExecutionControl;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 
+// TODO: javadoc
 public class Session implements AutoCloseable {
 
     private final GenericDao genericDao;
@@ -18,7 +19,6 @@ public class Session implements AutoCloseable {
     public Session(DataSource dataSource) {
         this.genericDao = new GenericDao(dataSource);
         this.persistenceContext = new PersistenceContext();
-
     }
 
     // TODO add test

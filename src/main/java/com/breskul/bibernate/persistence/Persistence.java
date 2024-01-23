@@ -2,6 +2,7 @@ package com.breskul.bibernate.persistence;
 
 import org.postgresql.ds.PGSimpleDataSource;
 
+// TODO: javadoc
 public class Persistence {
 
     // TODO: read properties for data source

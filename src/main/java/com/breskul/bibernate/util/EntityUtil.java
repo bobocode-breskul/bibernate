@@ -22,18 +22,16 @@ public class EntityUtil {
     }
   }
 
+  // TODO: implement get default table name by class name
   public static String getEntityTableName(Class<?> cls) {
     return Optional.ofNullable(cls.getAnnotation(Table.class))
-        .map(Table::name)
-        .orElseThrow(() -> new EntityParseException(
-            "Class should be marked with 'Table' annotation and it should not be empty"));
+      .map(Table::name)
+      .orElseGet(cls::getName);
   }
 
   // TODO: javadoc
   public static List<Field> getClassColumnFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
-        .filter(field -> field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(
-            Id.class))
         .toList();
   }
 
@@ -54,7 +52,7 @@ public class EntityUtil {
   // TODO: javadoc
   public static String composeSelectBlockFromColumns(List<Field> columnNames) {
     return columnNames.stream()
-        .map(EntityUtil::getFieldColumnName)
+        .map(EntityUtil::resolveColumnName)
         .collect(Collectors.joining(", "));
   }
 
@@ -64,16 +62,6 @@ public class EntityUtil {
       return idField.getAnnotation(Column.class).name();
     }
     return idField.getName();
-  }
-
-  private static String getFieldColumnName(Field field) {
-    if (field.isAnnotationPresent(Column.class)) {
-      return field.getAnnotation(Column.class).name();
-    } else if (field.isAnnotationPresent(Id.class)) {
-      return getIdColumnName(field);
-    }
-    throw new IllegalArgumentException(
-        "Field should have annotation of type [Column.class, Id.class]");
   }
 
   private EntityUtil() {
