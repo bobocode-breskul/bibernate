@@ -56,12 +56,14 @@ public class GenericDao {
 
     // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
     private  <T> T mapResult(ResultSet resultSet, Class<T> cls) {
+        // todo: change it to have both field and it's column name (from @Column annotation)
         List<Field> columnFields = getClassColumnFields(cls);
         try {
             T t = cls.getConstructor().newInstance();
             for (int i = 0; i < columnFields.size(); i++) {
                 Field field = columnFields.get(i);
                 field.setAccessible(true);
+                // todo: take data from resultSet by column name (taken from @Column annotation)
                 field.set(t, resultSet.getObject(i + 1));
             }
             return t;
