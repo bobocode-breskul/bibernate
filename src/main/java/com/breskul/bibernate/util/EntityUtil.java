@@ -8,9 +8,7 @@ import com.breskul.bibernate.exception.EntityParseException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class EntityUtil {
@@ -62,6 +60,22 @@ public class EntityUtil {
       return idField.getAnnotation(Column.class).name();
     }
     return idField.getName();
+  }
+
+  public static Object getEntityId(Object entity) {
+    var idField = findEntityIdField(List.of(entity.getClass().getDeclaredFields()));
+    return readFieldValue(entity, idField);
+  }
+
+  public static Object readFieldValue(Object entity, Field idField) {
+    try {
+      idField.setAccessible(true);
+      return idField.get(entity);
+    } catch (IllegalAccessException e) {
+      throw new EntityParseException(
+          "Failed to access field '" + idField.getName() + "' of entity type '" + entity.getClass()
+              .getName() + "': Illegal access");
+    }
   }
 
   private EntityUtil() {
