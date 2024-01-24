@@ -15,10 +15,10 @@ import java.lang.annotation.Target;
  * <p> There must be only one <code>EmbeddedId</code> annotation and
  * no <code>Id</code> annotation when the <code>EmbeddedId</code> annotation is used.
  *
- * <p> The {@link AttributeOverride} annotation may be used to override
+ * <p> The {@code AttributeOverride} annotation may be used to override
  * the column mappings declared within the embeddable class.
  *
- * <p> The {@link MapsId} annotation may be used in conjunction
+ * <p> The {@code MapsId} annotation may be used in conjunction
  * with the <code>EmbeddedId</code> annotation to specify a derived
  * primary key.
  *
