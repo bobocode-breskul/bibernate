@@ -27,7 +27,6 @@ import java.lang.annotation.Target;
  * relationship attribute within the embedded attribute.  The value of
  * each identifier used with the dot notation is the name of the
  * respective embedded field or property.
- * <pre>
  */
 
 @Retention(RetentionPolicy.RUNTIME)
