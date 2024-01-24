@@ -6,12 +6,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 
-// TODO: add javadocs
+/**
+ * Specifies the mapped column for a persistent property or field.
+ * If no <code>Column</code> annotation is specified, the default values apply.
+ */
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Column {
 
     // TODO: add attributes
 
-    String name ();
+    String name () default "";
 }
