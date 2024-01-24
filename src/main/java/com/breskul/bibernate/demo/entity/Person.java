@@ -8,8 +8,7 @@ import com.breskul.bibernate.annotation.Table;
 @Entity
 @Table(name = "persons")
 public class Person {
-    @Id
-    @Column(name = "id")
+    @Id("name")
     private Long id;
 
     @Column(name = "first_name")
