@@ -28,6 +28,7 @@ public class PropertiesConfiguration {
     try (InputStream input = PropertiesConfiguration.class.getClassLoader()
         .getResourceAsStream(configFileName)) {
       if (input == null) {
+        // TODO: throw exception if it is required to have application properties for the project
         return;
       }
       properties.load(input);
