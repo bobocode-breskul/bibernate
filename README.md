@@ -29,7 +29,7 @@ extensively with SQL and database-specific details.
 Make sure that you are using Java 17
 
 ## Getting Started
-Follow these steps to integrate Bring Framework into your project:
+Follow these steps to integrate Bibernate Framework into your project:
 
 1. Open your project's `pom.xml` file.
 2. Add the following Maven dependency:
@@ -215,7 +215,7 @@ You can find the example of a Bibernate application [here](https://github.com/bo
 
 ## Contributing
 We welcome contributions!
-If you'd like to contribute to Bring, please contact with the team Breskul.
+If you'd like to contribute to Bibernate, please contact with the team Breskul.
 
 ## License
 This project is licensed under the [Apache License](https://opensource.org/licenses/Apache-2.0).
