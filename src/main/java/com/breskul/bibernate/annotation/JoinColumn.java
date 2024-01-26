@@ -16,6 +16,13 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface JoinColumn {
+  String name() default "";
 
-    // TODO: add attributes
+  boolean unique() default false;
+
+  boolean nullable() default true;
+
+  boolean insertable() default true;
+
+  boolean updatable() default true;
 }

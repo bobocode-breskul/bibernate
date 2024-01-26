@@ -3,6 +3,10 @@ package com.breskul.bibernate.util;
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
+import com.breskul.bibernate.annotation.JoinColumn;
+import com.breskul.bibernate.annotation.ManyToOne;
+import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
 import java.lang.reflect.Field;
@@ -47,6 +51,11 @@ public class EntityUtil {
     return idFields.get(0);
   }
 
+  public static Field findEntityIdField(Class<?> cls) {
+    validateIsEntity(cls);
+    return findEntityIdField(getClassColumnFields(cls));
+  }
+
   // TODO: javadoc
   public static String composeSelectBlockFromColumns(List<Field> columnNames) {
     return columnNames.stream()
@@ -65,6 +74,38 @@ public class EntityUtil {
   public static Object getEntityId(Object entity) {
     var idField = findEntityIdField(List.of(entity.getClass().getDeclaredFields()));
     return readFieldValue(entity, idField);
+  }
+
+  public static String getColumnName(Field field) {
+    if (field.isAnnotationPresent(Column.class)) {
+      var columnName = field.getAnnotation(Column.class).name();
+      return columnName.isBlank() ? field.getName() : columnName;
+    }
+    return field.getName();
+  }
+
+  public static String getJoinColumnName(Field field) {
+    String name = field.getName() + "_id";
+    if (field.isAnnotationPresent(JoinColumn.class)) {
+      var columnName = field.getAnnotation(JoinColumn.class).name();
+      return columnName.isBlank() ? name : columnName;
+    }
+    return name;
+  }
+
+  public static boolean isPrimitiveColumn(Field field) {
+    return field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(Id.class);
+  }
+
+  public static Class<?> getEntityIdType(Class<?> entityType) {
+    if (entityType.isAnnotationPresent(Entity.class)) {
+      throw new IllegalArgumentException(""); // todo write msg
+    }
+    return Arrays.stream(entityType.getDeclaredFields())
+      .filter(field -> field.isAnnotationPresent(Id.class))
+      .findFirst()
+      .orElseThrow(() -> new IllegalArgumentException("Id must be present in entity!"))
+      .getType();
   }
 
   public static Object readFieldValue(Object entity, Field idField) {
