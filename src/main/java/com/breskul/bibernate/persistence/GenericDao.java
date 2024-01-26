@@ -63,7 +63,7 @@ public class GenericDao {
 
   private  <T> List<T> innerFindByFieldValue(Class<T> cls, String fieldName, Object fieldValue,
     String requestId) {
-    RequestCache<T> requestCache = requestCacheStorage.getOrDefault(requestId, new RequestCache<T>());
+    RequestCache requestCache = requestCacheStorage.getOrDefault(requestId, new RequestCache());
 
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
@@ -78,7 +78,7 @@ public class GenericDao {
       while (resultSet.next()) {
         T entity = mapResult(resultSet, cls, requestId);
         result.add(entity);
-        requestCache.addEntity(getEntityId(entity), entity);
+        requestCache.addEntity(entity);
       }
       requestCacheStorage.put(requestId, requestCache);
     } catch (SQLException e) {
@@ -105,14 +105,15 @@ public class GenericDao {
             String joinColumnName = getJoinColumnName(field);
             Field idField = findEntityIdField(cls);
             var id = idField.getType().cast(resultSet.getObject(joinColumnName));
-            var relatedEntity = requestCacheStorage.get(requestId).getEntity(id);
+            var relatedEntity = requestCacheStorage.get(requestId).getEntity(id, idField.getType());
             if (relatedEntity == null) {
               String idColumnName = resolveColumnName(idField);
               relatedEntity = innerFindByFieldValue(field.getType(), idColumnName, id, requestId);
             }
             field.set(entity, relatedEntity);
           } else if (field.isAnnotationPresent(OneToMany.class)) {
-            // todo implement
+            // todo get entity type from collection
+            // todo fetch data and set
           }
         }
         return entity;
@@ -131,15 +132,15 @@ public class GenericDao {
     }
 
 
-    private static class RequestCache<T> {
-      final Map<Object, T> idToEntityMap = new HashMap<>();
+    private static class RequestCache {
+      final Map<EntityKey, Object> idToEntityMap = new HashMap<>();
 
-      void addEntity(Object id, T entity) {
-        idToEntityMap.put(id, entity);
+      void addEntity(Object entity) {
+        idToEntityMap.put(EntityKey.valueOf(entity), entity);
       }
 
-      T getEntity(Object id) {
-        return idToEntityMap.get(id);
+      Object getEntity(Object id, Class<?> clazz) {
+        return idToEntityMap.get(new EntityKey(clazz, id));
       }
     }
 }
