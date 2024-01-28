@@ -27,11 +27,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
+import lombok.EqualsAndHashCode;
 
 public class GenericDao {
 
@@ -69,7 +72,6 @@ public class GenericDao {
   private  <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue,
     String requestId) {
     requestCacheStorage.putIfAbsent(requestId, new RequestCache());
-    RequestCache requestCache = requestCacheStorage.get(requestId);
 
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
@@ -86,7 +88,6 @@ public class GenericDao {
       while (resultSet.next()) {
         T entity = mapResult(resultSet, cls, requestId);
         result.add(entity);
-        requestCache.addEntity(entity);
       }
     } catch (SQLException e) {
       throw new EntityQueryException(
@@ -101,35 +102,42 @@ public class GenericDao {
     // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
     private  <T> T mapResult(ResultSet resultSet, Class<T> cls, String requestId) {
       List<Field> columnFields = getClassEntityFields(cls);
+
       try {
+        Field idField = findEntityIdField(cls);
+        String idName = resolveColumnName(idField);
+        Object id = idField.getType().cast(resultSet.getObject(idName));
+        requestCacheStorage.get(requestId).addRequest(RequestKey.of(cls, idName, id));
+
         T entity = cls.getConstructor().newInstance();
         for (Field field : columnFields) {
             field.setAccessible(true);
+
+         // todo round all links
           if (isPrimitiveColumn(field)) {
             String columnName = resolveColumnName(field);
             field.set(entity, resultSet.getObject(columnName));
           } else if (field.isAnnotationPresent(ManyToOne.class)) {
             String joinColumnName = resolveColumnName(field);
-            Field idField = findEntityIdField(cls);
-            var id = idField.getType().cast(resultSet.getObject(joinColumnName));
-            var relatedEntity = context.findEntity(field.getType(), id); //requestCacheStorage.get(requestId).getEntity(id, field.getType());
-            if (relatedEntity == null) {
-              String idColumnName = resolveColumnName(idField);
-//              requestCacheStorage.get(requestId).preventLoop(id, field.getType());
-              relatedEntity = innerFindAllByFieldValue(field.getType(), idColumnName, id, requestId).get(0);
-              context.mergeEntity(relatedEntity);
+            Field relatedEntityIdField = findEntityIdField(cls);
+            Object relatedEntityId = relatedEntityIdField.getType().cast(resultSet.getObject(joinColumnName));
+            String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
+            boolean isDuplicatedRequest = requestCacheStorage.get(requestId)
+              .isDuplicatedRequest(RequestKey.of(field.getType(), relatedEntityIdColumnName, relatedEntityId));
+            if (isDuplicatedRequest) {
+              continue; // stops infinity recursion.
             }
+
+            var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId, requestId);
             field.set(entity, relatedEntity);
           } else if (field.isAnnotationPresent(OneToMany.class)) {
+            // todo merge to context fetched entities and set merged entities.
             Class<?> relatedEntityType = getEntityCollectionElementType(field);
             String joinColumnName = getJoinColumnName(relatedEntityType, cls);
 
-            var id = extractIdFromResultSet(cls, resultSet);
-
-            // lazy loading
-            var relatedEntities = new LazyList<>(() -> innerFindAllByFieldValue(
+            var relatedEntities = innerFindAllByFieldValue(
               relatedEntityType, joinColumnName, id, requestId
-            ));
+            );
             field.set(entity, relatedEntities);
           }
         }
@@ -148,6 +156,17 @@ public class GenericDao {
       }
     }
 
+    private Object fetchRelatedEntity(Field field, String columnName, Object id, String requestId) {
+      var relatedEntity = context.findEntity(field.getType(), id);
+      if (relatedEntity == null) {
+        requestCacheStorage.get(requestId)
+          .addRequest(RequestKey.of(field.getType(), columnName, id));
+        relatedEntity = innerFindAllByFieldValue(field.getType(), columnName, id, requestId).get(0);
+        context.manageEntity(relatedEntity);
+      }
+      return relatedEntity;
+    }
+
     private Object extractIdFromResultSet(Class<?> cls, ResultSet resultSet) throws SQLException {
       Field idField = findEntityIdField(cls);
       String idColumnName = resolveColumnName(idField);
@@ -155,25 +174,32 @@ public class GenericDao {
     }
 
     private static class RequestCache {
-      final Map<RequestKey, Object> idToEntityMap = new HashMap<>();
+      final Set<RequestKey> requests = new HashSet<>();
 
-      void preventLoop(Object id, Class<?> clazz)
-        throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-//        idToEntityMap.put(new EntityKey(clazz, id), clazz.getConstructor().newInstance());
+      boolean isDuplicatedRequest(RequestKey key) {
+        return !requests.add(key);
       }
 
-      void addEntity(Object entity) {
-//        idToEntityMap.put(EntityKey.valueOf(entity), entity);
-      }
-
-      Object getEntity(Object id, Class<?> clazz) {
-        return idToEntityMap.get(new EntityKey(clazz, id));
+      void addRequest(RequestKey key) {
+        requests.add(key);
       }
     }
 
+    @EqualsAndHashCode
     private static class RequestKey {
       Class<?> entityType;
-      String searchField;
-      Object fieldValue;
+      String fieldName;
+      Object entityId;
+
+      public RequestKey(Class<?> entityType, String fieldName, Object id) {
+        this.entityType = entityType;
+        this.fieldName = fieldName;
+        this.entityId = id;
+      }
+
+
+      static RequestKey of(Class<?> entityType, String searchField, Object fieldValue) {
+        return new RequestKey(entityType, searchField, fieldValue);
+      }
     }
 }
