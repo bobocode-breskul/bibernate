@@ -9,10 +9,16 @@ import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
+import com.breskul.bibernate.persistence.Test;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class EntityUtil {
@@ -34,7 +40,19 @@ public class EntityUtil {
   // TODO: javadoc
   public static List<Field> getClassColumnFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
-        .toList();
+      .filter(field -> !isRelatedEntityField(field))
+      .toList();
+  }
+
+  public static boolean isRelatedEntityField(Field field) {
+    return field.isAnnotationPresent(OneToMany.class)
+//      || field.isAnnotationPresent(ManyToOne.class)
+      || field.isAnnotationPresent(OneToOne.class);
+  }
+
+  public static List<Field> getClassEntityFields(Class<?> cls) {
+    return Arrays.stream(cls.getDeclaredFields())
+      .toList();
   }
 
   // TODO: javadoc
@@ -64,11 +82,25 @@ public class EntityUtil {
   }
 
   // TODO: javadoc
-  public static String resolveColumnName(Field idField) {
-    if (idField.isAnnotationPresent(Column.class)) {
-      return idField.getAnnotation(Column.class).name();
+  public static String resolveColumnName(Field field) {
+    if (field.isAnnotationPresent(Column.class)) {
+      var columnName = field.getAnnotation(Column.class).name();
+      return columnName.isBlank() ? field.getName() : columnName;
+    } else if (field.isAnnotationPresent(JoinColumn.class)) {
+      var columnName = field.getAnnotation(JoinColumn.class).name();
+      return columnName.isBlank() ? field.getName() + "_id" : columnName;
     }
-    return idField.getName();
+    return field.getName();
+  }
+
+  public static String getJoinColumnName(Class<?> entityType, Class<?> joinedEntity) {
+    var joinField = Arrays.stream(entityType.getDeclaredFields())
+      .filter(field -> field.getType().equals(joinedEntity))
+      .findFirst()
+      .orElseThrow(() -> new IllegalStateException("Can't find related entity [%s] field in [%s]."
+        .formatted(joinedEntity, entityType)));
+
+    return resolveColumnName(joinField);
   }
 
   public static Object getEntityId(Object entity) {
@@ -76,25 +108,46 @@ public class EntityUtil {
     return readFieldValue(entity, idField);
   }
 
-  public static String getColumnName(Field field) {
-    if (field.isAnnotationPresent(Column.class)) {
-      var columnName = field.getAnnotation(Column.class).name();
-      return columnName.isBlank() ? field.getName() : columnName;
-    }
-    return field.getName();
-  }
-
-  public static String getJoinColumnName(Field field) {
-    String name = field.getName() + "_id";
-    if (field.isAnnotationPresent(JoinColumn.class)) {
-      var columnName = field.getAnnotation(JoinColumn.class).name();
-      return columnName.isBlank() ? name : columnName;
-    }
-    return name;
-  }
+//  public static String getColumnName(Field field) {
+//    if (field.isAnnotationPresent(Column.class)) {
+//      var columnName = field.getAnnotation(Column.class).name();
+//      return columnName.isBlank() ? field.getName() : columnName;
+//    }
+//    return field.getName();
+//  }
+//
+//  public static String getJoinColumnName(Field field) {
+//    String name = field.getName() + "_id";
+//    if (field.isAnnotationPresent(JoinColumn.class)) {
+//      var columnName = field.getAnnotation(JoinColumn.class).name();
+//      return columnName.isBlank() ? name : columnName;
+//    }
+//    return name;
+//  }
 
   public static boolean isPrimitiveColumn(Field field) {
     return field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(Id.class);
+  }
+
+  public static Class<?> getEntityCollectionElementType(Field field) {
+    var parameterizedType = (ParameterizedType) field.getGenericType();
+    var typeArguments = parameterizedType.getActualTypeArguments();
+    var actualTypeArgument = typeArguments[0];
+    return (Class<?>) actualTypeArgument;
+  }
+
+  public static Collection<Object> getCollectionInstance(Field collectionField) {
+    var collectionClass = collectionField.getType();
+
+    if (collectionClass.isAssignableFrom(List.class)) {
+      return new ArrayList<>();
+    }
+
+    if (collectionClass.isAssignableFrom(Set.class)) {
+      return new HashSet<>();
+    }
+
+    throw new IllegalArgumentException("Unsupported collection: " + collectionClass); // change exception and more clear msg?
   }
 
   public static Class<?> getEntityIdType(Class<?> entityType) {

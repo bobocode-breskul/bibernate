@@ -17,8 +17,9 @@ public class Session implements AutoCloseable {
     private EntityTransaction transaction;
 
     public Session(DataSource dataSource) {
-        this.genericDao = new GenericDao(dataSource);
         this.persistenceContext = new PersistenceContext();
+        this.genericDao = new GenericDao(dataSource, persistenceContext);
+
     }
 
     // TODO add test

@@ -3,9 +3,10 @@ package com.breskul.bibernate.persistence;
 import static com.breskul.bibernate.util.EntityUtil.composeSelectBlockFromColumns;
 import static com.breskul.bibernate.util.EntityUtil.findEntityIdField;
 import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
-import static com.breskul.bibernate.util.EntityUtil.getColumnName;
+import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
+import static com.breskul.bibernate.util.EntityUtil.getCollectionInstance;
+import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
 import static com.breskul.bibernate.util.EntityUtil.getEntityId;
-import static com.breskul.bibernate.util.EntityUtil.getEntityIdType;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isPrimitiveColumn;
@@ -22,54 +23,60 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 
 public class GenericDao {
 
+  PersistenceContext context ;
+
     // TODO: change to select '*'
     public static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
 
     private final DataSource dataSource;
-    public GenericDao(DataSource dataSource) {
+    public GenericDao(DataSource dataSource, PersistenceContext context) {
         this.dataSource = dataSource;
+      this.context = context;
     }
 
     Map<String, RequestCache> requestCacheStorage = new ConcurrentHashMap<>();
 
 
-    public <T> T findById(Class<T> cls, Object id) {
+  public <T> T findById(Class<T> cls, Object id) {
+    Field idField = findEntityIdField(cls);
+    String idColumnName = resolveColumnName(idField);
+    String requestId = UUID.randomUUID().toString();
+    List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id, requestId);
+    requestCacheStorage.remove(requestId);
+    return searchResult.isEmpty() ? null : searchResult.get(0);
+  }
 
-        Field idField = findEntityIdField(cls);
-        String idColumnName = resolveColumnName(idField);
-      String requestId = UUID.randomUUID().toString();
-        List<T> searchResult = innerFindByFieldValue(cls, idColumnName, id, requestId);
-        requestCacheStorage.remove(requestId);
-        return searchResult.isEmpty() ? null : searchResult.get(0);
-    }
-
-  public <T> List<T> findByFieldValue(Class<T> cls, String fieldName, Object fieldValue) {
+  public <T> List<T> findAllByField(Class<T> cls, String fieldName, Object fieldValue) {
     validateIsEntity(cls);
     String requestId = UUID.randomUUID().toString();
-    var result = innerFindByFieldValue(cls, fieldName, fieldValue, requestId);
+    var result = innerFindAllByFieldValue(cls, fieldName, fieldValue, requestId);
     requestCacheStorage.remove(requestId);
     return result;
   }
 
-  private  <T> List<T> innerFindByFieldValue(Class<T> cls, String fieldName, Object fieldValue,
+  private  <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue,
     String requestId) {
-    RequestCache requestCache = requestCacheStorage.getOrDefault(requestId, new RequestCache());
+    requestCacheStorage.putIfAbsent(requestId, new RequestCache());
+    RequestCache requestCache = requestCacheStorage.get(requestId);
 
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
 
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
       tableName, fieldName);
+
+    System.out.println(sql);
     List<T> result = new ArrayList<>();
     try (Connection connection = dataSource.getConnection();
       PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -80,7 +87,6 @@ public class GenericDao {
         result.add(entity);
         requestCache.addEntity(entity);
       }
-      requestCacheStorage.put(requestId, requestCache);
     } catch (SQLException e) {
       throw new EntityQueryException(
         "Could not read entity data from database for entity [%s] by field [%s]=%s"
@@ -93,27 +99,37 @@ public class GenericDao {
 
     // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
     private  <T> T mapResult(ResultSet resultSet, Class<T> cls, String requestId) {
-      List<Field> columnFields = getClassColumnFields(cls);
+      List<Field> columnFields = getClassEntityFields(cls);
       try {
         T entity = cls.getConstructor().newInstance();
         for (Field field : columnFields) {
             field.setAccessible(true);
           if (isPrimitiveColumn(field)) {
-            String columnName = getColumnName(field);
+            String columnName = resolveColumnName(field);
             field.set(entity, resultSet.getObject(columnName));
           } else if (field.isAnnotationPresent(ManyToOne.class)) {
-            String joinColumnName = getJoinColumnName(field);
+            String joinColumnName = resolveColumnName(field);
             Field idField = findEntityIdField(cls);
             var id = idField.getType().cast(resultSet.getObject(joinColumnName));
-            var relatedEntity = requestCacheStorage.get(requestId).getEntity(id, idField.getType());
+            var relatedEntity = context.findEntity(field.getType(), id); //requestCacheStorage.get(requestId).getEntity(id, field.getType());
             if (relatedEntity == null) {
               String idColumnName = resolveColumnName(idField);
-              relatedEntity = innerFindByFieldValue(field.getType(), idColumnName, id, requestId);
+//              requestCacheStorage.get(requestId).preventLoop(id, field.getType());
+              relatedEntity = innerFindAllByFieldValue(field.getType(), idColumnName, id, requestId).get(0);
+              context.mergeEntity(relatedEntity);
             }
             field.set(entity, relatedEntity);
           } else if (field.isAnnotationPresent(OneToMany.class)) {
-            // todo get entity type from collection
-            // todo fetch data and set
+            Class<?> relatedEntityType = getEntityCollectionElementType(field);
+            String joinColumnName = getJoinColumnName(relatedEntityType, cls);
+
+            var id = extractIdFromResultSet(cls, resultSet);
+
+            // lazy loading
+            var relatedEntities = new LazyList<>(() -> innerFindAllByFieldValue(
+              relatedEntityType, joinColumnName, id, requestId
+            ));
+            field.set(entity, relatedEntities);
           }
         }
         return entity;
@@ -131,16 +147,32 @@ public class GenericDao {
       }
     }
 
+    private Object extractIdFromResultSet(Class<?> cls, ResultSet resultSet) throws SQLException {
+      Field idField = findEntityIdField(cls);
+      String idColumnName = resolveColumnName(idField);
+      return resultSet.getObject(idColumnName);
+    }
 
     private static class RequestCache {
-      final Map<EntityKey, Object> idToEntityMap = new HashMap<>();
+      final Map<RequestKey, Object> idToEntityMap = new HashMap<>();
+
+      void preventLoop(Object id, Class<?> clazz)
+        throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+//        idToEntityMap.put(new EntityKey(clazz, id), clazz.getConstructor().newInstance());
+      }
 
       void addEntity(Object entity) {
-        idToEntityMap.put(EntityKey.valueOf(entity), entity);
+//        idToEntityMap.put(EntityKey.valueOf(entity), entity);
       }
 
       Object getEntity(Object id, Class<?> clazz) {
         return idToEntityMap.get(new EntityKey(clazz, id));
       }
+    }
+
+    private static class RequestKey {
+      Class<?> entityType;
+      String searchField;
+      Object fieldValue;
     }
 }

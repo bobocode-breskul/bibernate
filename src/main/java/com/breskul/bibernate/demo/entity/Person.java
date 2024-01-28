@@ -3,12 +3,14 @@ package com.breskul.bibernate.demo.entity;
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
+import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.annotation.Table;
+import java.util.List;
 
 @Entity
 @Table(name = "persons")
 public class Person {
-    @Id("name")
+    @Id
     private Long id;
 
     @Column(name = "first_name")
@@ -18,6 +20,9 @@ public class Person {
     private String lastName;
     @Column(name = "age")
     private Integer age;
+
+    @OneToMany
+    private List<Notes> notes;
 
     @Override
     public String toString() {
