@@ -15,6 +15,7 @@ import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
 
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.collection.LazyList;
 import com.breskul.bibernate.exception.EntityQueryException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
