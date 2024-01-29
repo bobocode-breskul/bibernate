@@ -25,7 +25,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Build with Maven
-        run: mvn -B package --file pom.xml org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=bobocode-breskul_bibernate
+        run: mvn -B package --file pom.xml org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
   testCoverage:
     runs-on: ubuntu-latest
