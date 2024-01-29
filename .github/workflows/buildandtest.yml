@@ -100,4 +100,4 @@ jobs:
       - name: SonarQube Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn sonar:sonar
+        run: mvn -B package --file pom.xml sonar:sonar
