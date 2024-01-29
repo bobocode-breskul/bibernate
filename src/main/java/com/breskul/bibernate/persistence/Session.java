@@ -25,6 +25,14 @@ public class Session implements AutoCloseable {
     return genericDao.findById(entityClass, id);
   }
 
+  // TODO add test
+  // TODO add javadoc
+  public <T> T save(T entity) {
+    T savedEntity = genericDao.save(entity);
+    persistenceContext.manageEntity(savedEntity);
+    return savedEntity;
+  }
+
   @Override
   public void close() throws Exception {
     // TODO implement

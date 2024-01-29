@@ -6,6 +6,8 @@ import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
+import static java.util.Objects.isNull;
+import static java.util.stream.Stream.generate;
 
 import com.breskul.bibernate.exception.EntityQueryException;
 import java.lang.reflect.Field;
@@ -14,13 +16,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 public class GenericDao {
 
   // TODO: change to select '*'
   public static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  public static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
 
   private final DataSource dataSource;
 
@@ -53,6 +58,59 @@ public class GenericDao {
               .formatted(cls, id), e);
     }
     return null;
+  }
+
+  /**
+   * Saves a given entity. Use the returned instance for further operations as the save operation might have changed the
+   * entity instance completely.
+   *
+   * @param entity must not be {@literal null}.
+   * @return the saved entity; will never be {@literal null}.
+   * @throws IllegalArgumentException in case the given {@literal entity} is {@literal null}.
+   *           {@code OptimisticLockingFailureException} when the entity uses optimistic locking and has a version attribute with
+   *           a different value from that found in the persistence store. Also thrown if the entity is assumed to be
+   *           present but does not exist in the database.
+   */
+  public <T> T save(T entity) {
+    if (isNull(entity)) {
+      throw new IllegalArgumentException();
+    }
+    Class<?> cls = entity.getClass();
+    String tableName = getEntityTableName(cls);
+    Field idField = findEntityIdField(cls);
+    List<Field> columnFields = getClassColumnFields(cls, field -> !field.equals(idField));
+
+    String questionMarks = generate(() -> "?")
+        .limit(columnFields.size())
+        .collect(Collectors.joining(", "));
+    String sql = INSERT_ENTITY_QUERY.formatted(tableName,
+        composeSelectBlockFromColumns(columnFields), questionMarks);
+
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement = connection.prepareStatement(sql,
+            Statement.RETURN_GENERATED_KEYS)) {
+      for (int i = 0; i < columnFields.size(); i++) {
+        Field field = columnFields.get(i);
+        field.setAccessible(true);
+        statement.setObject(i + 1, field.get(entity));
+      }
+      int result = statement.executeUpdate();
+      if (result != 1) {
+        throw new EntityQueryException(
+            "Could not save entity to database for entity [%s]"
+                .formatted(entity));
+      }
+      ResultSet generatedKeys = statement.getGeneratedKeys();
+      generatedKeys.next();
+      Object idValue = idField.getType().cast(generatedKeys.getObject(1));
+      idField.setAccessible(true);
+      idField.set(entity, idValue);
+    } catch (SQLException | IllegalAccessException e) {
+      throw new EntityQueryException(
+          "Could not save entity to database for entity [%s]"
+              .formatted(entity), e);
+    }
+    return entity;
   }
 
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
