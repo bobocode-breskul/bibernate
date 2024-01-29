@@ -1,6 +1,5 @@
 package com.breskul.bibernate.persistence;
 
-import com.breskul.bibernate.util.EntityUtil;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
