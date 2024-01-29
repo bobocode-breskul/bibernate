@@ -108,23 +108,6 @@ public class EntityUtil {
     return readFieldValue(entity, idField);
   }
 
-//  public static String getColumnName(Field field) {
-//    if (field.isAnnotationPresent(Column.class)) {
-//      var columnName = field.getAnnotation(Column.class).name();
-//      return columnName.isBlank() ? field.getName() : columnName;
-//    }
-//    return field.getName();
-//  }
-//
-//  public static String getJoinColumnName(Field field) {
-//    String name = field.getName() + "_id";
-//    if (field.isAnnotationPresent(JoinColumn.class)) {
-//      var columnName = field.getAnnotation(JoinColumn.class).name();
-//      return columnName.isBlank() ? name : columnName;
-//    }
-//    return name;
-//  }
-
   public static boolean isPrimitiveColumn(Field field) {
     return field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(Id.class);
   }
@@ -150,16 +133,16 @@ public class EntityUtil {
     throw new IllegalArgumentException("Unsupported collection: " + collectionClass); // change exception and more clear msg?
   }
 
-  public static Class<?> getEntityIdType(Class<?> entityType) {
-    if (entityType.isAnnotationPresent(Entity.class)) {
-      throw new IllegalArgumentException(""); // todo write msg
-    }
-    return Arrays.stream(entityType.getDeclaredFields())
-      .filter(field -> field.isAnnotationPresent(Id.class))
-      .findFirst()
-      .orElseThrow(() -> new IllegalArgumentException("Id must be present in entity!"))
-      .getType();
-  }
+//  public static Class<?> getEntityIdType(Class<?> entityType) {
+//    if (entityType.isAnnotationPresent(Entity.class)) {
+//      throw new IllegalArgumentException(""); // todo write msg
+//    }
+//    return Arrays.stream(entityType.getDeclaredFields())
+//      .filter(field -> field.isAnnotationPresent(Id.class))
+//      .findFirst()
+//      .orElseThrow(() -> new IllegalArgumentException("Id must be present in entity!"))
+//      .getType();
+//  }
 
   public static Object readFieldValue(Object entity, Field idField) {
     try {

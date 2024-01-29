@@ -15,9 +15,14 @@ public class PersistenceContext {
   // persist
   // todo: docs
   // todo: tests
-  public <T> void manageEntity(T entity) {
-    manage(entity);
+  public <T> T manageEntity(T entity) {
+//    manage(entity);
+    var key = EntityKey.valueOf(entity);
+    if (firstLevelCache.containsKey(key)) {
+      return (T) firstLevelCache.get(key);
+    }
     firstLevelCache.put(EntityKey.valueOf(entity), entity);
+    return entity;
   }
 
   private <T> void manage(T entity) {

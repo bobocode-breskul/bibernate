@@ -12,8 +12,8 @@ public class Main {
     public static void main(String[] args) {
         SessionFactory sessionFactory = Persistence.createSessionFactory();
         try (Session session = sessionFactory.openSession()) {
-//            Photo person = session.findById(Photo.class, 1L);
-            PhotoComment comment = session.findById(PhotoComment.class, 1L);
+            Photo comment = session.findById(Photo.class, 1L);
+//            PhotoComment comment = session.findById(PhotoComment.class, 1L);
             System.out.println(comment);
         } catch (Exception e) {
             throw new RuntimeException(e);

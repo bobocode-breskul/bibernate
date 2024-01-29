@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import com.breskul.bibernate.annotation.Column;
@@ -33,6 +34,7 @@ import com.breskul.bibernate.annotation.Table;
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name = "photo")
+@NoArgsConstructor
 public class Photo {
     @Id
     private Long id;
