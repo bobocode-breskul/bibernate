@@ -1,9 +1,8 @@
 package com.breskul.bibernate;
 
+import com.breskul.bibernate.demo.Main;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-
-import com.breskul.bibernate.demo.Main;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

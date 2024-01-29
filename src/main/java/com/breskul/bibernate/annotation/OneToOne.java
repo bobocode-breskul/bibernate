@@ -32,5 +32,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface OneToOne {
 
-    // TODO: add attributes
+  // TODO: add attributes
 }

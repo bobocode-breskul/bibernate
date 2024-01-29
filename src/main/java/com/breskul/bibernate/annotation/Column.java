@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Column {
 
-    // TODO: add attributes
+  // TODO: add attributes
 
-    String name () default "";
+  String name() default "";
 }

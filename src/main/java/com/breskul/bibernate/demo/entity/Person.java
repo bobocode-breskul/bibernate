@@ -8,24 +8,25 @@ import com.breskul.bibernate.annotation.Table;
 @Entity
 @Table(name = "persons")
 public class Person {
-    @Id("name")
-    private Long id;
 
-    @Column(name = "first_name")
-    private String firstName;
+  @Id("name")
+  private Long id;
 
-    @Column(name = "last_name")
-    private String lastName;
-    @Column(name = "age")
-    private Integer age;
+  @Column(name = "first_name")
+  private String firstName;
 
-    @Override
-    public String toString() {
-        return "Person{" +
-                "id=" + id +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", age=" + age +
-                '}';
-    }
+  @Column(name = "last_name")
+  private String lastName;
+  @Column(name = "age")
+  private Integer age;
+
+  @Override
+  public String toString() {
+    return "Person{" +
+        "id=" + id +
+        ", firstName='" + firstName + '\'' +
+        ", lastName='" + lastName + '\'' +
+        ", age=" + age +
+        '}';
+  }
 }
