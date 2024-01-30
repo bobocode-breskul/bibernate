@@ -75,6 +75,16 @@ public class GenericDao {
   }
 
 
+  /**
+   * Perform an internal search for entities of the specified class filtered by a field value.
+   *
+   * @param <T>        the type parameter
+   * @param cls        the entity class
+   * @param fieldName  the field name to filter by
+   * @param fieldValue the field value to filter by
+   * @return the list of found entities or an empty list if no entities match the search criteria
+   * @throws EntityQueryException if an error occurs during the search
+   */
   private  <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue) {
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
@@ -100,7 +110,19 @@ public class GenericDao {
     return result;
   }
 
-    // todo add logic for relation annotations - @OneToMany
+    // todo add logic for relation annotations - @ManyToMany, @OneToOne
+    /**
+     * Maps the results from a ResultSet object to an entity object of the specified class and add
+     * the entity to context.
+     * Recursively fetch all related entities and add them to context.
+     * Returns the mapped entity object.
+     *
+     * @param resultSet - The ResultSet object containing the data to be mapped
+     * @param cls - The class of the entity object
+     * @param <T> - The type parameter representing the entity class
+     * @return The mapped entity object
+     * @throws EntityQueryException if there is an error during the mapping process
+     */
     private  <T> T mapResult(ResultSet resultSet, Class<T> cls) {
       List<Field> columnFields = getClassEntityFields(cls);
 
@@ -131,10 +153,7 @@ public class GenericDao {
             String joinColumnName = getJoinColumnName(relatedEntityType, cls);
             Object id = extractIdFromResultSet(cls, resultSet);
 
-            var relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id)
-              .stream()
-              .map(context::manageEntity)
-              .toList();
+            var relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id);
             Collection<Object> collection = getCollectionInstance(field);
             collection.addAll(relatedEntities);
             field.set(entity, collection);
