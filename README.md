@@ -1,8 +1,8 @@
 # Bibernate Framework ![Bobocode Breskul Team](https://img.shields.io/badge/Bobocode%20Breskul%20Team-8A2BE2) [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Maven Central](https://img.shields.io/maven-central/v/io.github.bobocode-breskul/bibernate)
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=bobocode-breskul_bibernate&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=bobocode-breskul_bibernate)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=bobocode-breskul_bibernate&metric=coverage)](https://sonarcloud.io/summary/new_code?id=bobocode-breskul_bibernate)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=bobocode-breskul_bibernate&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=bobocode-breskul_bibernate)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=bobocode-breskul_bibernate&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=bobocode-breskul_bibernate)
 
 ## What is Bibernate Framework?
 
