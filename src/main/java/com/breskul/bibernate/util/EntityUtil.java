@@ -48,12 +48,12 @@ public class EntityUtil {
     return idFields.get(0);
   }
 
-  public static String findEntityIdFieldName(Class<?> entityClass){
+  public static String findEntityIdFieldName(Class<?> entityClass) {
     return Arrays.stream(entityClass.getDeclaredFields())
-            .filter(field -> field.isAnnotationPresent(Id.class))
-            .findFirst()
-            .map(Field::getName)
-            .orElseThrow(() -> new BibernateException("Primary key column is not found"));
+        .filter(field -> field.isAnnotationPresent(Id.class))
+        .findFirst()
+        .map(Field::getName)
+        .orElseThrow(() -> new BibernateException("Primary key column is not found"));
   }
 
   // TODO: javadoc
@@ -89,19 +89,21 @@ public class EntityUtil {
 
   public static <T> List<Field> getEntityColumns(Class<? extends T> entityClass) {
     return Arrays.stream(entityClass.getDeclaredFields())
-            .filter(field -> field.isAnnotationPresent(Column.class))
-            .collect(Collectors.toList());
+        .filter(field -> field.isAnnotationPresent(Column.class))
+        .collect(Collectors.toList());
   }
-  public static  <T> Object[] getEntityColumnValues(T entity) {
+
+  public static <T> Object[] getEntityColumnValues(T entity) {
     return getEntityColumns(entity.getClass()).stream()
-            .map(field -> readFieldValue( entity, field))
-            .toArray();
+        .map(field -> readFieldValue(entity, field))
+        .toArray();
   }
+
   public static <T> List<String> getEntityColumnNames(Class<? extends T> entityClass) {
     return Arrays.stream(entityClass.getDeclaredFields())
-            .filter(field -> field.isAnnotationPresent(Column.class))
-            .map(field -> field.getAnnotation(Column.class).name())
-            .collect(Collectors.toList());
+        .filter(field -> field.isAnnotationPresent(Column.class))
+        .map(field -> field.getAnnotation(Column.class).name())
+        .collect(Collectors.toList());
   }
 
   private EntityUtil() {
