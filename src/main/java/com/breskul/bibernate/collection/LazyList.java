@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+
 public class LazyList<T> implements List<T> {
 
   private final Supplier<List<T>> delegateSupplier;
@@ -168,41 +169,6 @@ public class LazyList<T> implements List<T> {
   public Spliterator<T> spliterator() {
     return getDelegateList().spliterator();
   }
-
-//  @Override
-//  public void addFirst(T t) {
-//    getDelegateList().addFirst(t);
-//  }
-//
-//  @Override
-//  public void addLast(T t) {
-//    getDelegateList().addLast(t);
-//  }
-//
-//  @Override
-//  public T getFirst() {
-//    return getDelegateList().getFirst();
-//  }
-//
-//  @Override
-//  public T getLast() {
-//    return getDelegateList().getLast();
-//  }
-//
-//  @Override
-//  public T removeFirst() {
-//    return getDelegateList().removeFirst();
-//  }
-//
-//  @Override
-//  public T removeLast() {
-//    return getDelegateList().removeLast();
-//  }
-//
-//  @Override
-//  public List<T> reversed() {
-//    return getDelegateList().reversed();
-//  }
 
   public static <E> List<E> of() {
     return List.of();

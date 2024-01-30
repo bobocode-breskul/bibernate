@@ -11,7 +11,7 @@ public class Persistence {
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
         dataSource.setUrl("jdbc:postgresql://localhost:5432/postgres");
         dataSource.setUser("postgres");
-        dataSource.setPassword("postgrespass");
+        dataSource.setPassword("admin");
         return new SessionFactory(dataSource);
     }
 }
