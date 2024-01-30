@@ -10,6 +10,7 @@ import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isPrimitiveColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
+import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
 
 import com.breskul.bibernate.annotation.ManyToOne;
@@ -23,15 +24,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javax.sql.DataSource;
-import lombok.EqualsAndHashCode;
 
 public class GenericDao {
 
@@ -46,19 +40,40 @@ public class GenericDao {
       this.context = context;
     }
 
-  // todo add javadoc
+  /**
+   * Find by primary key. Search for an entity of the specified class and primary key.
+   * If the entity instance is contained in the persistence context, it is returned from there.
+   *
+   * @param cls – entity class
+   * @param id - primary key
+   * @return the found entity instance or null if the entity does not exist
+   */
   public <T> T findById(Class<T> cls, Object id) {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
+    T cachedEntity = context.findEntity(cls, id);
+    if (cachedEntity != null) {
+      return cachedEntity;
+    }
     List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id);
     return searchResult.isEmpty() ? null : searchResult.get(0);
   }
 
-  // todo add javadoc
-  public <T> List<T> findAllByField(Class<T> cls, String fieldName, Object fieldValue) {
-    validateIsEntity(cls);
-    return innerFindAllByFieldValue(cls, fieldName, fieldValue);
+  /**
+   * Find by primary key. Search for entities of the specified class filtered by column.
+   * If the entities contained in the persistence context, they returned from there.
+   *
+   * @param cls – entity class
+   * @param columnName - column name
+   * @param columnValue - column value
+   *
+   * @return the found entities instance or empty list if such entities do not exist
+   */
+  public <T> List<T> findAllByColumn(Class<T> cls, String columnName, Object columnValue) {
+    validateColumnName(cls, columnName);
+    return innerFindAllByFieldValue(cls, columnName, columnValue);
   }
+
 
   private  <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue) {
     String tableName = getEntityTableName(cls);
