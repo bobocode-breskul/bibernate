@@ -12,18 +12,24 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class EntityKey {
+public class EntityKey<T> {
 
-  private final Class<?> entityClass;
-  private final Object id;
+    private final Class<T> entityClass;
+    private final Object id;
 
-  public EntityKey(Class<?> entityClass, Object id) {
-    this.entityClass = entityClass;
-    this.id = id;
-  }
+    private EntityKey(Class<T> entityClass, Object id) {
+        this.entityClass = entityClass;
+        this.id = id;
+    }
 
-  public static <T> EntityKey valueOf(T entity) {
-    Object id = getEntityId(entity);
-    return new EntityKey(entity.getClass(), id);
-  }
+    public static <T> EntityKey<T> of(Class<T> entityClass, Object id) {
+        return new EntityKey<>(entityClass, id);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> EntityKey<T> valueOf(T entity) {
+        Object id = getEntityId(entity);
+        Class<T> entityClass = (Class<T>) entity.getClass();
+        return new EntityKey<>(entityClass, id);
+    }
 }

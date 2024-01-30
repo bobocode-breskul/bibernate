@@ -4,6 +4,7 @@ import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityParseException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -47,6 +48,14 @@ public class EntityUtil {
     return idFields.get(0);
   }
 
+  public static String findEntityIdFieldName(Class<?> entityClass){
+    return Arrays.stream(entityClass.getDeclaredFields())
+            .filter(field -> field.isAnnotationPresent(Id.class))
+            .findFirst()
+            .map(Field::getName)
+            .orElseThrow(() -> new BibernateException("Primary key column is not found"));
+  }
+
   // TODO: javadoc
   public static String composeSelectBlockFromColumns(List<Field> columnNames) {
     return columnNames.stream()
@@ -76,6 +85,23 @@ public class EntityUtil {
           "Failed to access field '" + idField.getName() + "' of entity type '" + entity.getClass()
               .getName() + "': Illegal access");
     }
+  }
+
+  public static <T> List<Field> getEntityColumns(Class<? extends T> entityClass) {
+    return Arrays.stream(entityClass.getDeclaredFields())
+            .filter(field -> field.isAnnotationPresent(Column.class))
+            .collect(Collectors.toList());
+  }
+  public static  <T> Object[] getEntityColumnValues(T entity) {
+    return getEntityColumns(entity.getClass()).stream()
+            .map(field -> readFieldValue( entity, field))
+            .toArray();
+  }
+  public static <T> List<String> getEntityColumnNames(Class<? extends T> entityClass) {
+    return Arrays.stream(entityClass.getDeclaredFields())
+            .filter(field -> field.isAnnotationPresent(Column.class))
+            .map(field -> field.getAnnotation(Column.class).name())
+            .collect(Collectors.toList());
   }
 
   private EntityUtil() {
