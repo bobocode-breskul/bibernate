@@ -28,16 +28,13 @@ public class GenericDao {
   // TODO: change to select '*'
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s %s WHERE %s = ?;";
-
   private static final Logger log = LoggerFactory.getLogger(Session.class);
-
 
   private final DataSource dataSource;
 
   public GenericDao(DataSource dataSource) {
     this.dataSource = dataSource;
   }
-
 
   public <T> T findById(Class<T> cls, Object id) {
     validateIsEntity(cls);
@@ -106,7 +103,6 @@ public class GenericDao {
       throw new BibernateException("Failed to execute update query: [%s] with parameters %s"
           .formatted(updateSql, Arrays.toString(parameters)), e);
     }
-
   }
 
   public <T> String prepareUpdateQuery(EntityKey<T> entityKey) {

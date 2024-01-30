@@ -83,8 +83,7 @@ public class Session implements AutoCloseable {
 
   private <T> void flushChanges(EntityKey<T> entityKey) {
     log.trace("Found not flushed changes in the cache");
-    Class<T> entityClass = entityKey.entityClass();
-    T updatedEntity = entityClass.cast(persistenceContext.getEntity(entityKey));
+    T updatedEntity = persistenceContext.getEntity(entityKey);
     genericDao.executeUpdate(entityKey, EntityUtil.getEntityColumnValues(updatedEntity));
   }
 }
