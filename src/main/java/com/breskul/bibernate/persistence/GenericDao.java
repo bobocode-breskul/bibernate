@@ -65,10 +65,6 @@ public class GenericDao {
     return null;
   }
 
-  public <T> String executeUpdate(EntityKey<T> entityKey) {
-    return null;
-  }
-
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
   private <T> T mapResult(ResultSet resultSet, Class<T> cls) {
     // todo: change it to have both field and it's column name (from @Column annotation)
