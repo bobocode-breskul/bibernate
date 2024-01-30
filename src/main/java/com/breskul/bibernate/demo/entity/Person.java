@@ -13,24 +13,21 @@ public class Person {
     @Id
     private Long id;
 
-    @Column(name = "first_name")
-    private String firstName;
+  @Column(name = "first_name")
+  private String firstName;
 
-    @Column(name = "last_name")
-    private String lastName;
-    @Column(name = "age")
-    private Integer age;
+  @Column(name = "last_name")
+  private String lastName;
+  @Column(name = "age")
+  private Integer age;
 
-    @OneToMany
-    private List<Notes> notes;
-
-    @Override
-    public String toString() {
-        return "Person{" +
-                "id=" + id +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", age=" + age +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "Person{" +
+        "id=" + id +
+        ", firstName='" + firstName + '\'' +
+        ", lastName='" + lastName + '\'' +
+        ", age=" + age +
+        '}';
+  }
 }

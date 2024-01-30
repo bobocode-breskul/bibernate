@@ -21,5 +21,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface NaturalId {
 
-    // TODO: add attributes
+  // TODO: add attributes
 }
