@@ -24,8 +24,8 @@ public class EntityUtil {
   // TODO: implement get default table name by class name
   public static String getEntityTableName(Class<?> cls) {
     return Optional.ofNullable(cls.getAnnotation(Table.class))
-      .map(Table::name)
-      .orElseGet(cls::getName);
+        .map(Table::name)
+        .orElseGet(cls::getName);
   }
 
   // TODO: javadoc

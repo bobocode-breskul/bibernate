@@ -33,37 +33,38 @@ public class GenericDao {
     private static final Logger log = LoggerFactory.getLogger(Session.class);
 
 
-    private final DataSource dataSource;
-    public GenericDao(DataSource dataSource) {
-        this.dataSource = dataSource;
+  private final DataSource dataSource;
+
+  public GenericDao(DataSource dataSource) {
+    this.dataSource = dataSource;
+  }
+
+
+  public <T> T findById(Class<T> cls, Object id) {
+    validateIsEntity(cls);
+
+    String tableName = getEntityTableName(cls);
+    List<Field> columnFields = getClassColumnFields(cls);
+    Field idField = findEntityIdField(columnFields);
+    String idColumnName = resolveColumnName(idField);
+
+    String sql = SELECT_BY_ID_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
+        tableName, idColumnName);
+
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setObject(1, id);
+      ResultSet resultSet = statement.executeQuery();
+      if (resultSet.next()) {
+        return mapResult(resultSet, cls);
+      }
+    } catch (SQLException e) {
+      throw new EntityQueryException(
+          "Could not read entity data from database for entity [%s] with id [%s]"
+              .formatted(cls, id), e);
     }
-
-
-    public <T> T findById(Class<T> cls, Object id) {
-        validateIsEntity(cls);
-
-        String tableName = getEntityTableName(cls);
-        List<Field> columnFields = getClassColumnFields(cls);
-        Field idField = findEntityIdField(columnFields);
-        String idColumnName = resolveColumnName(idField);
-
-        String sql = SELECT_BY_ID_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
-                tableName, idColumnName);
-
-        try (Connection connection = dataSource.getConnection();
-          PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setObject(1, id);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                return mapResult(resultSet, cls);
-            }
-        } catch (SQLException e) {
-            throw new EntityQueryException(
-              "Could not read entity data from database for entity [%s] with id [%s]"
-                .formatted(cls, id), e);
-        }
-        return null;
-    }
+    return null;
+  }
 
     public <T> String executeUpdate(EntityKey<T> entityKey) {
         return null;
