@@ -30,7 +30,7 @@ public class Session implements AutoCloseable {
   }
 
   private <T> T find(EntityKey<? extends T> entityKey) {
-    T entity = genericDao.findById(entityKey.getEntityClass(), entityKey.getId());
+    T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
     persistenceContext.put(entity);
     return entity;
   }
@@ -83,7 +83,7 @@ public class Session implements AutoCloseable {
 
   private <T> void flushChanges(EntityKey<T> entityKey) {
     log.trace("Found not flushed changes in the cache");
-    Class<T> entityClass = entityKey.getEntityClass();
+    Class<T> entityClass = entityKey.entityClass();
     T updatedEntity = entityClass.cast(persistenceContext.getEntity(entityKey));
     genericDao.executeUpdate(entityKey, EntityUtil.getEntityColumnValues(updatedEntity));
   }

@@ -104,7 +104,7 @@ public class GenericDao {
     log.trace("Update entity: [{}]", updateSql);
     try (Connection connection = getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
-      setParameters(preparedStatement, entityKey.getId(), parameters);
+      setParameters(preparedStatement, entityKey.id(), parameters);
       return preparedStatement.executeUpdate();
     } catch (SQLException e) {
       throw new BibernateException("Failed to execute update query: [%s] with parameters %s"
@@ -114,7 +114,7 @@ public class GenericDao {
   }
 
   public <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
-    Class<T> entityClass = entityKey.getEntityClass();
+    Class<T> entityClass = entityKey.entityClass();
     String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
         .map("%s = ?"::formatted)
         .collect(Collectors.joining(", "));

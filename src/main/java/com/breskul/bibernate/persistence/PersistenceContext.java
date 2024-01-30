@@ -18,7 +18,7 @@ public class PersistenceContext {
   }
 
   public <T> T getEntity(EntityKey<T> key) {
-    return key.getEntityClass().cast(firstLevelCache.get(key));
+    return key.entityClass().cast(firstLevelCache.get(key));
   }
 
   public Set<EntityKey<?>> getEntityKeys() {
