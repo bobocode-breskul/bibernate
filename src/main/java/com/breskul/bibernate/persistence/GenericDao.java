@@ -28,12 +28,10 @@ import javax.sql.DataSource;
 
 public class GenericDao {
 
-  PersistenceContext context;
-
   // TODO: change to select '*'
   public static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
-
   private final DataSource dataSource;
+  PersistenceContext context;
 
   public GenericDao(DataSource dataSource, PersistenceContext context) {
     this.dataSource = dataSource;
@@ -89,12 +87,12 @@ public class GenericDao {
     List<Field> columnFields = getClassColumnFields(cls);
 
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
-      tableName, fieldName);
+        tableName, fieldName);
 
     System.out.println("Bibirnate: " + sql);  // todo make this print depend on property.
     List<T> result = new ArrayList<>();
     try (Connection connection = dataSource.getConnection();
-      PreparedStatement statement = connection.prepareStatement(sql)) {
+        PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setObject(1, fieldValue);
       ResultSet resultSet = statement.executeQuery();
       while (resultSet.next()) {
@@ -103,8 +101,8 @@ public class GenericDao {
       }
     } catch (SQLException e) {
       throw new EntityQueryException(
-        "Could not read entity data from database for entity [%s] by field [%s]=%s"
-          .formatted(cls, fieldName, fieldValue), e);
+          "Could not read entity data from database for entity [%s] by field [%s]=%s"
+              .formatted(cls, fieldName, fieldValue), e);
     }
     return result;
   }
@@ -148,34 +146,34 @@ public class GenericDao {
       return entity;
     } catch (IllegalAccessException e) {
       throw new EntityQueryException(
-        "Entity [%s] should have public no-args constructor".formatted(cls), e);
+          "Entity [%s] should have public no-args constructor".formatted(cls), e);
     } catch (IllegalArgumentException | NoSuchMethodException e) {
       throw new EntityQueryException(
-        "Entity [%s] should have constructor without parameters".formatted(cls), e);
+          "Entity [%s] should have constructor without parameters".formatted(cls), e);
     } catch (InstantiationException e) {
       throw new EntityQueryException("Entity [%s] should be non-abstract class".formatted(cls), e);
     } catch (InvocationTargetException e) {
       throw new EntityQueryException(
-        "Could not create instance of target entity [%s]".formatted(cls), e);
+          "Could not create instance of target entity [%s]".formatted(cls), e);
     } catch (SQLException e) {
       throw new EntityQueryException("Could not read single row data from database for entity [%s]"
-        .formatted(cls), e);
+          .formatted(cls), e);
     }
   }
 
   private <T> void mapManyToOneRelationship(ResultSet resultSet, Class<T> cls, Field field,
-    T entity) throws SQLException, IllegalAccessException {
+      T entity) throws SQLException, IllegalAccessException {
     String joinColumnName = resolveColumnName(field);
     Field relatedEntityIdField = findEntityIdField(cls);
     Object relatedEntityId = relatedEntityIdField.getType()
-      .cast(resultSet.getObject(joinColumnName));
+        .cast(resultSet.getObject(joinColumnName));
     String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
     var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
     field.set(entity, relatedEntity);
   }
 
   private <T> void mapOneToManyRelationship(ResultSet resultSet, Class<T> cls, Field field,
-    T entity) throws IllegalAccessException, SQLException {
+      T entity) throws IllegalAccessException, SQLException {
     Class<?> relatedEntityType = getEntityCollectionElementType(field);
     String joinColumnName = getJoinColumnName(relatedEntityType, cls);
     Object id = extractIdFromResultSet(cls, resultSet);
