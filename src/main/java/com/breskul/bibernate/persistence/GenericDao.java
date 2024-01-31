@@ -6,7 +6,7 @@ import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
-import static java.util.Objects.isNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Stream.generate;
 
 import com.breskul.bibernate.exception.EntityQueryException;
@@ -24,8 +24,8 @@ import javax.sql.DataSource;
 public class GenericDao {
 
   // TODO: change to select '*'
-  public static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
-  public static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
+  private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
 
   private final DataSource dataSource;
 
@@ -66,15 +66,13 @@ public class GenericDao {
    *
    * @param entity must not be {@literal null}.
    * @return the saved entity; will never be {@literal null}.
-   * @throws IllegalArgumentException in case the given {@literal entity} is {@literal null}.
+   * @throws NullPointerException in case the given {@literal entity} is {@literal null}.
    *           {@code OptimisticLockingFailureException} when the entity uses optimistic locking and has a version attribute with
    *           a different value from that found in the persistence store. Also thrown if the entity is assumed to be
    *           present but does not exist in the database.
    */
   public <T> T save(T entity) {
-    if (isNull(entity)) {
-      throw new IllegalArgumentException();
-    }
+    requireNonNull(entity, "Entity should not be null.");
     Class<?> cls = entity.getClass();
     String tableName = getEntityTableName(cls);
     Field idField = findEntityIdField(cls);
@@ -105,10 +103,18 @@ public class GenericDao {
       Object idValue = idField.getType().cast(generatedKeys.getObject(1));
       idField.setAccessible(true);
       idField.set(entity, idValue);
-    } catch (SQLException | IllegalAccessException e) {
+    } catch (SQLException e) {
       throw new EntityQueryException(
           "Could not save entity to database for entity [%s]"
               .formatted(entity), e);
+    } catch (IllegalAccessException e) {
+      throw new EntityQueryException(
+          "Could not set id to entity [%s]"
+              .formatted(entity), e);
+    } catch (ClassCastException e) {
+      throw new EntityQueryException(
+          "Could not cast id value to type [%s] for entity [%s]"
+              .formatted(idField.getType().getSimpleName(), entity), e);
     }
     return entity;
   }

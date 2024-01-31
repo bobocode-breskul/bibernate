@@ -26,11 +26,24 @@ public class Session implements AutoCloseable {
   }
 
   // TODO add test
-  // TODO add javadoc
-  public <T> T save(T entity) {
+
+  /**
+   * Make an instance managed and persistent.
+   * @param entity  entity instance
+   * @throws @code EntityExistsException if the entity already exists.
+   * (If the entity already exists, the <code>EntityExistsException</code> may
+   * be thrown when the persist operation is invoked, or the
+   * <code>EntityExistsException</code> or another <code>PersistenceException</code> may be
+   * thrown at flush or commit time.)
+   * @throws @code IllegalArgumentException if the instance is not an
+   *         entity
+   * @throws @code TransactionRequiredException if there is no transaction when
+   *         invoked on a container-managed entity manager of that is of type
+   *         <code>PersistenceContextType.TRANSACTION</code>
+   */
+  public <T> void persist(T entity) {
     T savedEntity = genericDao.save(entity);
     persistenceContext.manageEntity(savedEntity);
-    return savedEntity;
   }
 
   @Override
