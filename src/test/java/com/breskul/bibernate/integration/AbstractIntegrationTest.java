@@ -5,7 +5,6 @@ import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import javax.sql.DataSource;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -18,7 +17,6 @@ public abstract class AbstractIntegrationTest {
 
   @BeforeAll
   public static void beforeAll() {
-    System.out.println("before all...");
     DataSourceProperties properties = ApplicationPropertiesReader.getInstance().readProperty();
     dataSource = new BibernateDataSource(properties);
   }
