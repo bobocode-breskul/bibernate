@@ -37,8 +37,8 @@ public class Session implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
-    // TODO implement
-    throw new NotImplementedException("not implemented yet");
+  public void close() {
+//     TODO implement
+//    throw new NotImplementedException("not implemented yet");
   }
 }
