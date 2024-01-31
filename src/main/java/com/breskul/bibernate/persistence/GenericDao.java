@@ -28,6 +28,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.sql.DataSource;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.NamingStrategy;
+import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.implementation.FixedValue;
+import net.bytebuddy.matcher.ElementMatchers;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -170,7 +175,7 @@ public class GenericDao {
   }
 
   private <T> void mapManyToOneRelationship(ResultSet resultSet, Class<T> cls, Field field,
-      T entity) throws SQLException, IllegalAccessException {
+      T entity) throws SQLException, IllegalAccessException, InstantiationException {
     String joinColumnName = resolveColumnName(field);
     Field relatedEntityIdField = findEntityIdField(cls);
     Object relatedEntityId = relatedEntityIdField.getType()
@@ -205,16 +210,33 @@ public class GenericDao {
     };
   }
 
-  public Object createLazyReferenceObject(Field field, String columnName, Object id) {
+  public Object createLazyReferenceObject(Field field, String columnName, Object id)
+      throws IllegalAccessException, InstantiationException {
     Class<?> objectType = field.getType();
     // todo must work!!
-    Enhancer enhancer = new Enhancer();
-//    return Enhancer.create(objectType, new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
+//    Enhancer enhancer = new Enhancer();
+////    return Enhancer.create(objectType, new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
+//
+//    enhancer.setSuperclass(objectType);
+//    enhancer.setCallback(new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
+//
+//    return enhancer.create();
 
-    enhancer.setSuperclass(objectType);
-    enhancer.setCallback(new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
-
-    return enhancer.create();
+    // todo play with it
+    Class<?> dynamicType = new ByteBuddy()
+//        .with(new NamingStrategy.AbstractBase() {
+//          @Override
+//          protected String name(TypeDescription superClass) {
+//            return "LazyProxy" + superClass.getSimpleName();
+//          }
+//        })
+        .subclass(field.getType())
+        .method(ElementMatchers.named("*"))
+        .intercept(FixedValue.value("Hello World!"))
+        .make()
+        .load(getClass().getClassLoader())
+        .getLoaded();
+    return dynamicType.newInstance();
   }
 
   // todo generic?
