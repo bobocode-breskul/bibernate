@@ -15,17 +15,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import javax.sql.DataSource;
 
 public class GenericDao {
 
   // TODO: change to select '*'
   public static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
 
-  private final DataSource dataSource;
+  private final Connection connection;
 
-  public GenericDao(DataSource dataSource) {
-    this.dataSource = dataSource;
+  public GenericDao(Connection connection) {
+    this.connection = connection;
   }
 
 
@@ -40,8 +39,7 @@ public class GenericDao {
     String sql = SELECT_BY_ID_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
         tableName, idColumnName);
 
-    try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setObject(1, id);
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {

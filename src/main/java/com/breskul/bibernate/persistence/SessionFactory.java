@@ -1,5 +1,6 @@
 package com.breskul.bibernate.persistence;
 
+import java.sql.SQLException;
 import javax.sql.DataSource;
 
 // TODO: javadoc
@@ -12,7 +13,7 @@ public class SessionFactory {
   }
 
   // TODO: javaDoc
-  public Session openSession() {
+  public Session openSession() throws SQLException {
     return new Session(dataSource);
   }
 }
