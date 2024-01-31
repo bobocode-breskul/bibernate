@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+// todo: docs
 public class LazyList<T> implements List<T> {
 
   private final Supplier<List<T>> delegateSupplier;
@@ -167,94 +168,6 @@ public class LazyList<T> implements List<T> {
   @Override
   public Spliterator<T> spliterator() {
     return getDelegateList().spliterator();
-  }
-
-//  @Override
-//  public void addFirst(T t) {
-//    getDelegateList().addFirst(t);
-//  }
-//
-//  @Override
-//  public void addLast(T t) {
-//    getDelegateList().addLast(t);
-//  }
-//
-//  @Override
-//  public T getFirst() {
-//    return getDelegateList().getFirst();
-//  }
-//
-//  @Override
-//  public T getLast() {
-//    return getDelegateList().getLast();
-//  }
-//
-//  @Override
-//  public T removeFirst() {
-//    return getDelegateList().removeFirst();
-//  }
-//
-//  @Override
-//  public T removeLast() {
-//    return getDelegateList().removeLast();
-//  }
-//
-//  @Override
-//  public List<T> reversed() {
-//    return getDelegateList().reversed();
-//  }
-
-  public static <E> List<E> of() {
-    return List.of();
-  }
-
-  public static <E> List<E> of(E e1) {
-    return List.of(e1);
-  }
-
-  public static <E> List<E> of(E e1, E e2) {
-    return List.of(e1, e2);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3) {
-    return List.of(e1, e2, e3);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4) {
-    return List.of(e1, e2, e3, e4);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5) {
-    return List.of(e1, e2, e3, e4, e5);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
-    return List.of(e1, e2, e3, e4, e5, e6);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7, e8);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7, e8, e9);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10);
-  }
-
-  @SafeVarargs
-  public static <E> List<E> of(E... elements) {
-    return List.of(elements);
-  }
-
-  public static <E> List<E> copyOf(Collection<? extends E> coll) {
-    return List.copyOf(coll);
   }
 
   @Override
