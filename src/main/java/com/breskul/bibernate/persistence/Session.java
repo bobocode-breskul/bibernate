@@ -1,6 +1,7 @@
 package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.action.Action;
+import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import java.sql.Connection;
@@ -9,9 +10,12 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import javax.sql.DataSource;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
+import org.slf4j.Logger;
 
 // TODO: javadoc
 public class Session implements AutoCloseable {
+
+  private static final Logger log = LoggerFactory.getLogger(Session.class);
 
   private final GenericDao genericDao;
   private final PersistenceContext persistenceContext;
@@ -43,18 +47,22 @@ public class Session implements AutoCloseable {
     persistenceContext.manageEntity(savedEntity);
   }
 
-  //TODO add implementation
+  //TODO implement
   public boolean isOpen() {
     return true;
   }
 
+  //TODO: write tests
   public Transaction getTransaction() {
     if (transaction == null) {
+      log.trace("Creating new transaction");
       transaction = new Transaction(this, connection);
-    } else if (
-        transaction.getStatus() == TransactionStatus.COMMITTED ||
-            transaction.getStatus() == TransactionStatus.ROLLED_BACK) {
+    } else if (transaction.getStatus() == TransactionStatus.COMMITTED ||
+        transaction.getStatus() == TransactionStatus.ROLLED_BACK) {
+      log.trace("Creating new transaction");
       transaction = new Transaction(this, connection);
+    } else {
+      log.trace("using current transaction");
     }
 
     return transaction;

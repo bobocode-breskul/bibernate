@@ -8,10 +8,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 
-
+//TODO: write tests
 public class Transaction {
 
-  Logger log = LoggerFactory.getLogger(Transaction.class);
+  private static final Logger log = LoggerFactory.getLogger(Transaction.class);
 
   private final Session session;
   private final Connection connection;

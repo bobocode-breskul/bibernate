@@ -19,7 +19,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 
 public class GenericDao {
 
@@ -81,9 +80,7 @@ public class GenericDao {
     String sql = INSERT_ENTITY_QUERY.formatted(tableName,
         composeSelectBlockFromColumns(columnFields), questionMarks);
 
-    try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql,
-            Statement.RETURN_GENERATED_KEYS)) {
+    try (var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
         field.setAccessible(true);
