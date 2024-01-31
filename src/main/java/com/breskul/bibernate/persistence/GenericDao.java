@@ -15,7 +15,6 @@ import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
-import com.breskul.bibernate.collection.LazyList;
 import com.breskul.bibernate.exception.EntityQueryException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -27,7 +26,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.sql.DataSource;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 
 public class GenericDao {
 
@@ -173,7 +176,13 @@ public class GenericDao {
     Object relatedEntityId = relatedEntityIdField.getType()
         .cast(resultSet.getObject(joinColumnName));
     String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
-    var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
+
+//    var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
+
+    var relatedEntity = switch (field.getAnnotation(ManyToOne.class).fetch()) {
+      case EAGER -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
+      case LAZY -> createLazyReferenceObject(field, relatedEntityIdColumnName, relatedEntityId);
+    };
     field.set(entity, relatedEntity);
   }
 
@@ -196,13 +205,39 @@ public class GenericDao {
     };
   }
 
-  private <T> Collection<Object> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue, Field collectionField) {
-    var relatedEntities = innerFindAllByFieldValue(cls, fieldName, fieldValue);
+  public Object createLazyReferenceObject(Field field, String columnName, Object id) {
+    Class<?> objectType = field.getType();
+    // todo must work!!
+    Enhancer enhancer = new Enhancer();
+//    return Enhancer.create(objectType, new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
 
-    Collection<Object> collection = getCollectionInstance(collectionField);
-    collection.addAll(relatedEntities);
-    return collection;
+    enhancer.setSuperclass(objectType);
+    enhancer.setCallback(new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
+
+    return enhancer.create();
   }
+
+  // todo generic?
+  public class LazyObjectInterceptor implements MethodInterceptor {
+    Object target;
+    //todo generic?
+    Supplier supplier;
+
+    LazyObjectInterceptor(Supplier supplier) {
+      this.supplier = supplier;
+    }
+
+    @Override
+    public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy)
+        throws Throwable {
+      if (target == null) {
+        target = supplier.get();
+      }
+      Object obj = method.invoke(target, objects);
+      return obj;
+    }
+  }
+
 
   private Object fetchRelatedEntity(Field field, String columnName, Object id) {
     var relatedEntity = context.findEntity(field.getType(), id);
