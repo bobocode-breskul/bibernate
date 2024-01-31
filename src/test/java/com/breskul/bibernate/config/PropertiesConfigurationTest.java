@@ -1,18 +1,17 @@
 package com.breskul.bibernate.config;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.breskul.bibernate.exception.InvalidPropertyValueException;
 import com.breskul.bibernate.exception.PropertyNotFoundException;
+import java.lang.reflect.Field;
+import java.util.Properties;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
-import java.util.Properties;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PropertiesConfigurationTest {
 

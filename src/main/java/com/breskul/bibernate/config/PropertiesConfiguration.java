@@ -3,7 +3,6 @@ package com.breskul.bibernate.config;
 import com.breskul.bibernate.exception.InvalidPropertyValueException;
 import com.breskul.bibernate.exception.LoadingPropertiesFailedException;
 import com.breskul.bibernate.exception.PropertyNotFoundException;
-
 import java.io.InputStream;
 import java.util.Properties;
 
