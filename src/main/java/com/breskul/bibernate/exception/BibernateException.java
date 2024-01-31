@@ -6,8 +6,7 @@ public class BibernateException extends RuntimeException {
     super(message);
   }
 
-  public BibernateException(String message, Exception ex) {
-    super(message, ex);
+  public BibernateException(String message, Throwable cause) {
+    super(message, cause);
   }
-
 }

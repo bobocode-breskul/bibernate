@@ -3,6 +3,7 @@ package com.breskul.bibernate.config;
 import com.breskul.bibernate.exception.InvalidPropertyValueException;
 import com.breskul.bibernate.exception.LoadingPropertiesFailedException;
 import com.breskul.bibernate.exception.PropertyNotFoundException;
+
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -27,7 +28,6 @@ public class PropertiesConfiguration {
     try (InputStream input = PropertiesConfiguration.class.getClassLoader()
         .getResourceAsStream(configFileName)) {
       if (input == null) {
-        // TODO: throw exception if it is required to have application properties for the project
         return;
       }
       properties.load(input);
