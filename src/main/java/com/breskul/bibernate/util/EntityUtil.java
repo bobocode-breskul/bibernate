@@ -4,7 +4,6 @@ import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
-import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityParseException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -35,8 +34,8 @@ public class EntityUtil {
   }
 
   // TODO: javadoc
-  public static Field findEntityIdField(List<Field> fields) {
-    List<Field> idFields = fields.stream()
+  public static Field findEntityIdField(Class<?> entityClass) {
+    List<Field> idFields = Arrays.stream(entityClass.getDeclaredFields())
         .filter(field -> field.isAnnotationPresent(Id.class))
         .toList();
     if (idFields.isEmpty()) {
@@ -48,13 +47,10 @@ public class EntityUtil {
     return idFields.get(0);
   }
 
-  public static String findEntityIdFieldName(Class<?> entityClass) {
-    return Arrays.stream(entityClass.getDeclaredFields())
-        .filter(field -> field.isAnnotationPresent(Id.class))
-        .findFirst()
-        .map(Field::getName)
-        .orElseThrow(() -> new BibernateException("Primary key column is not found"));
+  public static <T> String findEntityIdFieldName(Class<T> entityClass) {
+    return findEntityIdField(entityClass).getName();
   }
+
 
   // TODO: javadoc
   public static String composeSelectBlockFromColumns(List<Field> columnNames) {
@@ -72,7 +68,7 @@ public class EntityUtil {
   }
 
   public static Object getEntityId(Object entity) {
-    var idField = findEntityIdField(List.of(entity.getClass().getDeclaredFields()));
+    var idField = findEntityIdField(entity.getClass());
     return readFieldValue(entity, idField);
   }
 

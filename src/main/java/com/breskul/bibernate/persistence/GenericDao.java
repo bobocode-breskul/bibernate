@@ -27,8 +27,8 @@ public class GenericDao {
 
   // TODO: change to select '*'
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
-  private static final String UPDATE_SQL = "UPDATE %s %s WHERE %s = ?;";
-  private static final Logger log = LoggerFactory.getLogger(Session.class);
+  private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
+  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
   private final DataSource dataSource;
 
@@ -41,7 +41,7 @@ public class GenericDao {
 
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
-    Field idField = findEntityIdField(columnFields);
+    Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
 
     String sql = SELECT_BY_ID_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
@@ -113,19 +113,26 @@ public class GenericDao {
     String tableName = EntityUtil.getEntityTableName(entityClass);
     String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
 
-    return UPDATE_SQL.formatted(tableName, "SET %s".formatted(setUpdatedColumnsSql),
-        primaryKeyName);
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
   }
 
-  public <T> void setParameters(PreparedStatement preparedStatement, Object pk,
-      Object... parameters) throws SQLException {
-    int i = 1;
-    for (Object parameter : parameters) {
-      preparedStatement.setObject(i++, parameter);
+  public <T> void setParameters(PreparedStatement preparedStatement,
+      Object primaryKey,
+      Object... params) throws SQLException {
+    validatePrimaryKey(primaryKey);
+
+    int parameterIndex = 1;
+    for (Object parameter : params) {
+      preparedStatement.setObject(parameterIndex, parameter);
+      parameterIndex++;
     }
 
-    if (pk != null) {
-      preparedStatement.setObject(i, pk);
+    preparedStatement.setObject(parameterIndex, primaryKey);
+  }
+
+  private void validatePrimaryKey(Object primaryKey) {
+    if (primaryKey == null) {
+      throw new BibernateException("Primary key value must be passed for update query");
     }
   }
 
