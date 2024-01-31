@@ -8,17 +8,18 @@ import static com.breskul.bibernate.util.EntityUtil.getCollectionInstance;
 import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
+import static com.breskul.bibernate.util.EntityUtil.getLazyCollectionInstance;
 import static com.breskul.bibernate.util.EntityUtil.isPrimitiveColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 
-import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.collection.LazyList;
 import com.breskul.bibernate.exception.EntityQueryException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -35,7 +36,6 @@ public class GenericDao {
   // TODO: change to select '*'
   public static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private final DataSource dataSource;
-  PersistenceContext context;
 
   public GenericDao(DataSource dataSource, PersistenceContext context) {
     this.dataSource = dataSource;
@@ -182,18 +182,18 @@ public class GenericDao {
     Class<?> relatedEntityType = getEntityCollectionElementType(field);
     String joinColumnName = getJoinColumnName(relatedEntityType, cls);
     Object id = extractIdFromResultSet(cls, resultSet);
-    List<?> relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id);
-    Collection<Object> collection = getCollectionInstance(field);
-    collection.addAll(relatedEntities);
+    field.set(entity, createAssociatedCollection(field, relatedEntityType, joinColumnName, id));
+  }
 
-//    if (annotation.fetch() == FetchType.EAGER) {
-//      var relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id, field);
-//      field.set(entity, relatedEntities);
-//    } else {
-//              field.set(new LazyList<>());
-//    }
-
-    field.set(entity, collection);
+  // todo: rename
+  private Collection<Object> createAssociatedCollection(Field field, Class<?> relatedEntityType, String joinColumnName,
+      Object id) {
+    return switch (field.getAnnotation(OneToMany.class).fetch()) {
+      case EAGER -> getCollectionInstance(field,
+          innerFindAllByFieldValue(relatedEntityType, joinColumnName, id));
+      case LAZY -> getLazyCollectionInstance(field,
+          () -> this.innerFindAllByFieldValue(relatedEntityType, joinColumnName, id));
+    };
   }
 
   private <T> Collection<Object> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue, Field collectionField) {

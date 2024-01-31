@@ -1,5 +1,6 @@
 package com.breskul.bibernate.collection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -16,16 +17,16 @@ import java.util.stream.Stream;
 // todo: docs
 public class LazyList<T> implements List<T> {
 
-  private final Supplier<List<T>> delegateSupplier;
+  private final Supplier<Collection<? extends T>> delegateSupplier;
   private List<T> delegate;
 
-  public LazyList(Supplier<List<T>> delegateSupplier) {
+  public LazyList(Supplier<Collection<? extends T>> delegateSupplier) {
     this.delegateSupplier = delegateSupplier;
   }
 
   private List<T> getDelegateList() {
     if (delegate == null) {
-      delegate = delegateSupplier.get();
+      delegate = new ArrayList<>(delegateSupplier.get());
     }
     return delegate;
   }
@@ -193,5 +194,10 @@ public class LazyList<T> implements List<T> {
   @Override
   public void forEach(Consumer<? super T> action) {
     getDelegateList().forEach(action);
+  }
+
+  @Override
+  public String toString() {
+    return getDelegateList().toString();
   }
 }

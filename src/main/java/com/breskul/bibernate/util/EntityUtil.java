@@ -9,6 +9,8 @@ import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.annotation.Table;
+import com.breskul.bibernate.collection.LazyList;
+import com.breskul.bibernate.collection.LazySet;
 import com.breskul.bibernate.exception.EntityParseException;
 import com.breskul.bibernate.persistence.Test;
 import java.lang.reflect.Field;
@@ -16,10 +18,12 @@ import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -244,14 +248,34 @@ public class EntityUtil {
    * @throws IllegalArgumentException if the collection type is unsupported
    */
   public static Collection<Object> getCollectionInstance(Field collectionField) {
+    return getCollectionInstance(collectionField, Collections.emptyList());
+  }
+
+  // todo: docs
+  public static Collection<Object> getCollectionInstance(Field collectionField, Collection<?> source) {
     var collectionClass = collectionField.getType();
 
     if (collectionClass.isAssignableFrom(List.class)) {
-      return new ArrayList<>();
+      return new ArrayList<>(source);
     }
 
     if (collectionClass.isAssignableFrom(Set.class)) {
-      return new HashSet<>();
+      return new HashSet<>(source);
+    }
+
+    throw new IllegalArgumentException("Unsupported collection: " + collectionClass); // change exception and more clear msg?
+  }
+
+  // todo: docs
+  public static Collection<Object> getLazyCollectionInstance(Field collectionField, Supplier<Collection<?>> delegateSupplier) {
+    var collectionClass = collectionField.getType();
+
+    if (collectionClass.isAssignableFrom(List.class)) {
+      return new LazyList<>(delegateSupplier);
+    }
+
+    if (collectionClass.isAssignableFrom(Set.class)) {
+      return new LazySet<>(delegateSupplier);
     }
 
     throw new IllegalArgumentException("Unsupported collection: " + collectionClass); // change exception and more clear msg?
