@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class EntityUtil {
@@ -33,6 +34,12 @@ public class EntityUtil {
         .toList();
   }
 
+  public static List<Field> getClassColumnFields(Class<?> cls, Predicate<Field> fieldPredicate) {
+    return Arrays.stream(cls.getDeclaredFields())
+        .filter(fieldPredicate)
+        .toList();
+  }
+
   // TODO: javadoc
   public static Field findEntityIdField(List<Field> fields) {
     List<Field> idFields = fields.stream()
@@ -45,6 +52,12 @@ public class EntityUtil {
       throw new EntityParseException("Only one field should be marked with 'Id' annotation.");
     }
     return idFields.get(0);
+  }
+
+  // TODO: javadoc
+  public static Field findEntityIdField(Class<?> cls) {
+    List<Field> fields = getClassColumnFields(cls);
+    return findEntityIdField(fields);
   }
 
   // TODO: javadoc

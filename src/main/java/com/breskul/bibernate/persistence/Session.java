@@ -25,6 +25,17 @@ public class Session implements AutoCloseable {
     return genericDao.findById(entityClass, id);
   }
 
+  // TODO add test
+
+  /**
+   * Make an instance managed and persistent.
+   * @param entity  entity instance
+   */
+  public <T> void persist(T entity) {
+    T savedEntity = genericDao.save(entity);
+    persistenceContext.manageEntity(savedEntity);
+  }
+
   @Override
   public void close() throws Exception {
     // TODO implement
