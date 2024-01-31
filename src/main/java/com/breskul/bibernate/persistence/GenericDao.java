@@ -13,8 +13,10 @@ import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
 
+import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.collection.LazyList;
 import com.breskul.bibernate.exception.EntityQueryException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -29,7 +31,7 @@ import javax.sql.DataSource;
 
 public class GenericDao {
 
-  PersistenceContext context ;
+  private PersistenceContext context;
 
     // TODO: change to select '*'
     public static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
@@ -74,7 +76,6 @@ public class GenericDao {
     return innerFindAllByFieldValue(cls, columnName, columnValue);
   }
 
-
   private  <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue) {
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
@@ -82,6 +83,7 @@ public class GenericDao {
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
       tableName, fieldName);
 
+    // TODO: logging
     System.out.println(sql);
     List<T> result = new ArrayList<>();
     try (Connection connection = dataSource.getConnection();
@@ -100,7 +102,8 @@ public class GenericDao {
     return result;
   }
 
-    // todo add logic for relation annotations - @OneToMany
+    // todo add logic for relation annotations - @ManyToMany
+    // todo add logic for relation annotations - @OneToOne
     private  <T> T mapResult(ResultSet resultSet, Class<T> cls) {
       List<Field> columnFields = getClassEntityFields(cls);
 
@@ -127,17 +130,19 @@ public class GenericDao {
             var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
             field.set(entity, relatedEntity);
           } else if (field.isAnnotationPresent(OneToMany.class)) {
+            OneToMany annotation = field.getAnnotation(OneToMany.class);
             Class<?> relatedEntityType = getEntityCollectionElementType(field);
             String joinColumnName = getJoinColumnName(relatedEntityType, cls);
             Object id = extractIdFromResultSet(cls, resultSet);
 
-            var relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id)
-              .stream()
-              .map(context::manageEntity)
-              .toList();
-            Collection<Object> collection = getCollectionInstance(field);
-            collection.addAll(relatedEntities);
-            field.set(entity, collection);
+            if (annotation.fetch() == FetchType.EAGER) {
+              var relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id, field);
+              field.set(entity, relatedEntities);
+            } else {
+//              field.set(new LazyList<>());
+            }
+            var relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id, field);
+            field.set(entity, relatedEntities);
           }
         }
         return entity;
@@ -153,6 +158,14 @@ public class GenericDao {
           throw new EntityQueryException("Could not read single row data from database for entity [%s]"
             .formatted(cls), e);
       }
+    }
+
+    private <T> Collection<Object> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue, Field collectionField) {
+      var relatedEntities = innerFindAllByFieldValue(cls, fieldName, fieldValue);
+
+      Collection<Object> collection = getCollectionInstance(collectionField);
+      collection.addAll(relatedEntities);
+      return collection;
     }
 
     private Object fetchRelatedEntity(Field field, String columnName, Object id) {
