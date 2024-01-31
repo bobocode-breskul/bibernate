@@ -67,9 +67,7 @@ public class GenericDao {
    * @param entity must not be {@literal null}.
    * @return the saved entity; will never be {@literal null}.
    * @throws NullPointerException in case the given {@literal entity} is {@literal null}.
-   *           {@code OptimisticLockingFailureException} when the entity uses optimistic locking and has a version attribute with
-   *           a different value from that found in the persistence store. Also thrown if the entity is assumed to be
-   *           present but does not exist in the database.
+   * @throws EntityQueryException If an error occurs during the save operation.
    */
   public <T> T save(T entity) {
     requireNonNull(entity, "Entity should not be null.");
