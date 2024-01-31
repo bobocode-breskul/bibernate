@@ -1,4 +1,4 @@
-package com.breskul.bibernate.persistence;
+package com.breskul.bibernate.persistence.datasource;
 
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
@@ -11,6 +11,10 @@ import java.util.Optional;
 import java.util.Properties;
 import lombok.Setter;
 
+/**
+ * The BibernateDataSource class represents a data source for Bibernate connections. It provides flexibility to work with either
+ * the default DriverManager-based mechanism for finding the appropriate Driver class or a specified custom Driver class.
+ */
 @Setter
 public class BibernateDataSource extends AbstractDataSource {
 
@@ -22,22 +26,25 @@ public class BibernateDataSource extends AbstractDataSource {
   private Driver delegateDriver;
 
   /**
-   * Default constructor for BibernateDataSource. This constructor is used when a specific Driver class is not specified. It relies on
-   * DriverManager to find the appropriate Driver class based on the connection URL.
+   * Default constructor for BibernateDataSource. This constructor is used when a specific Driver class is not specified.
+   * It relies on DriverManager to find the appropriate Driver class based on the connection URL.
    */
   public BibernateDataSource() {
   }
 
   /**
-   * Constructor for BibernateDataSource with a specified driver class. Use this constructor when you need to use a specific or custom
-   * Driver class. The provided driver class must be registered. DriverManager is used to find the Driver class by matching it with the
-   * given driver class name.
+   * Constructor for BibernateDataSource with a specified driver class. Use this constructor when you need to use a specific
+   * or custom Driver class. The provided driver class must be registered. DriverManager is used to find the Driver class by
+   * matching it with the given driver class name.
    *
-   * @param driverClassName The fully qualified name of the Driver class.
+   * @param properties The properties containing the connection URL, username, password, and driver class.
    * @throws BibernateException If the Driver with the specified name is not found or if there is an issue loading the class.
    */
-  protected BibernateDataSource(String driverClassName) {
-    Objects.requireNonNull(driverClassName, "Driver class name cannot be null");
+  public BibernateDataSource(DataSourceProperties properties) {
+    this.url = properties.url();
+    this.username = properties.username();
+    this.password = properties.password();
+    String driverClassName = Objects.requireNonNull(properties.driverClass(), "Driver class name cannot be null");
     try {
       Class<?> aClass = Class.forName(driverClassName);
       Optional<Driver> driver = DriverManager.drivers().filter(aClass::isInstance).findFirst();

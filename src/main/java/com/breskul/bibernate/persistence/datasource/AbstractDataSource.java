@@ -1,4 +1,4 @@
-package com.breskul.bibernate.persistence;
+package com.breskul.bibernate.persistence.datasource;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
