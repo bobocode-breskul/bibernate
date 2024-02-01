@@ -60,12 +60,6 @@ public class EntityUtil {
 
 
   // TODO: javadoc
-  public static Field findEntityIdField(Class<?> cls) {
-    List<Field> fields = getClassColumnFields(cls);
-    return findEntityIdField(fields);
-  }
-
-  // TODO: javadoc
   public static String composeSelectBlockFromColumns(List<Field> columnNames) {
     return columnNames.stream()
         .map(EntityUtil::resolveColumnName)

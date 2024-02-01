@@ -68,7 +68,7 @@ public class Session implements AutoCloseable {
    */
   public <T> void persist(T entity) {
     T savedEntity = genericDao.save(entity);
-    persistenceContext.manageEntity(savedEntity);
+    persistenceContext.put(savedEntity);
   }
 
   @Override
