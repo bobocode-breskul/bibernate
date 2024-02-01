@@ -32,6 +32,9 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.NamingStrategy;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.implementation.FixedValue;
+import net.bytebuddy.implementation.MethodDelegation;
+import net.bytebuddy.implementation.bind.annotation.AllArguments;
+import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.matcher.ElementMatchers;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
@@ -171,11 +174,13 @@ public class GenericDao {
     } catch (SQLException e) {
       throw new EntityQueryException("Could not read single row data from database for entity [%s]"
           .formatted(cls), e);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 
   private <T> void mapManyToOneRelationship(ResultSet resultSet, Class<T> cls, Field field,
-      T entity) throws SQLException, IllegalAccessException, InstantiationException {
+      T entity) throws Exception {
     String joinColumnName = resolveColumnName(field);
     Field relatedEntityIdField = findEntityIdField(cls);
     Object relatedEntityId = relatedEntityIdField.getType()
@@ -210,10 +215,10 @@ public class GenericDao {
     };
   }
 
-  public Object createLazyReferenceObject(Field field, String columnName, Object id)
-      throws IllegalAccessException, InstantiationException {
-    Class<?> objectType = field.getType();
-    // todo must work!!
+//  public Object createLazyReferenceObject(Field field, String columnName, Object id)
+//      throws IllegalAccessException, InstantiationException {
+//    Class<?> objectType = field.getType();
+//    // todo must work!!
 //    Enhancer enhancer = new Enhancer();
 ////    return Enhancer.create(objectType, new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
 //
@@ -221,23 +226,7 @@ public class GenericDao {
 //    enhancer.setCallback(new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
 //
 //    return enhancer.create();
-
-    // todo play with it
-    Class<?> dynamicType = new ByteBuddy()
-//        .with(new NamingStrategy.AbstractBase() {
-//          @Override
-//          protected String name(TypeDescription superClass) {
-//            return "LazyProxy" + superClass.getSimpleName();
-//          }
-//        })
-        .subclass(field.getType())
-        .method(ElementMatchers.named("*"))
-        .intercept(FixedValue.value("Hello World!"))
-        .make()
-        .load(getClass().getClassLoader())
-        .getLoaded();
-    return dynamicType.newInstance();
-  }
+//  }
 
   // todo generic?
   public class LazyObjectInterceptor implements MethodInterceptor {
@@ -259,6 +248,52 @@ public class GenericDao {
       return obj;
     }
   }
+
+  public Object createLazyReferenceObject(Field field, String columnName, Object id) throws Exception {
+
+    Class<?> objectType = field.getType();
+
+    ByteBuddy byteBuddy = new ByteBuddy();
+
+//    Class<?> proxyClass = new ByteBuddy()
+//        .subclass(objectType)
+//        .method(ElementMatchers.named("getOriginalObject"))
+//        .intercept(FixedValue.origin())
+//        .make()
+//        .load(getClass().getClassLoader())
+//        .getLoaded();
+
+    Class<?> proxyClass = byteBuddy
+        .subclass(objectType)
+        .method(ElementMatchers.not(ElementMatchers.isClone().or(ElementMatchers.isFinalizer()).or(ElementMatchers.isEquals()).or(ElementMatchers.isHashCode()).or(ElementMatchers.isToString())))
+        .intercept(
+            MethodDelegation.to(new LazyInterceptor(()-> fetchRelatedEntity(field, columnName, id))))
+        .make()
+        .load(objectType.getClassLoader())
+        .getLoaded();
+
+    return proxyClass.newInstance();
+
+  }
+
+  public static class LazyInterceptor {
+    Object object;
+    Supplier<?> supplier;
+
+    public LazyInterceptor(Supplier<Object> supplier) {
+      this.supplier = supplier;
+    }
+
+    public Object intercept(@Origin Method method, @AllArguments Object[] args) throws Exception {
+      if (object == null) {
+        object = supplier.get();
+      }
+      return method.invoke(object, args);
+    }
+
+  }
+
+
 
 
   private Object fetchRelatedEntity(Field field, String columnName, Object id) {
