@@ -60,6 +60,17 @@ public class Session implements AutoCloseable {
     persistenceContext.put(entity);
   }
 
+  // TODO add test
+
+  /**
+   * Make an instance managed and persistent.
+   * @param entity  entity instance
+   */
+  public <T> void persist(T entity) {
+    T savedEntity = genericDao.save(entity);
+    persistenceContext.manageEntity(savedEntity);
+  }
+
   @Override
   public void close() throws Exception {
     performDirtyChecking();
