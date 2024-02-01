@@ -29,16 +29,11 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.sql.DataSource;
 import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.NamingStrategy;
-import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.implementation.FixedValue;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.Origin;
+import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.matcher.ElementMatchers;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
 
 public class GenericDao {
 
@@ -187,8 +182,6 @@ public class GenericDao {
         .cast(resultSet.getObject(joinColumnName));
     String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
 
-//    var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
-
     var relatedEntity = switch (field.getAnnotation(ManyToOne.class).fetch()) {
       case EAGER -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
       case LAZY -> createLazyReferenceObject(field, relatedEntityIdColumnName, relatedEntityId);
@@ -215,75 +208,33 @@ public class GenericDao {
     };
   }
 
-//  public Object createLazyReferenceObject(Field field, String columnName, Object id)
-//      throws IllegalAccessException, InstantiationException {
-//    Class<?> objectType = field.getType();
-//    // todo must work!!
-//    Enhancer enhancer = new Enhancer();
-////    return Enhancer.create(objectType, new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
-//
-//    enhancer.setSuperclass(objectType);
-//    enhancer.setCallback(new LazyObjectInterceptor(() -> fetchRelatedEntity(field, columnName, id)));
-//
-//    return enhancer.create();
-//  }
-
-  // todo generic?
-  public class LazyObjectInterceptor implements MethodInterceptor {
-    Object target;
-    //todo generic?
-    Supplier supplier;
-
-    LazyObjectInterceptor(Supplier supplier) {
-      this.supplier = supplier;
-    }
-
-    @Override
-    public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy)
-        throws Throwable {
-      if (target == null) {
-        target = supplier.get();
-      }
-      Object obj = method.invoke(target, objects);
-      return obj;
-    }
-  }
-
   public Object createLazyReferenceObject(Field field, String columnName, Object id) throws Exception {
-
     Class<?> objectType = field.getType();
 
     ByteBuddy byteBuddy = new ByteBuddy();
 
-//    Class<?> proxyClass = new ByteBuddy()
-//        .subclass(objectType)
-//        .method(ElementMatchers.named("getOriginalObject"))
-//        .intercept(FixedValue.origin())
-//        .make()
-//        .load(getClass().getClassLoader())
-//        .getLoaded();
-
     Class<?> proxyClass = byteBuddy
         .subclass(objectType)
-        .method(ElementMatchers.not(ElementMatchers.isClone().or(ElementMatchers.isFinalizer()).or(ElementMatchers.isEquals()).or(ElementMatchers.isHashCode()).or(ElementMatchers.isToString())))
+        .method(ElementMatchers.any())
         .intercept(
-            MethodDelegation.to(new LazyInterceptor(()-> fetchRelatedEntity(field, columnName, id))))
+            MethodDelegation.to(new LazyInterceptor<>(()-> fetchRelatedEntity(field, columnName, id))))
         .make()
         .load(objectType.getClassLoader())
         .getLoaded();
 
     return proxyClass.newInstance();
-
   }
 
-  public static class LazyInterceptor {
-    Object object;
-    Supplier<?> supplier;
+  public static class LazyInterceptor<T> {
+    T object;
+    Supplier<T> supplier;
 
-    public LazyInterceptor(Supplier<Object> supplier) {
+
+    public LazyInterceptor(Supplier<T> supplier) {
       this.supplier = supplier;
     }
 
+    @RuntimeType
     public Object intercept(@Origin Method method, @AllArguments Object[] args) throws Exception {
       if (object == null) {
         object = supplier.get();
@@ -292,9 +243,6 @@ public class GenericDao {
     }
 
   }
-
-
-
 
   private Object fetchRelatedEntity(Field field, String columnName, Object id) {
     var relatedEntity = context.findEntity(field.getType(), id);
