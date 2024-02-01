@@ -4,7 +4,9 @@ import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
+import lombok.Setter;
 
+@Setter
 @Entity
 @Table(name = "persons")
 public class Person {

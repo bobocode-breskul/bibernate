@@ -7,14 +7,12 @@ import java.lang.annotation.Target;
 
 
 /**
- * Specifies a persistent field or property of an entity whose
- * value is an instance of an embeddable class. The embeddable
- * class must be annotated as {@link Embeddable}.
+ * Specifies a persistent field or property of an entity whose value is an instance of an embeddable
+ * class. The embeddable class must be annotated as {@link Embeddable}.
  *
  * <p> The <code>AttributeOverride</code>, <code>AttributeOverrides</code>,
  * <code>AssociationOverride</code>, and <code>AssociationOverrides</code>
- * annotations may be used to override mappings declared or defaulted
- * by the embeddable class.
+ * annotations may be used to override mappings declared or defaulted by the embeddable class.
  */
 
 @Retention(RetentionPolicy.RUNTIME)

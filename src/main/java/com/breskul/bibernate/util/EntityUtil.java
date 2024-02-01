@@ -41,8 +41,8 @@ public class EntityUtil {
   }
 
   // TODO: javadoc
-  public static Field findEntityIdField(List<Field> fields) {
-    List<Field> idFields = fields.stream()
+  public static Field findEntityIdField(Class<?> entityClass) {
+    List<Field> idFields = Arrays.stream(entityClass.getDeclaredFields())
         .filter(field -> field.isAnnotationPresent(Id.class))
         .toList();
     if (idFields.isEmpty()) {
@@ -54,11 +54,10 @@ public class EntityUtil {
     return idFields.get(0);
   }
 
-  // TODO: javadoc
-  public static Field findEntityIdField(Class<?> cls) {
-    List<Field> fields = getClassColumnFields(cls);
-    return findEntityIdField(fields);
+  public static <T> String findEntityIdFieldName(Class<T> entityClass) {
+    return findEntityIdField(entityClass).getName();
   }
+
 
   // TODO: javadoc
   public static String composeSelectBlockFromColumns(List<Field> columnNames) {
@@ -76,7 +75,7 @@ public class EntityUtil {
   }
 
   public static Object getEntityId(Object entity) {
-    var idField = findEntityIdField(List.of(entity.getClass().getDeclaredFields()));
+    var idField = findEntityIdField(entity.getClass());
     return readFieldValue(entity, idField);
   }
 
@@ -89,6 +88,25 @@ public class EntityUtil {
           "Failed to access field '" + idField.getName() + "' of entity type '" + entity.getClass()
               .getName() + "': Illegal access");
     }
+  }
+
+  public static <T> List<Field> getEntityColumns(Class<? extends T> entityClass) {
+    return Arrays.stream(entityClass.getDeclaredFields())
+        .filter(field -> field.isAnnotationPresent(Column.class))
+        .collect(Collectors.toList());
+  }
+
+  public static <T> Object[] getEntityColumnValues(T entity) {
+    return getEntityColumns(entity.getClass()).stream()
+        .map(field -> readFieldValue(entity, field))
+        .toArray();
+  }
+
+  public static <T> List<String> getEntityColumnNames(Class<? extends T> entityClass) {
+    return Arrays.stream(entityClass.getDeclaredFields())
+        .filter(field -> field.isAnnotationPresent(Column.class))
+        .map(field -> field.getAnnotation(Column.class).name())
+        .collect(Collectors.toList());
   }
 
   private EntityUtil() {

@@ -1,6 +1,8 @@
 package com.breskul.bibernate.persistence;
 
+import com.breskul.bibernate.util.EntityUtil;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 //TODO add docs
@@ -8,64 +10,37 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PersistenceContext {
 
-  private final Map<EntityKey, Object> firstLevelCache = new ConcurrentHashMap<>(); //TODO Think what better HashMap vs ConcurrentHashMap
-  private final Map<EntityKey, Object[]> entitySnapshots = new ConcurrentHashMap<>(); // for dirty checking
+  private final Map<EntityKey<?>, Object> firstLevelCache = new ConcurrentHashMap<>(); //TODO Think what better HashMap vs ConcurrentHashMap
+  private final Map<EntityKey<?>, Object[]> entitySnapshots = new ConcurrentHashMap<>(); // for dirty checking
 
-  // persist
-  // todo: docs
-  // todo: tests
-  public <T> void manageEntity(T entity) {
-    manage(entity);
-    firstLevelCache.put(EntityKey.valueOf(entity), entity);
+  public <T> T getEntity(Class<T> entityClass, Object id) {
+    return getEntity(EntityKey.of(entityClass, id));
   }
 
-  private <T> void manage(T entity) {
-    // todo: implement manage (persist)
+  public <T> T getEntity(EntityKey<T> key) {
+    return key.entityClass().cast(firstLevelCache.get(key));
   }
 
-  // todo: docs
-  // todo: tests
-  public <T> T findEntity(Class<T> cls, Object id) {
-    return cls.cast(firstLevelCache.computeIfAbsent(new EntityKey(cls, id), this::find));
+  public Set<EntityKey<?>> getEntityKeys() {
+    return firstLevelCache.keySet();
   }
 
-  private <T> T find(EntityKey entityKey) {
-    // todo: implement find by id
-    return null;
+  public <T> Object[] getEntitySnapshot(EntityKey<T> entityKey) {
+    return entitySnapshots.get(entityKey);
   }
 
-  // todo: docs
-  // todo: tests
-//  @SuppressWarnings()
-  public <T> T mergeEntity(T entity) {
-    // todo: check for id
-    var key = EntityKey.valueOf(entity);
-    if (firstLevelCache.containsKey(key)) {
-      T cachedEntity = (T) firstLevelCache.get(key);
-      if (!isDirty(entity)) {
-        merge(entity, cachedEntity);
-      }
-      return cachedEntity;
-    }
-    T newEntity = find(key);
-    firstLevelCache.put(key, newEntity);
-    return newEntity;
+  public <T> void put(T entity) {
+    firstLevelCache.putIfAbsent(EntityKey.valueOf(entity), entity);
+    takeSnapshot(entity);
   }
 
-  private <T> void merge(T entity, T cachedEntity) {
-    // todo: merge field from entity to cachedEntity using reflection
-  }
-
-  private <T> boolean isDirty(T entity) {
-    // todo: implement
-    return false;
-  }
-
-  // todo: docs
-  // todo: test
   public <T> boolean contains(T entity) {
     var key = EntityKey.valueOf(entity);
     return firstLevelCache.containsKey(key);
+  }
+
+  public <T> boolean isDirty(T entity) {
+    return false;
   }
 
   public void clear() {
@@ -73,4 +48,13 @@ public class PersistenceContext {
     entitySnapshots.clear();
   }
 
+  private <T> void takeSnapshot(T entity) {
+    EntityKey<T> entityKey = EntityKey.valueOf(entity);
+    if (!entitySnapshots.containsKey(entityKey)) {
+      Object[] values = EntityUtil.getEntityColumnValues(entity);
+      entitySnapshots.put(entityKey, values);
+    }
+  }
+
 }
+

@@ -9,23 +9,30 @@ import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Stream.generate;
 
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityQueryException;
+import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GenericDao {
 
   // TODO: change to select '*'
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
+  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
   private final DataSource dataSource;
 
@@ -33,13 +40,12 @@ public class GenericDao {
     this.dataSource = dataSource;
   }
 
-
   public <T> T findById(Class<T> cls, Object id) {
     validateIsEntity(cls);
 
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
-    Field idField = findEntityIdField(columnFields);
+    Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
 
     String sql = SELECT_BY_ID_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
@@ -144,6 +150,58 @@ public class GenericDao {
     } catch (SQLException e) {
       throw new EntityQueryException("Could not read single row data from database for entity [%s]"
           .formatted(cls), e);
+    }
+  }
+
+  public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
+    String updateSql = prepareUpdateQuery(entityKey);
+    log.trace("Update entity: [{}]", updateSql);
+    try (Connection connection = getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+      setParameters(preparedStatement, entityKey.id(), parameters);
+      return preparedStatement.executeUpdate();
+    } catch (SQLException e) {
+      throw new BibernateException("Failed to execute update query: [%s] with parameters %s"
+          .formatted(updateSql, Arrays.toString(parameters)), e);
+    }
+  }
+
+  public <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+    String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
+
+  public <T> void setParameters(PreparedStatement preparedStatement,
+      Object primaryKey,
+      Object... params) throws SQLException {
+    validatePrimaryKey(primaryKey);
+
+    int parameterIndex = 1;
+    for (Object parameter : params) {
+      preparedStatement.setObject(parameterIndex, parameter);
+      parameterIndex++;
+    }
+
+    preparedStatement.setObject(parameterIndex, primaryKey);
+  }
+
+  private void validatePrimaryKey(Object primaryKey) {
+    if (primaryKey == null) {
+      throw new BibernateException("Primary key value must be passed for update query");
+    }
+  }
+
+  private Connection getConnection() {
+    try {
+      return dataSource.getConnection();
+    } catch (SQLException e) {
+      throw new BibernateException("Failed to acquire connection", e);
     }
   }
 }
