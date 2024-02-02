@@ -5,12 +5,9 @@ import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.JoinColumn;
 import com.breskul.bibernate.annotation.ManyToMany;
-import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
-import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
-import com.breskul.bibernate.persistence.Test;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -217,7 +214,7 @@ public class EntityUtil {
    * @param field - The field to check
    * @return true if the field is a primitive column, false otherwise
    */
-  public static boolean isPrimitiveColumn(Field field) {
+  public static boolean isSimpleColumn(Field field) {
     return field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(Id.class);
   }
 

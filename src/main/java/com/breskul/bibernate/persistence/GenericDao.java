@@ -8,12 +8,13 @@ import static com.breskul.bibernate.util.EntityUtil.getCollectionInstance;
 import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
-import static com.breskul.bibernate.util.EntityUtil.isPrimitiveColumn;
+import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.EntityQueryException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -25,11 +26,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
 
 public class GenericDao {
 
   // TODO: change to select '*'
-  public static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+
+  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
   PersistenceContext context;
 
@@ -89,7 +93,7 @@ public class GenericDao {
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
         tableName, fieldName);
 
-    System.out.println("Bibirnate: " + sql);  // todo make this print depend on property.
+    log.info("Bibernate: " + sql);  // todo make this print depend on property.
     List<T> result = new ArrayList<>();
     try (Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -128,7 +132,7 @@ public class GenericDao {
       for (Field field : columnFields) {
         field.setAccessible(true);
 
-        if (isPrimitiveColumn(field)) {
+        if (isSimpleColumn(field)) {
           String columnName = resolveColumnName(field);
           field.set(entity, resultSet.getObject(columnName));
         }
