@@ -1,4 +1,4 @@
-package com.breskul.bibernate.collection;
+package com.breskul.bibernate.proxy.collection;
 
 import java.util.ArrayList;
 import java.util.Collection;
