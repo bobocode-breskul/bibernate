@@ -10,12 +10,17 @@ import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
+import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Stream.generate;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.EntityQueryException;
+import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -24,14 +29,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Arrays;
+import java.sql.Statement;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GenericDao {
 
   // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
+  private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
@@ -111,6 +124,64 @@ public class GenericDao {
     return result;
   }
 
+  /**
+   * Saves a given entity. Use the returned instance for further operations as the save operation might have changed the
+   * entity instance completely.
+   *
+   * @param entity must not be {@literal null}.
+   * @return the saved entity; will never be {@literal null}.
+   * @throws NullPointerException in case the given {@literal entity} is {@literal null}.
+   * @throws EntityQueryException If an error occurs during the save operation.
+   */
+  public <T> T save(T entity) {
+    requireNonNull(entity, "Entity should not be null.");
+    Class<?> cls = entity.getClass();
+    String tableName = getEntityTableName(cls);
+    Field idField = findEntityIdField(cls);
+    List<Field> columnFields = getClassColumnFields(cls, field -> !field.equals(idField));
+
+    String questionMarks = generate(() -> "?")
+        .limit(columnFields.size())
+        .collect(Collectors.joining(", "));
+    String sql = INSERT_ENTITY_QUERY.formatted(tableName,
+        composeSelectBlockFromColumns(columnFields), questionMarks);
+
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement = connection.prepareStatement(sql,
+            Statement.RETURN_GENERATED_KEYS)) {
+      for (int i = 0; i < columnFields.size(); i++) {
+        Field field = columnFields.get(i);
+        field.setAccessible(true);
+        statement.setObject(i + 1, field.get(entity));
+      }
+      int result = statement.executeUpdate();
+      if (result != 1) {
+        throw new EntityQueryException(
+            "Could not save entity to database for entity [%s]"
+                .formatted(entity));
+      }
+      ResultSet generatedKeys = statement.getGeneratedKeys();
+      generatedKeys.next();
+      Object idValue = idField.getType().cast(generatedKeys.getObject(1));
+      idField.setAccessible(true);
+      idField.set(entity, idValue);
+    } catch (SQLException e) {
+      throw new EntityQueryException(
+          "Could not save entity to database for entity [%s]"
+              .formatted(entity), e);
+    } catch (IllegalAccessException e) {
+      throw new EntityQueryException(
+          "Could not set id to entity [%s]"
+              .formatted(entity), e);
+    } catch (ClassCastException e) {
+      throw new EntityQueryException(
+          "Could not cast id value to type [%s] for entity [%s]"
+              .formatted(idField.getType().getSimpleName(), entity), e);
+    }
+    return entity;
+  }
+
+  // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
 
   /**
@@ -200,5 +271,57 @@ public class GenericDao {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
     return resultSet.getObject(idColumnName);
+  }
+
+  public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
+    String updateSql = prepareUpdateQuery(entityKey);
+    log.trace("Update entity: [{}]", updateSql);
+    try (Connection connection = getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+      setParameters(preparedStatement, entityKey.id(), parameters);
+      return preparedStatement.executeUpdate();
+    } catch (SQLException e) {
+      throw new BibernateException("Failed to execute update query: [%s] with parameters %s"
+          .formatted(updateSql, Arrays.toString(parameters)), e);
+    }
+  }
+
+  public <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+    String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
+
+  public <T> void setParameters(PreparedStatement preparedStatement,
+      Object primaryKey,
+      Object... params) throws SQLException {
+    validatePrimaryKey(primaryKey);
+
+    int parameterIndex = 1;
+    for (Object parameter : params) {
+      preparedStatement.setObject(parameterIndex, parameter);
+      parameterIndex++;
+    }
+
+    preparedStatement.setObject(parameterIndex, primaryKey);
+  }
+
+  private void validatePrimaryKey(Object primaryKey) {
+    if (primaryKey == null) {
+      throw new BibernateException("Primary key value must be passed for update query");
+    }
+  }
+
+  private Connection getConnection() {
+    try {
+      return dataSource.getConnection();
+    } catch (SQLException e) {
+      throw new BibernateException("Failed to acquire connection", e);
+    }
   }
 }

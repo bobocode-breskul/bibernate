@@ -5,8 +5,9 @@ import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.annotation.Table;
-import java.util.List;
+import lombok.Setter;
 
+@Setter
 @Entity
 @Table(name = "persons")
 public class Person {
