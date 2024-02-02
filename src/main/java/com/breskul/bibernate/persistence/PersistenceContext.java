@@ -12,8 +12,6 @@ public class PersistenceContext {
 
   private final Map<EntityKey<?>, Object> firstLevelCache = new ConcurrentHashMap<>(); //TODO Think what better HashMap vs ConcurrentHashMap
   private final Map<EntityKey<?>, Object[]> entitySnapshots = new ConcurrentHashMap<>(); // for dirty checking
-  private final Map<EntityKey, Object> firstLevelCache = new ConcurrentHashMap<>(); //TODO Think what better HashMap vs ConcurrentHashMap
-  private final Map<EntityKey, Object[]> entitySnapshots = new ConcurrentHashMap<>(); // for dirty checking
 
   // persist
   // todo: docs

@@ -10,15 +10,14 @@ import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
-import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
+import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Stream.generate;
-import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 
-import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
@@ -27,16 +26,15 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Arrays;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 public class GenericDao {
 
@@ -66,7 +64,7 @@ public class GenericDao {
   public <T> T findById(Class<T> cls, Object id) {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
-    T cachedEntity = context.findEntity(cls, id);
+    T cachedEntity = context.getEntity(cls, id);
     if (cachedEntity != null) {
       return cachedEntity;
     }
@@ -259,7 +257,7 @@ public class GenericDao {
   }
 
   private Object fetchRelatedEntity(Field field, String columnName, Object id) {
-    var relatedEntity = context.findEntity(field.getType(), id);
+    var relatedEntity = context.getEntity(field.getType(), id);
     if (relatedEntity == null) {
       relatedEntity = innerFindAllByFieldValue(field.getType(), columnName, id).get(0);
       relatedEntity = context.manageEntity(relatedEntity);

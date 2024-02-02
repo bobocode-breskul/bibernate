@@ -5,7 +5,9 @@ import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.JoinColumn;
 import com.breskul.bibernate.annotation.ManyToMany;
+import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
 import java.lang.reflect.Field;
@@ -220,13 +222,16 @@ public class EntityUtil {
 
 
   /**
-   * Checks if the given field represents a primitive column in an entity.
+   * Checks if the given field represents a simple column in an entity.
    *
    * @param field - The field to check
    * @return true if the field is a primitive column, false otherwise
    */
   public static boolean isSimpleColumn(Field field) {
-    return field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(Id.class);
+    return !field.isAnnotationPresent(OneToMany.class)
+        && !field.isAnnotationPresent(ManyToOne.class)
+        && !field.isAnnotationPresent(ManyToMany.class)
+        && !field.isAnnotationPresent(OneToOne.class);
   }
 
 
@@ -285,6 +290,8 @@ public class EntityUtil {
     }
   }
 
+
+  //todo check if we should use getClassColumnFields instead this one
   public static <T> List<Field> getEntityColumns(Class<? extends T> entityClass) {
     return Arrays.stream(entityClass.getDeclaredFields())
         .filter(field -> field.isAnnotationPresent(Column.class))
@@ -297,6 +304,7 @@ public class EntityUtil {
         .toArray();
   }
 
+  // todo use resolveColumnName inside?
   public static <T> List<String> getEntityColumnNames(Class<? extends T> entityClass) {
     return Arrays.stream(entityClass.getDeclaredFields())
         .filter(field -> field.isAnnotationPresent(Column.class))
