@@ -1,24 +1,25 @@
 package com.breskul.bibernate.persistence;
 
+import static com.breskul.bibernate.util.AssociationUtil.getCollectionInstance;
+import static com.breskul.bibernate.util.AssociationUtil.getLazyCollectionInstance;
+import static com.breskul.bibernate.util.AssociationUtil.getLazyObjectProxy;
 import static com.breskul.bibernate.util.EntityUtil.composeSelectBlockFromColumns;
 import static com.breskul.bibernate.util.EntityUtil.findEntityIdField;
 import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
 import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
-import static com.breskul.bibernate.util.EntityUtil.getCollectionInstance;
 import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
-import static com.breskul.bibernate.util.EntityUtil.getLazyCollectionInstance;
 import static com.breskul.bibernate.util.EntityUtil.isPrimitiveColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
+import static com.breskul.bibernate.util.ReflectionUtil.createEntityInstance;
+import static com.breskul.bibernate.util.ReflectionUtil.writeFieldValue;
 
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.exception.EntityQueryException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,14 +27,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 import javax.sql.DataSource;
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.implementation.MethodDelegation;
-import net.bytebuddy.implementation.bind.annotation.AllArguments;
-import net.bytebuddy.implementation.bind.annotation.Origin;
-import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import net.bytebuddy.matcher.ElementMatchers;
 
 public class GenericDao {
 
@@ -135,13 +129,13 @@ public class GenericDao {
     List<Field> columnFields = getClassEntityFields(cls);
 
     try {
-      T entity = cls.getConstructor().newInstance();
+      T entity = createEntityInstance(cls);
       for (Field field : columnFields) {
         field.setAccessible(true);
 
         if (isPrimitiveColumn(field)) {
           String columnName = resolveColumnName(field);
-          field.set(entity, resultSet.getObject(columnName));
+          writeFieldValue(field, entity, resultSet.getObject(columnName));
         }
       }
       context.manageEntity(entity);
@@ -155,50 +149,35 @@ public class GenericDao {
         }
       }
       return entity;
-    } catch (IllegalAccessException e) {
-      throw new EntityQueryException(
-          "Entity [%s] should have public no-args constructor".formatted(cls), e);
-    } catch (IllegalArgumentException | NoSuchMethodException e) {
-      throw new EntityQueryException(
-          "Entity [%s] should have constructor without parameters".formatted(cls), e);
-    } catch (InstantiationException e) {
-      throw new EntityQueryException("Entity [%s] should be non-abstract class".formatted(cls), e);
-    } catch (InvocationTargetException e) {
-      throw new EntityQueryException(
-          "Could not create instance of target entity [%s]".formatted(cls), e);
     } catch (SQLException e) {
       throw new EntityQueryException("Could not read single row data from database for entity [%s]"
           .formatted(cls), e);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
     }
   }
 
   private <T> void mapManyToOneRelationship(ResultSet resultSet, Class<T> cls, Field field,
-      T entity) throws Exception {
+      T entity) throws SQLException {
     String joinColumnName = resolveColumnName(field);
     Field relatedEntityIdField = findEntityIdField(cls);
     Object relatedEntityId = relatedEntityIdField.getType()
         .cast(resultSet.getObject(joinColumnName));
     String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
-
-    var relatedEntity = switch (field.getAnnotation(ManyToOne.class).fetch()) {
-      case EAGER -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
-      case LAZY -> createLazyReferenceObject(field, relatedEntityIdColumnName, relatedEntityId);
-    };
-    field.set(entity, relatedEntity);
+    writeFieldValue(field, entity,
+        createAssocitatedObject(field, relatedEntityIdColumnName, relatedEntityId));
   }
 
   private <T> void mapOneToManyRelationship(ResultSet resultSet, Class<T> cls, Field field,
-      T entity) throws IllegalAccessException, SQLException {
+      T entity) throws SQLException {
     Class<?> relatedEntityType = getEntityCollectionElementType(field);
     String joinColumnName = getJoinColumnName(relatedEntityType, cls);
     Object id = extractIdFromResultSet(cls, resultSet);
-    field.set(entity, createAssociatedCollection(field, relatedEntityType, joinColumnName, id));
+    writeFieldValue(field, entity,
+        createAssociatedCollection(field, relatedEntityType, joinColumnName, id));
   }
 
-  // todo: rename
-  private Collection<Object> createAssociatedCollection(Field field, Class<?> relatedEntityType, String joinColumnName,
+  // todo: logging
+  private Collection<Object> createAssociatedCollection(Field field, Class<?> relatedEntityType,
+      String joinColumnName,
       Object id) {
     return switch (field.getAnnotation(OneToMany.class).fetch()) {
       case EAGER -> getCollectionInstance(field,
@@ -208,40 +187,14 @@ public class GenericDao {
     };
   }
 
-  public Object createLazyReferenceObject(Field field, String columnName, Object id) throws Exception {
-    Class<?> objectType = field.getType();
-
-    ByteBuddy byteBuddy = new ByteBuddy();
-
-    Class<?> proxyClass = byteBuddy
-        .subclass(objectType)
-        .method(ElementMatchers.any())
-        .intercept(
-            MethodDelegation.to(new LazyInterceptor<>(()-> fetchRelatedEntity(field, columnName, id))))
-        .make()
-        .load(objectType.getClassLoader())
-        .getLoaded();
-
-    return proxyClass.newInstance();
-  }
-
-  public static class LazyInterceptor<T> {
-    T object;
-    Supplier<T> supplier;
-
-
-    public LazyInterceptor(Supplier<T> supplier) {
-      this.supplier = supplier;
-    }
-
-    @RuntimeType
-    public Object intercept(@Origin Method method, @AllArguments Object[] args) throws Exception {
-      if (object == null) {
-        object = supplier.get();
-      }
-      return method.invoke(object, args);
-    }
-
+  // todo: logging
+  private Object createAssocitatedObject(Field field, String relatedEntityIdColumnName,
+      Object relatedEntityId) {
+    return switch (field.getAnnotation(ManyToOne.class).fetch()) {
+      case EAGER -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
+      case LAZY -> getLazyObjectProxy(field,
+          () -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId));
+    };
   }
 
   private Object fetchRelatedEntity(Field field, String columnName, Object id) {
