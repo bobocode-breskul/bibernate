@@ -132,13 +132,11 @@
       <artifactId>cglib</artifactId>
       <version>3.3.0</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/net.bytebuddy/byte-buddy-maven-plugin -->
     <dependency>
       <groupId>net.bytebuddy</groupId>
-      <artifactId>byte-buddy-maven-plugin</artifactId>
+      <artifactId>byte-buddy</artifactId>
       <version>1.14.11</version>
     </dependency>
-
   </dependencies>
 
   <distributionManagement>
