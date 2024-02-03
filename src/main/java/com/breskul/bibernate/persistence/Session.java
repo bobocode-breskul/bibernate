@@ -19,10 +19,11 @@ public class Session implements AutoCloseable {
   private final Queue<Action> actionQueue = new PriorityQueue<>();
   private EntityTransaction transaction; // todo: get rid of jakarta api
 
-  public Session(DataSource dataSource) {
-    this.genericDao = new GenericDao(dataSource);
-    this.persistenceContext = new PersistenceContext();
-  }
+    public Session(DataSource dataSource) {
+        this.persistenceContext = new PersistenceContext();
+        this.genericDao = new GenericDao(dataSource, persistenceContext);
+
+    }
 
   public <T> T findById(Class<T> entityClass, Object id) {
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))

@@ -13,6 +13,23 @@ public class PersistenceContext {
   private final Map<EntityKey<?>, Object> firstLevelCache = new ConcurrentHashMap<>(); //TODO Think what better HashMap vs ConcurrentHashMap
   private final Map<EntityKey<?>, Object[]> entitySnapshots = new ConcurrentHashMap<>(); // for dirty checking
 
+  // persist
+  // todo: docs
+  // todo: tests
+  public <T> T manageEntity(T entity) {
+//    manage(entity);
+    var key = EntityKey.valueOf(entity);
+    if (firstLevelCache.containsKey(key)) {
+      return (T) firstLevelCache.get(key);
+    }
+    firstLevelCache.put(EntityKey.valueOf(entity), entity);
+    return entity;
+  }
+
+  private <T> void manage(T entity) {
+    // todo: implement manage (persist)
+  }
+
   public <T> T getEntity(Class<T> entityClass, Object id) {
     return getEntity(EntityKey.of(entityClass, id));
   }
