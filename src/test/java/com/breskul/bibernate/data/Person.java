@@ -13,7 +13,7 @@ import lombok.ToString;
 @Table(name = "persons")
 public class Person {
 
-  @Id(value = "id")
+  @Id
   private Long id;
 
   @Column(name = "first_name")
