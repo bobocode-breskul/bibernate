@@ -1,6 +1,7 @@
 package com.breskul.bibernate.util;
 
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.EntityConstructionException;
 import com.breskul.bibernate.exception.ReflectAccessException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -60,6 +61,10 @@ public class ReflectionUtil {
     } catch (IllegalAccessException e) {
       throw new ReflectAccessException(
           "Object field [%s] should be accessible and not final".formatted(field), e);
+    } catch (IllegalArgumentException e) {
+      throw new EntityConstructionException(
+          "Mismatched types: Expected value of type %s but received value of type %s".formatted(
+              field.getType().getSimpleName(), value.getClass().getSimpleName()), e);
     }
   }
 
