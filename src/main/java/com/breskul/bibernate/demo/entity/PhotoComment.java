@@ -17,21 +17,14 @@ import lombok.Setter;
 @Table(name = "photo_comment")
 @NoArgsConstructor
 public class PhotoComment {
-    @Id
-    private Long id;
 
-    @Column(name = "text")
-    private String text;
+  @Id
+  private Long id;
 
-//    @Column
-//    private LocalDateTime createdOn;
+  @Column(name = "text")
+  private String text;
 
-    @ManyToOne
-    @JoinColumn(name = "photo_id", nullable = false)
-    private Photo photo;
-
-//    public PhotoComment(String text, Photo photo) {
-//        this.text = text;
-//        this.photo = photo;
-//    }
+  @ManyToOne
+  @JoinColumn(name = "photo_id", nullable = false)
+  private Photo photo;
 }

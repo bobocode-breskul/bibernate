@@ -9,12 +9,13 @@ import com.breskul.bibernate.annotation.Table;
 @Entity
 @Table(name = "notes")
 public class Notes {
-    @Id
-    private Long id;
 
-    private String note;
+  @Id
+  private Long id;
 
-    @ManyToOne
-    private Person persons;
+  private String note;
+
+  @ManyToOne
+  private Person persons;
 
 }

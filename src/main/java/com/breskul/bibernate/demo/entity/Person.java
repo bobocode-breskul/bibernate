@@ -12,25 +12,26 @@ import lombok.Setter;
 @Table(name = "persons")
 @NoArgsConstructor
 public class Person {
-    @Id
-    private Long id;
 
-    @Column(name = "first_name")
-    private String firstName;
+  @Id
+  private Long id;
 
-    @Column(name = "last_name")
-    private String lastName;
+  @Column(name = "first_name")
+  private String firstName;
 
-    @Column(name = "age")
-    private Integer age;
+  @Column(name = "last_name")
+  private String lastName;
 
-    @Override
-    public String toString() {
-        return "Person{" +
-                "id=" + id +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", age=" + age +
-                '}';
-    }
+  @Column(name = "age")
+  private Integer age;
+
+  @Override
+  public String toString() {
+    return "Person{" +
+        "id=" + id +
+        ", firstName='" + firstName + '\'' +
+        ", lastName='" + lastName + '\'' +
+        ", age=" + age +
+        '}';
+  }
 }
