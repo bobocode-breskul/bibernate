@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 
 public class GenericDao {
 
-  private PersistenceContext context;
 
   // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
@@ -52,6 +51,7 @@ public class GenericDao {
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
+  private PersistenceContext context;
 
   public GenericDao(DataSource dataSource, PersistenceContext context) {
     this.dataSource = dataSource;
