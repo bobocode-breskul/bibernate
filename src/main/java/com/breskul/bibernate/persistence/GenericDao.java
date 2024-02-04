@@ -187,6 +187,7 @@ public class GenericDao {
   }
 
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
+
   /**
    * Maps the results from a ResultSet object to an entity object of the specified class and add the
    * entity to context. Recursively fetch all related entities and add them to context. Returns the
@@ -216,7 +217,7 @@ public class GenericDao {
       for (Field field : columnFields) {
         field.setAccessible(true);
         if (field.isAnnotationPresent(ManyToOne.class)) {
-          mapManyToOneRelationship(resultSet, cls, field, entity);
+          mapManyToOneRelationship(resultSet, field, entity);
         } else if (field.isAnnotationPresent(OneToMany.class)) {
           mapOneToManyRelationship(resultSet, cls, field, entity);
         }
@@ -228,12 +229,11 @@ public class GenericDao {
     }
   }
 
-  private <T> void mapManyToOneRelationship(ResultSet resultSet, Class<T> cls, Field field,
-      T entity) throws SQLException {
+  private <T> void mapManyToOneRelationship(ResultSet resultSet, Field field, T entity)
+      throws SQLException {
     String joinColumnName = resolveColumnName(field);
-    Field relatedEntityIdField = findEntityIdField(cls);
-    Object relatedEntityId = relatedEntityIdField.getType()
-        .cast(resultSet.getObject(joinColumnName));
+    Field relatedEntityIdField = findEntityIdField(field.getType());
+    Object relatedEntityId = resultSet.getObject(joinColumnName);
     String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
     writeFieldValue(field, entity,
         createAssocitatedObject(field, relatedEntityIdColumnName, relatedEntityId));
