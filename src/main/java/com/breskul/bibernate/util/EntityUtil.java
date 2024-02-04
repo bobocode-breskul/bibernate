@@ -1,5 +1,7 @@
 package com.breskul.bibernate.util;
 
+import static com.breskul.bibernate.util.ReflectionUtil.readFieldValue;
+
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
@@ -246,48 +248,6 @@ public class EntityUtil {
     var typeArguments = parameterizedType.getActualTypeArguments();
     var actualTypeArgument = typeArguments[0];
     return (Class<?>) actualTypeArgument;
-  }
-
-
-  /**
-   * Retrieves an instance of the Collection class based on the given Field representing a collection.
-   *
-   * @param collectionField - The Field representing the collection
-   * @return An instance of the Collection class
-   * @throws IllegalArgumentException if the collection type is unsupported
-   */
-  public static Collection<Object> getCollectionInstance(Field collectionField) {
-    var collectionClass = collectionField.getType();
-
-    if (collectionClass.isAssignableFrom(List.class)) {
-      return new ArrayList<>();
-    }
-
-    if (collectionClass.isAssignableFrom(Set.class)) {
-      return new HashSet<>();
-    }
-
-    throw new IllegalArgumentException("Unsupported collection: " + collectionClass); // change exception and more clear msg?
-  }
-
-
-  /**
-   * Reads the value of a field on the given entity object.
-   *
-   * @param entity - The entity object
-   * @param idField - The field to read the value from
-   * @return The value of the field
-   * @throws EntityParseException if failed to access the field due to illegal access
-   */
-  public static Object readFieldValue(Object entity, Field idField) {
-    try {
-      idField.setAccessible(true);
-      return idField.get(entity);
-    } catch (IllegalAccessException e) {
-      throw new EntityParseException(
-          "Failed to access field '" + idField.getName() + "' of entity type '" + entity.getClass()
-              .getName() + "': Illegal access");
-    }
   }
 
 

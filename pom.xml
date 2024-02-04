@@ -147,6 +147,11 @@
       <version>${h2.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>1.14.11</version>
+    </dependency>
   </dependencies>
 
   <distributionManagement>
