@@ -3,13 +3,23 @@ package com.breskul.bibernate.persistence;
 import static com.breskul.bibernate.util.EntityUtil.composeSelectBlockFromColumns;
 import static com.breskul.bibernate.util.EntityUtil.findEntityIdField;
 import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
+import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
+import static com.breskul.bibernate.util.EntityUtil.getCollectionInstance;
+import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
+import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
+import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
-import static com.breskul.bibernate.util.EntityUtil.validateIsEntity;
+import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Stream.generate;
 
+import com.breskul.bibernate.annotation.ManyToOne;
+import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityQueryException;
+import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -17,47 +27,99 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
+
 
 public class GenericDao {
 
   // TODO: change to select '*'
+  private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
 
+  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
+  PersistenceContext context;
 
-  public GenericDao(DataSource dataSource) {
+  public GenericDao(DataSource dataSource, PersistenceContext context) {
     this.dataSource = dataSource;
+    this.context = context;
+  }
+
+  /**
+   * Find by primary key. Search for an entity of the specified class and primary key. If the entity
+   * instance is contained in the persistence context, it is returned from there.
+   *
+   * @param cls – entity class
+   * @param id  - primary key
+   * @return the found entity instance or null if the entity does not exist
+   */
+  public <T> T findById(Class<T> cls, Object id) {
+    Field idField = findEntityIdField(cls);
+    String idColumnName = resolveColumnName(idField);
+    T cachedEntity = context.getEntity(cls, id);
+    if (cachedEntity != null) {
+      return cachedEntity;
+    }
+    List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id);
+    return searchResult.isEmpty() ? null : searchResult.get(0);
+  }
+
+  /**
+   * Find by primary key. Search for entities of the specified class filtered by column. If the
+   * entities contained in the persistence context, they returned from there.
+   *
+   * @param cls         – entity class
+   * @param columnName  - column name
+   * @param columnValue - column value
+   * @return the found entities instance or empty list if such entities do not exist
+   */
+  public <T> List<T> findAllByColumn(Class<T> cls, String columnName, Object columnValue) {
+    validateColumnName(cls, columnName);
+    return innerFindAllByFieldValue(cls, columnName, columnValue);
   }
 
 
-  public <T> T findById(Class<T> cls, Object id) {
-    validateIsEntity(cls);
-
+  /**
+   * Perform an internal search for entities of the specified class filtered by a field value.
+   *
+   * @param <T>        the type parameter
+   * @param cls        the entity class
+   * @param fieldName  the field name to filter by
+   * @param fieldValue the field value to filter by
+   * @return the list of found entities or an empty list if no entities match the search criteria
+   * @throws EntityQueryException if an error occurs during the search
+   */
+  private <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue) {
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
-    Field idField = findEntityIdField(columnFields);
-    String idColumnName = resolveColumnName(idField);
 
-    String sql = SELECT_BY_ID_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
-        tableName, idColumnName);
+    String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
+        tableName, fieldName);
 
+    log.info("Bibernate: " + sql);  // todo make this print depend on property.
+    List<T> result = new ArrayList<>();
     try (Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(sql)) {
-      statement.setObject(1, id);
+      statement.setObject(1, fieldValue);
       ResultSet resultSet = statement.executeQuery();
-      if (resultSet.next()) {
-        return mapResult(resultSet, cls);
+      while (resultSet.next()) {
+        T entity = mapResult(resultSet, cls);
+        result.add(entity);
       }
     } catch (SQLException e) {
       throw new EntityQueryException(
-          "Could not read entity data from database for entity [%s] with id [%s]"
-              .formatted(cls, id), e);
+          "Could not read entity data from database for entity [%s] by field [%s]=%s"
+              .formatted(cls, fieldName, fieldValue), e);
     }
-    return null;
+    return result;
   }
 
   /**
@@ -118,18 +180,43 @@ public class GenericDao {
   }
 
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
+  // todo add logic for relation annotations - @ManyToMany, @OneToOne
+
+  /**
+   * Maps the results from a ResultSet object to an entity object of the specified class and add the
+   * entity to context. Recursively fetch all related entities and add them to context. Returns the
+   * mapped entity object.
+   *
+   * @param resultSet - The ResultSet object containing the data to be mapped
+   * @param cls       - The class of the entity object
+   * @param <T>       - The type parameter representing the entity class
+   * @return The mapped entity object
+   * @throws EntityQueryException if there is an error during the mapping process
+   */
   private <T> T mapResult(ResultSet resultSet, Class<T> cls) {
-    // todo: change it to have both field and it's column name (from @Column annotation)
-    List<Field> columnFields = getClassColumnFields(cls);
+    List<Field> columnFields = getClassEntityFields(cls);
+
     try {
-      T t = cls.getConstructor().newInstance();
-      for (int i = 0; i < columnFields.size(); i++) {
-        Field field = columnFields.get(i);
+      T entity = cls.getConstructor().newInstance();
+      for (Field field : columnFields) {
         field.setAccessible(true);
-        // todo: take data from resultSet by column name (taken from @Column annotation)
-        field.set(t, resultSet.getObject(i + 1));
+
+        if (isSimpleColumn(field)) {
+          String columnName = resolveColumnName(field);
+          field.set(entity, resultSet.getObject(columnName));
+        }
       }
-      return t;
+      context.manageEntity(entity);
+
+      for (Field field : columnFields) {
+        field.setAccessible(true);
+        if (field.isAnnotationPresent(ManyToOne.class)) {
+          mapManyToOneRelationship(resultSet, cls, field, entity);
+        } else if (field.isAnnotationPresent(OneToMany.class)) {
+          mapOneToManyRelationship(resultSet, cls, field, entity);
+        }
+      }
+      return entity;
     } catch (IllegalAccessException e) {
       throw new EntityQueryException(
           "Entity [%s] should have public no-args constructor".formatted(cls), e);
@@ -144,6 +231,95 @@ public class GenericDao {
     } catch (SQLException e) {
       throw new EntityQueryException("Could not read single row data from database for entity [%s]"
           .formatted(cls), e);
+    }
+  }
+
+  private <T> void mapManyToOneRelationship(ResultSet resultSet, Class<T> cls, Field field,
+      T entity) throws SQLException, IllegalAccessException {
+    String joinColumnName = resolveColumnName(field);
+    Field relatedEntityIdField = findEntityIdField(cls);
+    Object relatedEntityId = relatedEntityIdField.getType()
+        .cast(resultSet.getObject(joinColumnName));
+    String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
+    var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
+    field.set(entity, relatedEntity);
+  }
+
+  private <T> void mapOneToManyRelationship(ResultSet resultSet, Class<T> cls, Field field,
+      T entity) throws IllegalAccessException, SQLException {
+    Class<?> relatedEntityType = getEntityCollectionElementType(field);
+    String joinColumnName = getJoinColumnName(relatedEntityType, cls);
+    Object id = extractIdFromResultSet(cls, resultSet);
+    List<?> relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id);
+    Collection<Object> collection = getCollectionInstance(field);
+    collection.addAll(relatedEntities);
+    field.set(entity, collection);
+  }
+
+  private Object fetchRelatedEntity(Field field, String columnName, Object id) {
+    var relatedEntity = context.getEntity(field.getType(), id);
+    if (relatedEntity == null) {
+      relatedEntity = innerFindAllByFieldValue(field.getType(), columnName, id).get(0);
+      relatedEntity = context.manageEntity(relatedEntity);
+    }
+    return relatedEntity;
+  }
+
+  private Object extractIdFromResultSet(Class<?> cls, ResultSet resultSet) throws SQLException {
+    Field idField = findEntityIdField(cls);
+    String idColumnName = resolveColumnName(idField);
+    return resultSet.getObject(idColumnName);
+  }
+
+  public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
+    String updateSql = prepareUpdateQuery(entityKey);
+    log.trace("Update entity: [{}]", updateSql);
+    try (Connection connection = getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+      setParameters(preparedStatement, entityKey.id(), parameters);
+      return preparedStatement.executeUpdate();
+    } catch (SQLException e) {
+      throw new BibernateException("Failed to execute update query: [%s] with parameters %s"
+          .formatted(updateSql, Arrays.toString(parameters)), e);
+    }
+  }
+
+  public <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+    String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
+
+  public <T> void setParameters(PreparedStatement preparedStatement,
+      Object primaryKey,
+      Object... params) throws SQLException {
+    validatePrimaryKey(primaryKey);
+
+    int parameterIndex = 1;
+    for (Object parameter : params) {
+      preparedStatement.setObject(parameterIndex, parameter);
+      parameterIndex++;
+    }
+
+    preparedStatement.setObject(parameterIndex, primaryKey);
+  }
+
+  private void validatePrimaryKey(Object primaryKey) {
+    if (primaryKey == null) {
+      throw new BibernateException("Primary key value must be passed for update query");
+    }
+  }
+
+  private Connection getConnection() {
+    try {
+      return dataSource.getConnection();
+    } catch (SQLException e) {
+      throw new BibernateException("Failed to acquire connection", e);
     }
   }
 }

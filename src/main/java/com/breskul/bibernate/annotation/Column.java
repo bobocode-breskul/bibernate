@@ -7,8 +7,8 @@ import java.lang.annotation.Target;
 
 
 /**
- * Specifies the mapped column for a persistent property or field.
- * If no <code>Column</code> annotation is specified, the default values apply.
+ * Specifies the mapped column for a persistent property or field. If no <code>Column</code>
+ * annotation is specified, the default values apply.
  */
 
 @Retention(RetentionPolicy.RUNTIME)

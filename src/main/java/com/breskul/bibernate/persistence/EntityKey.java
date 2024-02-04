@@ -2,28 +2,17 @@ package com.breskul.bibernate.persistence;
 
 import static com.breskul.bibernate.util.EntityUtil.getEntityId;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
 // todo: docs
-@EqualsAndHashCode(of = {"entityClass", "id"})
-@Getter
-@Setter
-@ToString
-public class EntityKey {
+public record EntityKey<T>(Class<T> entityClass, Object id) {
 
-  private final Class<?> entityClass;
-  private final Object id;
-
-  public EntityKey(Class<?> entityClass, Object id) {
-    this.entityClass = entityClass;
-    this.id = id;
+  public static <T> EntityKey<T> of(Class<T> entityClass, Object id) {
+    return new EntityKey<>(entityClass, id);
   }
 
-  public static <T> EntityKey valueOf(T entity) {
+  @SuppressWarnings("unchecked")
+  public static <T> EntityKey<T> valueOf(T entity) {
     Object id = getEntityId(entity);
-    return new EntityKey(entity.getClass(), id);
+    Class<T> entityClass = (Class<T>) entity.getClass();
+    return new EntityKey<>(entityClass, id);
   }
 }
