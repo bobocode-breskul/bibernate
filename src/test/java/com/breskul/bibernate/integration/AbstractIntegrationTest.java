@@ -1,6 +1,7 @@
 package com.breskul.bibernate.integration;
 
 import com.breskul.bibernate.persistence.GenericDao;
+import com.breskul.bibernate.persistence.PersistenceContext;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
@@ -23,7 +24,7 @@ public abstract class AbstractIntegrationTest {
 
   @BeforeEach
   public void setup() {
-    this.genericDao = new GenericDao(dataSource);
+    this.genericDao = new GenericDao(dataSource, new PersistenceContext());
   }
 
 
