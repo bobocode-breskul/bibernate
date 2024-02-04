@@ -64,6 +64,7 @@ public class GenericDao {
   public <T> T findById(Class<T> cls, Object id) {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
+    checkEntityIdType(cls, id);
     T cachedEntity = context.getEntity(cls, id);
     if (cachedEntity != null) {
       return cachedEntity;
@@ -123,8 +124,8 @@ public class GenericDao {
   }
 
   /**
-   * Saves a given entity. Use the returned instance for further operations as the save operation might have changed the
-   * entity instance completely.
+   * Saves a given entity. Use the returned instance for further operations as the save operation
+   * might have changed the entity instance completely.
    *
    * @param entity must not be {@literal null}.
    * @return the saved entity; will never be {@literal null}.
@@ -312,6 +313,15 @@ public class GenericDao {
   private void validatePrimaryKey(Object primaryKey) {
     if (primaryKey == null) {
       throw new BibernateException("Primary key value must be passed for update query");
+    }
+  }
+
+  private void checkEntityIdType(Class<?> entityClass, Object id) {
+    Class<?> entityIdType = findEntityIdField(entityClass).getType();
+    if (!entityIdType.equals(id.getClass())) {
+      throw new BibernateException(
+          "Mismatched types: Expected ID of type %s  but received ID of type %s".formatted(
+              entityIdType.getSimpleName(), id.getClass().getSimpleName()));
     }
   }
 
