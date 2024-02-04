@@ -3,22 +3,25 @@ package com.breskul.bibernate.demo.entity;
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
-import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.annotation.Table;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Setter
 @Entity
 @Table(name = "persons")
+@NoArgsConstructor
 public class Person {
-    @Id
-    private Long id;
+
+  @Id
+  private Long id;
 
   @Column(name = "first_name")
   private String firstName;
 
   @Column(name = "last_name")
   private String lastName;
+
   @Column(name = "age")
   private Integer age;
 
