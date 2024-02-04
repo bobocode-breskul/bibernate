@@ -43,7 +43,7 @@ public class GenericDao {
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
-  private static final String DELETE_ENTITY_QUERY = "DELETE FROM %S WHERE id = %s;";
+  private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = %s;";
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
@@ -211,7 +211,7 @@ public class GenericDao {
         throw new EntityQueryException("Entity ID is null for [%s]".formatted(entity));
       }
       String id = String.valueOf(idObject);
-      String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, id);
+      String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, idField.getName(), id);
       try (Connection connection = dataSource.getConnection();
           PreparedStatement statement = connection.prepareStatement(deleteSql)) {
         log.trace("Delete entity: [{}]", deleteSql);
