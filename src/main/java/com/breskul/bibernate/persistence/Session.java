@@ -79,7 +79,7 @@ public class Session implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     performDirtyChecking();
     // todo: transaction commit/rollback
     persistenceContext.clear();
