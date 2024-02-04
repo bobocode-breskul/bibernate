@@ -72,6 +72,12 @@ public class Session implements AutoCloseable {
     persistenceContext.put(savedEntity);
   }
 
+  public <T> T delete(T entity) {
+    T deletedEntity = genericDao.delete(entity);
+    persistenceContext.delete(deletedEntity);
+    return deletedEntity;
+  }
+
   @Override
   public void close() throws Exception {
     performDirtyChecking();

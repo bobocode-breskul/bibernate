@@ -51,6 +51,11 @@ public class PersistenceContext {
     takeSnapshot(entity);
   }
 
+  public <T> void delete(T entity) {
+    firstLevelCache.remove(EntityKey.valueOf(entity));
+    entitySnapshots.remove(EntityKey.valueOf(entity));
+  }
+
   public <T> boolean contains(T entity) {
     var key = EntityKey.valueOf(entity);
     return firstLevelCache.containsKey(key);

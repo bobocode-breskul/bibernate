@@ -43,6 +43,7 @@ public class GenericDao {
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
+  private static final String DELETE_ENTITY_QUERY = "DELETE FROM %S WHERE id = %s;";
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
@@ -123,8 +124,8 @@ public class GenericDao {
   }
 
   /**
-   * Saves a given entity. Use the returned instance for further operations as the save operation might have changed the
-   * entity instance completely.
+   * Saves a given entity. Use the returned instance for further operations as the save operation
+   * might have changed the entity instance completely.
    *
    * @param entity must not be {@literal null}.
    * @return the saved entity; will never be {@literal null}.
@@ -141,17 +142,18 @@ public class GenericDao {
     String questionMarks = generate(() -> "?")
         .limit(columnFields.size())
         .collect(Collectors.joining(", "));
-    String sql = INSERT_ENTITY_QUERY.formatted(tableName,
+    String saveSQL = INSERT_ENTITY_QUERY.formatted(tableName,
         composeSelectBlockFromColumns(columnFields), questionMarks);
 
     try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql,
+        PreparedStatement statement = connection.prepareStatement(saveSQL,
             Statement.RETURN_GENERATED_KEYS)) {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
         field.setAccessible(true);
         statement.setObject(i + 1, field.get(entity));
       }
+      log.trace("Save entity: [{}]", saveSQL);
       int result = statement.executeUpdate();
       if (result != 1) {
         throw new EntityQueryException(
@@ -174,6 +176,53 @@ public class GenericDao {
     } catch (ClassCastException e) {
       throw new EntityQueryException(
           "Could not cast id value to type [%s] for entity [%s]"
+              .formatted(idField.getType().getSimpleName(), entity), e);
+    }
+    return entity;
+  }
+
+  /**
+   * Deletes an entity from the database using its ID. This method finds the entity's ID field,
+   * constructs a DELETE SQL query, and executes it. The entity must not be null and must have a
+   * non-null ID.
+   *
+   * @param <T>    the type of the entity
+   * @param entity the entity to be deleted
+   * @return the deleted entity
+   * @throws EntityQueryException     if there's an error during deletion or if the entity or its ID
+   *                                  is null
+   * @throws IllegalArgumentException if the entity is null
+   */
+  public <T> T delete(T entity) {
+    requireNonNull(entity, "Entity should not be null.");
+    Class<?> cls = entity.getClass();
+    String tableName = getEntityTableName(cls);
+    Field idField = findEntityIdField(cls);
+    idField.setAccessible(true);
+    try {
+      Object idObject = idField.get(entity);
+      if (idObject == null) {
+        throw new EntityQueryException("Entity ID is null for [%s]".formatted(entity));
+      }
+      String id = String.valueOf(idObject);
+      String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, id);
+      try (Connection connection = dataSource.getConnection();
+          PreparedStatement statement = connection.prepareStatement(deleteSql)) {
+        log.trace("Delete entity: [{}]", deleteSql);
+        int result = statement.executeUpdate();
+        if (result != 1) {
+          throw new EntityQueryException(
+              "Could not delete entity to database for entity [%s]"
+                  .formatted(entity));
+        }
+      } catch (SQLException e) {
+        throw new EntityQueryException(
+            "Could not delete entity from the database for entity [%s]"
+                .formatted(entity), e);
+      }
+    } catch (IllegalAccessException e) {
+      throw new EntityQueryException(
+          "Could not get field [%s] from entity [%s]"
               .formatted(idField.getType().getSimpleName(), entity), e);
     }
     return entity;
