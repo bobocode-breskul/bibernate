@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS persons
 (
-    id         serial PRIMARY KEY,
+    id         bigserial PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     last_name  VARCHAR(255) NOT NULL,
     age        integer default 0
