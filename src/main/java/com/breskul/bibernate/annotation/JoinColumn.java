@@ -7,17 +7,16 @@ import java.lang.annotation.Target;
 
 
 /**
- * Specifies a column for joining an entity association or element
- * collection.  If the <code>JoinColumn</code> annotation itself is
- * defaulted, a single join column is assumed and the default values
- * apply.
+ * Specifies a column for joining an entity association or element collection.  If the
+ * <code>JoinColumn</code> annotation itself is defaulted, a single join column is assumed and the
+ * default values apply.
  */
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface JoinColumn {
+  // todo add documentation for fields
   String name() default "";
-
   boolean unique() default false;
 
   boolean nullable() default true;
