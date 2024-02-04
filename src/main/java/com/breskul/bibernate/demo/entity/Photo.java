@@ -1,18 +1,14 @@
 package com.breskul.bibernate.demo.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.breskul.bibernate.annotation.*;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import com.breskul.bibernate.annotation.Column;
-import com.breskul.bibernate.annotation.Entity;
-import com.breskul.bibernate.annotation.Id;
-import com.breskul.bibernate.annotation.OneToMany;
-import com.breskul.bibernate.annotation.Table;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Getter
