@@ -5,10 +5,12 @@ import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Setter
+@Getter
 @Entity
 @Table(name = "persons")
 @NoArgsConstructor
@@ -26,6 +28,12 @@ public class Person {
 
   @Column(name = "age")
   private Integer age;
+
+  public Person(String firstName, String lastName, Integer age) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.age = age;
+  }
 
   @Override
   public String toString() {

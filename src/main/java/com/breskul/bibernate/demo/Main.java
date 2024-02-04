@@ -10,12 +10,12 @@ public class Main {
   public static void main(String[] args) {
     SessionFactory sessionFactory = Persistence.createSessionFactory();
     try (Session session = sessionFactory.openSession()) {
-      // Test creation
-      Person person = new Person(1L, "Taras", "Shevchenko", 47);
+      // Test create
+      Person person = new Person("Taras", "TEST", 20);
       session.persist(person);
 
       // Test find
-      Person foundPerson = session.findById(Person.class, 1);
+      Person foundPerson = session.findById(Person.class, person.getId());
       System.out.println(foundPerson);
 
       // Test update
