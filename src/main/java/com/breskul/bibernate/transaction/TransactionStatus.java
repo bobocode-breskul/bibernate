@@ -1,5 +1,8 @@
 package com.breskul.bibernate.transaction;
 
+/**
+ * Represents status of {@link Transaction}
+ */
 public enum TransactionStatus {
   /**
    * The transaction has not yet been started.

@@ -9,6 +9,12 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 
 //TODO: write tests
+
+/**
+ * Class used to control transactions over session resource-local entity managers.  The
+ * {@link Session#getTransaction} method returns the
+ * <code>Transaction</code>.
+ */
 public class Transaction {
 
   private static final Logger log = LoggerFactory.getLogger(Transaction.class);
@@ -50,7 +56,7 @@ public class Transaction {
     try {
       validateIfSessionOpenAndTransactionActive();
       connection.commit();
-      connection.setAutoCommit(true);
+      setAutoCommitTrue();
       status = TransactionStatus.COMMITTED;
       log.trace("Transaction committed");
     } catch (SQLException ex) {
@@ -85,10 +91,10 @@ public class Transaction {
 
   private void validateIfSessionOpenAndTransactionActive() throws SQLException {
     if (!session.isOpen()) {
-      throw new IllegalStateException("Cannot begin Transaction on closed session");
+      throw new IllegalStateException("Cannot operate Transaction on closed session");
     }
     if (status != TransactionStatus.ACTIVE) {
-      throw new IllegalStateException("Cannot commit not active transaction");
+      throw new IllegalStateException("Transaction is not active");
     }
   }
 
