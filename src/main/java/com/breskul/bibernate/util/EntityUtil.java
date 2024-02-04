@@ -14,9 +14,13 @@ import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -39,37 +43,38 @@ public class EntityUtil {
   }
 
   /**
-   * Validates if the given column exists in the entity class. Throws an exception if the column
-   * does not exist.
+   * Validates if the given column exists in the entity class.
+   * Throws an exception if the column does not exist.
    *
    * @param cls        - The entity class
    * @param columnName - The column name to validate
+   *
    * @throws IllegalArgumentException if the column does not exist in the entity class
    */
   public static void validateColumnName(Class<?> cls, String columnName) {
     validateIsEntity(cls);
     var column = getClassColumnFields(cls).stream()
-        .filter(field -> resolveColumnName(field).equals(columnName))
-        .findFirst();
+      .filter(field -> resolveColumnName(field).equals(columnName))
+      .findFirst();
     if (column.isEmpty()) {
       throw new IllegalArgumentException("Entity [%s] does not have a column: [%s]."
-          .formatted(cls, columnName));
+        .formatted(cls, columnName));
     }
   }
 
 
   /**
    * Retrieves the table name for the given entity class. If the class is annotated with the
-   * {@link Table} annotation, the table name from the annotation is returned. Otherwise, the class
-   * name is returned.
+   * {@link Table} annotation, the table name from the annotation is returned. Otherwise, the
+   * class name is returned.
    *
    * @param cls - The entity class
    * @return The table name for the entity class
    */
   public static String getEntityTableName(Class<?> cls) {
     return Optional.ofNullable(cls.getAnnotation(Table.class))
-        .map(Table::name)
-        .orElseGet(cls::getSimpleName);
+      .map(Table::name)
+      .orElseGet(cls::getSimpleName);
   }
 
 
@@ -81,8 +86,8 @@ public class EntityUtil {
    */
   public static List<Field> getClassColumnFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
-        .filter(field -> !isCollectionEntityField(field))
-        .toList();
+      .filter(field -> !isCollectionEntityField(field))
+      .toList();
   }
 
 
@@ -94,7 +99,7 @@ public class EntityUtil {
    */
   public static boolean isCollectionEntityField(Field field) {
     return field.isAnnotationPresent(OneToMany.class)
-        || field.isAnnotationPresent(ManyToMany.class);
+      || field.isAnnotationPresent(ManyToMany.class);
   }
 
 
@@ -106,7 +111,7 @@ public class EntityUtil {
    */
   public static List<Field> getClassEntityFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
-        .toList();
+      .toList();
   }
 
   public static List<Field> getClassColumnFields(Class<?> cls, Predicate<Field> fieldPredicate) {
@@ -121,7 +126,7 @@ public class EntityUtil {
    * @param fields - The list of fields to search
    * @return The entity ID field
    * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *                              are marked with the 'Id' annotation
+   *         are marked with the 'Id' annotation
    */
   public static Field findEntityIdField(List<Field> fields) {
     List<Field> idFields = fields.stream()
@@ -142,7 +147,7 @@ public class EntityUtil {
    * @param cls - The entity class
    * @return The entity ID field
    * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *                              are marked with the 'Id' annotation
+   *         are marked with the 'Id' annotation
    */
   public static Field findEntityIdField(Class<?> cls) {
     validateIsEntity(cls);
@@ -188,17 +193,17 @@ public class EntityUtil {
   /**
    * Retrieves the join column name for joined entity.
    *
-   * @param entityType   - The entity type
-   * @param joinedEntity - The joined entity
+   * @param entityType    - The entity type
+   * @param joinedEntity  - The joined entity
    * @return The join column name
    * @throws IllegalStateException if the related entity field cannot be found in the entity type
    */
   public static String getJoinColumnName(Class<?> entityType, Class<?> joinedEntity) {
     var joinField = Arrays.stream(entityType.getDeclaredFields())
-        .filter(field -> field.getType().equals(joinedEntity))
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("Can't find related entity [%s] field in [%s]."
-            .formatted(joinedEntity, entityType)));
+      .filter(field -> field.getType().equals(joinedEntity))
+      .findFirst()
+      .orElseThrow(() -> new IllegalStateException("Can't find related entity [%s] field in [%s]."
+        .formatted(joinedEntity, entityType)));
 
     return resolveColumnName(joinField);
   }
@@ -210,7 +215,7 @@ public class EntityUtil {
    * @param entity - The entity object
    * @return The ID value of the entity object
    * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *                              are marked with the 'Id' annotation
+   *         are marked with the 'Id' annotation
    */
   public static Object getEntityId(Object entity) {
     var idField = findEntityIdField(entity.getClass());
