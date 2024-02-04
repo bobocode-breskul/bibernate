@@ -189,7 +189,6 @@ public class GenericDao {
    *
    * @param <T>    the type of the entity
    * @param entity the entity to be deleted
-   * @return the deleted entity
    * @throws EntityQueryException     if there's an error during deletion or if the entity or its ID
    *                                  is null
    * @throws IllegalArgumentException if the entity is null
