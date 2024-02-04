@@ -10,10 +10,17 @@ public class Main {
   public static void main(String[] args) {
     SessionFactory sessionFactory = Persistence.createSessionFactory();
     try (Session session = sessionFactory.openSession()) {
-      Person person = session.findById(Person.class, 1);
-      System.out.println(person);
-      person.setAge(40);
-      System.out.println(person);
+      // Test creation
+      Person person = new Person(1L, "Taras", "Shevchenko", 47);
+      session.persist(person);
+
+      // Test find
+      Person foundPerson = session.findById(Person.class, 1);
+      System.out.println(foundPerson);
+
+      // Test update
+      foundPerson.setAge(40);
+      System.out.println(foundPerson);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
