@@ -194,8 +194,13 @@ public class GenericDao {
    *                                  is null
    * @throws IllegalArgumentException if the entity is null
    */
-  public <T> T delete(T entity) {
+  public <T> void delete(T entity) {
     requireNonNull(entity, "Entity should not be null.");
+    if (!context.contains(entity)) {
+      throw new EntityQueryException(
+          "Entity [%s] could not be deleted because not found in the persistent context.".formatted(
+              entity));
+    }
     Class<?> cls = entity.getClass();
     String tableName = getEntityTableName(cls);
     Field idField = findEntityIdField(cls);
@@ -216,6 +221,7 @@ public class GenericDao {
               "Could not delete entity to database for entity [%s]"
                   .formatted(entity));
         }
+        context.delete(entity);
       } catch (SQLException e) {
         throw new EntityQueryException(
             "Could not delete entity from the database for entity [%s]"
@@ -226,7 +232,6 @@ public class GenericDao {
           "Could not get field [%s] from entity [%s]"
               .formatted(idField.getType().getSimpleName(), entity), e);
     }
-    return entity;
   }
 
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
