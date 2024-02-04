@@ -51,7 +51,7 @@ public class GenericDao {
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
-  private PersistenceContext context;
+  private final PersistenceContext context;
 
   public GenericDao(DataSource dataSource, PersistenceContext context) {
     this.dataSource = dataSource;
