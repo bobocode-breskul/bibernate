@@ -1,5 +1,6 @@
 package com.breskul.bibernate.persistence;
 
+import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.util.EntityUtil;
 import jakarta.persistence.EntityTransaction;
 import java.util.Arrays;
@@ -8,7 +9,6 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // TODO: javadoc
 public class Session implements AutoCloseable {

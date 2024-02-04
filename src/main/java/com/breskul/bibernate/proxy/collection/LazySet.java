@@ -11,8 +11,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-// todo: docs
+/**
+ * LazySet represents a lazily initialized set that delegates its operations to another set.
+ * The delegate set is supplied by a supplier, which allows for lazy initialization.
+ *
+ * @param <T> the type of elements in the set
+ */
 public class LazySet<T> implements Set<T> {
+
   private final Supplier<Collection<? extends T>> delegateSupplier;
 
   private Set<T> delegate;

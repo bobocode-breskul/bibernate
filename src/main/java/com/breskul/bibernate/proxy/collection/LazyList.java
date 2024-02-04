@@ -14,7 +14,13 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-// todo: docs
+
+/**
+ * LazyList represents a lazily initialized list that delegates its operations to another list.
+ * The delegate list is supplied by a supplier, which allows for lazy initialization.
+ *
+ * @param <T> the type of elements in the list
+ */
 public class LazyList<T> implements List<T> {
 
   private final Supplier<Collection<? extends T>> delegateSupplier;

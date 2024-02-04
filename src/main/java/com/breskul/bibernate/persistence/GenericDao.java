@@ -18,6 +18,7 @@ import static java.util.stream.Stream.generate;
 import static com.breskul.bibernate.util.ReflectionUtil.createEntityInstance;
 import static com.breskul.bibernate.util.ReflectionUtil.writeFieldValue;
 
+import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
@@ -108,7 +109,8 @@ public class GenericDao {
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
         tableName, fieldName);
 
-    log.info("Bibernate: " + sql);  // todo make this print depend on property.
+    // todo make this print depend on property.
+    log.info("Bibernate: {}", sql);
     List<T> result = new ArrayList<>();
     try (Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -127,8 +129,8 @@ public class GenericDao {
   }
 
   /**
-   * Saves a given entity. Use the returned instance for further operations as the save operation might have changed the
-   * entity instance completely.
+   * Saves a given entity. Use the returned instance for further operations as the save operation
+   * might have changed the entity instance completely.
    *
    * @param entity must not be {@literal null}.
    * @return the saved entity; will never be {@literal null}.
@@ -183,9 +185,7 @@ public class GenericDao {
     return entity;
   }
 
-  // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
-
   /**
    * Maps the results from a ResultSet object to an entity object of the specified class and add the
    * entity to context. Recursively fetch all related entities and add them to context. Returns the
@@ -247,11 +247,14 @@ public class GenericDao {
         createAssociatedCollection(field, relatedEntityType, joinColumnName, id));
   }
 
-  // todo: logging
   private Collection<Object> createAssociatedCollection(Field field, Class<?> relatedEntityType,
-      String joinColumnName,
-      Object id) {
-    return switch (field.getAnnotation(OneToMany.class).fetch()) {
+      String joinColumnName, Object id) {
+    FetchType fetchType = field.getAnnotation(OneToMany.class).fetch();
+    log.debug(
+        "Resolving [{}] collection for [{}.{}.{}] field by related column [{}] with value [{}]",
+        fetchType, field.getDeclaringClass().getPackageName(),
+        field.getDeclaringClass().getSimpleName(), field.getName(), joinColumnName, id);
+    return switch (fetchType) {
       case EAGER -> getCollectionInstance(field,
           innerFindAllByFieldValue(relatedEntityType, joinColumnName, id));
       case LAZY -> getLazyCollectionInstance(field,
@@ -259,10 +262,15 @@ public class GenericDao {
     };
   }
 
-  // todo: logging
   private Object createAssocitatedObject(Field field, String relatedEntityIdColumnName,
       Object relatedEntityId) {
-    return switch (field.getAnnotation(ManyToOne.class).fetch()) {
+    FetchType fetchType = field.getAnnotation(ManyToOne.class).fetch();
+    log.debug(
+        "Resolving [{}] parent object for [{}.{}.{}] field by related column [{}] with value [{}]",
+        fetchType, field.getDeclaringClass().getPackageName(),
+        field.getDeclaringClass().getSimpleName(), field.getName(), relatedEntityIdColumnName,
+        relatedEntityId);
+    return switch (fetchType) {
       case EAGER -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
       case LAZY -> getLazyObjectProxy(field,
           () -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId));
@@ -308,8 +316,7 @@ public class GenericDao {
     return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
   }
 
-  public <T> void setParameters(PreparedStatement preparedStatement,
-      Object primaryKey,
+  public void setParameters(PreparedStatement preparedStatement, Object primaryKey,
       Object... params) throws SQLException {
     validatePrimaryKey(primaryKey);
 
