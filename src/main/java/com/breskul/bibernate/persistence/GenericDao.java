@@ -13,10 +13,10 @@ import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
-import static java.util.Objects.requireNonNull;
-import static java.util.stream.Stream.generate;
 import static com.breskul.bibernate.util.ReflectionUtil.createEntityInstance;
 import static com.breskul.bibernate.util.ReflectionUtil.writeFieldValue;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Stream.generate;
 
 import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 
 
 public class GenericDao {
+
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
   // TODO: change to select '*'
