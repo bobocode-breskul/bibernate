@@ -7,8 +7,7 @@ import java.lang.annotation.Target;
 
 
 /**
- * Specifies that the class is an entity. This annotation is applied to the
- * entity class.
+ * Specifies that the class is an entity. This annotation is applied to the entity class.
  */
 
 @Retention(RetentionPolicy.RUNTIME)

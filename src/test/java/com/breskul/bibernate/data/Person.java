@@ -1,16 +1,16 @@
-package com.breskul.bibernate.demo.entity;
+package com.breskul.bibernate.data;
 
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Setter
+@ToString
 @Entity
 @Table(name = "persons")
-@NoArgsConstructor
 public class Person {
 
   @Id
@@ -18,20 +18,8 @@ public class Person {
 
   @Column(name = "first_name")
   private String firstName;
-
   @Column(name = "last_name")
   private String lastName;
 
-  @Column(name = "age")
-  private Integer age;
-
-  @Override
-  public String toString() {
-    return "Person{" +
-        "id=" + id +
-        ", firstName='" + firstName + '\'' +
-        ", lastName='" + lastName + '\'' +
-        ", age=" + age +
-        '}';
-  }
 }
+
