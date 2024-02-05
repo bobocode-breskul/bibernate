@@ -83,12 +83,19 @@ public class Session implements AutoCloseable {
     persistenceContext.put(savedEntity);
   }
 
-  //TODO implement
+  /**
+   * Check if current session is open
+   */
   public boolean isOpen() {
     return sessionStatus;
   }
 
   //TODO: write tests
+  /**
+   * Returns session transaction. If session does not have it or transaction was
+   * completed or rolledback then creates new {@link Transaction}
+   *
+   */
   public Transaction getTransaction() {
     if (transaction == null) {
       log.trace("Creating new transaction");
