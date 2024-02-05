@@ -93,8 +93,9 @@ public class Session implements AutoCloseable {
   //TODO: write tests
   /**
    * Returns session transaction. If session does not have it or transaction was
-   * completed or rolledback then creates new {@link Transaction}
+   * completed or rolled back then creates new {@link Transaction}
    *
+   * @return current session status
    */
   public Transaction getTransaction() {
     if (transaction == null) {

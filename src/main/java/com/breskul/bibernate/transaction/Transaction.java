@@ -85,6 +85,9 @@ public class Transaction {
     }
   }
 
+  /**
+   * @return current transaction status
+   */
   public TransactionStatus getStatus() {
     return status;
   }
