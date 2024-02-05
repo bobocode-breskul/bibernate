@@ -13,10 +13,10 @@ import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
-import static java.util.Objects.requireNonNull;
-import static java.util.stream.Stream.generate;
 import static com.breskul.bibernate.util.ReflectionUtil.createEntityInstance;
 import static com.breskul.bibernate.util.ReflectionUtil.writeFieldValue;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Stream.generate;
 
 import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
@@ -36,12 +36,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 import org.slf4j.Logger;
 
 
 public class GenericDao {
 
+  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
   // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
@@ -49,12 +49,11 @@ public class GenericDao {
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
 
-  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
-  private final DataSource dataSource;
+  private final Connection connection;
   private final PersistenceContext context;
 
-  public GenericDao(DataSource dataSource, PersistenceContext context) {
-    this.dataSource = dataSource;
+  public GenericDao(Connection connection, PersistenceContext context) {
+    this.connection = connection;
     this.context = context;
   }
 
@@ -113,8 +112,7 @@ public class GenericDao {
     // todo make this print depend on property.
     log.info("Bibernate: {}", sql);
     List<T> result = new ArrayList<>();
-    try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setObject(1, fieldValue);
       ResultSet resultSet = statement.executeQuery();
       while (resultSet.next()) {
@@ -151,9 +149,7 @@ public class GenericDao {
     String sql = INSERT_ENTITY_QUERY.formatted(tableName,
         composeSelectBlockFromColumns(columnFields), questionMarks);
 
-    try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql,
-            Statement.RETURN_GENERATED_KEYS)) {
+    try (var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
         field.setAccessible(true);
@@ -296,8 +292,7 @@ public class GenericDao {
   public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
     String updateSql = prepareUpdateQuery(entityKey);
     log.trace("Update entity: [{}]", updateSql);
-    try (Connection connection = getConnection();
-        PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+    try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
       setParameters(preparedStatement, entityKey.id(), parameters);
       return preparedStatement.executeUpdate();
     } catch (SQLException e) {
@@ -342,14 +337,6 @@ public class GenericDao {
       throw new BibernateException(
           "Mismatched types: Expected ID of type %s  but received ID of type %s".formatted(
               entityIdType.getSimpleName(), id.getClass().getSimpleName()));
-    }
-  }
-
-  private Connection getConnection() {
-    try {
-      return dataSource.getConnection();
-    } catch (SQLException e) {
-      throw new BibernateException("Failed to acquire connection", e);
     }
   }
 }
