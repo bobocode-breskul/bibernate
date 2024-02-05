@@ -50,5 +50,4 @@ public class Photo {
     this.comments.remove(comment);
     comment.setPhoto(null);
   }
-
 }

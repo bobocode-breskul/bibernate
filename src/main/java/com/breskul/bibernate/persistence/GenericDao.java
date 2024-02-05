@@ -1,19 +1,24 @@
 package com.breskul.bibernate.persistence;
 
+import static com.breskul.bibernate.util.AssociationUtil.getCollectionInstance;
+import static com.breskul.bibernate.util.AssociationUtil.getLazyCollectionInstance;
+import static com.breskul.bibernate.util.AssociationUtil.getLazyObjectProxy;
 import static com.breskul.bibernate.util.EntityUtil.composeSelectBlockFromColumns;
 import static com.breskul.bibernate.util.EntityUtil.findEntityIdField;
 import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
 import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
-import static com.breskul.bibernate.util.EntityUtil.getCollectionInstance;
 import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
+import static com.breskul.bibernate.util.ReflectionUtil.createEntityInstance;
+import static com.breskul.bibernate.util.ReflectionUtil.writeFieldValue;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Stream.generate;
 
+import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
@@ -23,7 +28,6 @@ import com.breskul.bibernate.util.EntityUtil;
 import com.breskul.bibernate.util.Pair;
 import com.breskul.bibernate.util.Triple;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,18 +46,19 @@ import org.slf4j.Logger;
 
 public class GenericDao {
 
+  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
+
   // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
 
-  private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
-  private final DataSource dataSource;
-  PersistenceContext context;
+  private final Connection connection;
+  private final PersistenceContext context;
 
-  public GenericDao(DataSource dataSource, PersistenceContext context) {
-    this.dataSource = dataSource;
+  public GenericDao(Connection connection, PersistenceContext context) {
+    this.connection = connection;
     this.context = context;
   }
 
@@ -68,6 +73,7 @@ public class GenericDao {
   public <T> T findById(Class<T> cls, Object id) {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
+    checkEntityIdType(cls, id);
     T cachedEntity = context.getEntity(cls, id);
     if (cachedEntity != null) {
       return cachedEntity;
@@ -108,10 +114,10 @@ public class GenericDao {
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
         tableName, fieldName);
 
-    log.info("Bibernate: " + sql);  // todo make this print depend on property.
+    // todo make this print depend on property.
+    log.info("Bibernate: {}", sql);
     List<T> result = new ArrayList<>();
-    try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setObject(1, fieldValue);
       ResultSet resultSet = statement.executeQuery();
       while (resultSet.next()) {
@@ -148,9 +154,7 @@ public class GenericDao {
     String sql = INSERT_ENTITY_QUERY.formatted(tableName,
         composeSelectBlockFromColumns(columnFields), questionMarks);
 
-    try (Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql,
-            Statement.RETURN_GENERATED_KEYS)) {
+    try (var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
         field.setAccessible(true);
@@ -183,7 +187,6 @@ public class GenericDao {
     return entity;
   }
 
-  // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
 
   /**
@@ -201,13 +204,13 @@ public class GenericDao {
     List<Field> columnFields = getClassEntityFields(cls);
 
     try {
-      T entity = cls.getConstructor().newInstance();
+      T entity = createEntityInstance(cls);
       for (Field field : columnFields) {
         field.setAccessible(true);
 
         if (isSimpleColumn(field)) {
           String columnName = resolveColumnName(field);
-          field.set(entity, resultSet.getObject(columnName));
+          writeFieldValue(field, entity, resultSet.getObject(columnName));
         }
       }
       context.put(entity);
@@ -215,7 +218,7 @@ public class GenericDao {
       for (Field field : columnFields) {
         field.setAccessible(true);
         if (field.isAnnotationPresent(ManyToOne.class)) {
-          mapManyToOneRelationship(resultSet, cls, field, entity);
+          mapManyToOneRelationship(resultSet, field, entity);
         } else if (field.isAnnotationPresent(OneToMany.class)) {
           mapOneToManyRelationship(resultSet, cls, field, entity);
         }
@@ -226,43 +229,59 @@ public class GenericDao {
       }
 
       return entity;
-    } catch (IllegalAccessException e) {
-      throw new EntityQueryException(
-          "Entity [%s] should have public no-args constructor".formatted(cls), e);
-    } catch (IllegalArgumentException | NoSuchMethodException e) {
-      throw new EntityQueryException(
-          "Entity [%s] should have constructor without parameters".formatted(cls), e);
-    } catch (InstantiationException e) {
-      throw new EntityQueryException("Entity [%s] should be non-abstract class".formatted(cls), e);
-    } catch (InvocationTargetException e) {
-      throw new EntityQueryException(
-          "Could not create instance of target entity [%s]".formatted(cls), e);
     } catch (SQLException e) {
       throw new EntityQueryException("Could not read single row data from database for entity [%s]"
           .formatted(cls), e);
     }
   }
 
-  private <T> void mapManyToOneRelationship(ResultSet resultSet, Class<T> cls, Field field,
-      T entity) throws SQLException, IllegalAccessException {
+  private <T> void mapManyToOneRelationship(ResultSet resultSet, Field field, T entity)
+      throws SQLException {
     String joinColumnName = resolveColumnName(field);
-    Field relatedEntityIdField = findEntityIdField(cls);
-    Object relatedEntityId = relatedEntityIdField.getType()
-        .cast(resultSet.getObject(joinColumnName));
+    Field relatedEntityIdField = findEntityIdField(field.getType());
+    Object relatedEntityId = resultSet.getObject(joinColumnName);
     String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
-    var relatedEntity = fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
-    field.set(entity, relatedEntity);
+    writeFieldValue(field, entity,
+        createAssocitatedObject(field, relatedEntityIdColumnName, relatedEntityId));
   }
 
   private <T> void mapOneToManyRelationship(ResultSet resultSet, Class<T> cls, Field field,
-      T entity) throws IllegalAccessException, SQLException {
+      T entity) throws SQLException {
     Class<?> relatedEntityType = getEntityCollectionElementType(field);
     String joinColumnName = getJoinColumnName(relatedEntityType, cls);
     Object id = extractIdFromResultSet(cls, resultSet);
-    List<?> relatedEntities = innerFindAllByFieldValue(relatedEntityType, joinColumnName, id);
-    Collection<Object> collection = getCollectionInstance(field);
-    collection.addAll(relatedEntities);
-    field.set(entity, collection);
+    writeFieldValue(field, entity,
+        createAssociatedCollection(field, relatedEntityType, joinColumnName, id));
+  }
+
+  private Collection<Object> createAssociatedCollection(Field field, Class<?> relatedEntityType,
+      String joinColumnName, Object id) {
+    FetchType fetchType = field.getAnnotation(OneToMany.class).fetch();
+    log.debug(
+        "Resolving [{}] collection for [{}.{}.{}] field by related column [{}] with value [{}]",
+        fetchType, field.getDeclaringClass().getPackageName(),
+        field.getDeclaringClass().getSimpleName(), field.getName(), joinColumnName, id);
+    return switch (fetchType) {
+      case EAGER -> getCollectionInstance(field,
+          innerFindAllByFieldValue(relatedEntityType, joinColumnName, id));
+      case LAZY -> getLazyCollectionInstance(field,
+          () -> this.innerFindAllByFieldValue(relatedEntityType, joinColumnName, id));
+    };
+  }
+
+  private Object createAssocitatedObject(Field field, String relatedEntityIdColumnName,
+      Object relatedEntityId) {
+    FetchType fetchType = field.getAnnotation(ManyToOne.class).fetch();
+    log.debug(
+        "Resolving [{}] parent object for [{}.{}.{}] field by related column [{}] with value [{}]",
+        fetchType, field.getDeclaringClass().getPackageName(),
+        field.getDeclaringClass().getSimpleName(), field.getName(), relatedEntityIdColumnName,
+        relatedEntityId);
+    return switch (fetchType) {
+      case EAGER -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
+      case LAZY -> getLazyObjectProxy(field,
+          () -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId));
+    };
   }
 
   private Object fetchRelatedEntity(Field field, String columnName, Object id) {
@@ -283,8 +302,7 @@ public class GenericDao {
   public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
     String updateSql = prepareUpdateQuery(entityKey);
     log.trace("Update entity: [{}]", updateSql);
-    try (Connection connection = getConnection();
-        PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+    try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
       setParameters(preparedStatement, entityKey.id(), parameters);
       return preparedStatement.executeUpdate();
     } catch (SQLException e) {
@@ -316,7 +334,7 @@ public class GenericDao {
     var currentState = EntityUtil.getEntitySimpleColumnValues(context.getEntity(entityKey));
     currentState.removeAll(initialState);
 
-    // toOne relation columns 
+    // toOne relation columns
     var entityToOneRelationSnapshot = context.getToOneRelationSnapshot(entityKey);
     var currentEntityToOneRelationValues =
         EntityUtil.getEntityToOneRelationValues(context.getEntity(entityKey));
@@ -355,11 +373,12 @@ public class GenericDao {
     }
   }
 
-  private Connection getConnection() {
-    try {
-      return dataSource.getConnection();
-    } catch (SQLException e) {
-      throw new BibernateException("Failed to acquire connection", e);
+  private void checkEntityIdType(Class<?> entityClass, Object id) {
+    Class<?> entityIdType = findEntityIdField(entityClass).getType();
+    if (!entityIdType.equals(id.getClass())) {
+      throw new BibernateException(
+          "Mismatched types: Expected ID of type %s  but received ID of type %s".formatted(
+              entityIdType.getSimpleName(), id.getClass().getSimpleName()));
     }
   }
 }

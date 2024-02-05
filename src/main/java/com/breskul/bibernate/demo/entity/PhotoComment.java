@@ -28,15 +28,7 @@ public class PhotoComment {
   @Column(name = "text")
   private String text;
 
-//    @Column
-//    private LocalDateTime createdOn;
-
   @ManyToOne
   @JoinColumn(name = "photo_id", nullable = false)
   private Photo photo;
-
-//    public PhotoComment(String text, Photo photo) {
-//        this.text = text;
-//        this.photo = photo;
-//    }
 }

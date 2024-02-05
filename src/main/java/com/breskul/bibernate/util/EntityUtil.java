@@ -1,5 +1,7 @@
 package com.breskul.bibernate.util;
 
+import static com.breskul.bibernate.util.ReflectionUtil.readFieldValue;
+
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.DynamicUpdate;
 import com.breskul.bibernate.annotation.Entity;

@@ -4,11 +4,13 @@ import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Setter
 @Entity
 @Table(name = "persons")
+@NoArgsConstructor
 public class Person {
 
   @Id
@@ -19,6 +21,7 @@ public class Person {
 
   @Column(name = "last_name")
   private String lastName;
+
   @Column(name = "age")
   private Integer age;
 
