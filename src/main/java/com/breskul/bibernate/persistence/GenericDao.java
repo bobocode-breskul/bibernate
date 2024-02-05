@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 
 
 public class GenericDao {
+
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
   // TODO: change to select '*'
@@ -47,7 +48,7 @@ public class GenericDao {
   private final Connection connection;
   private PersistenceContext context;
 
-  public GenericDao(Connection connection) {
+  public GenericDao(Connection connection, PersistenceContext context) {
     this.connection = connection;
     this.context = context;
   }

@@ -22,9 +22,10 @@ public abstract class AbstractIntegrationTest {
     dataSource = new BibernateDataSource(properties);
   }
 
+  @SneakyThrows
   @BeforeEach
   public void setup() {
-    this.genericDao = new GenericDao(dataSource, new PersistenceContext());
+    this.genericDao = new GenericDao(dataSource.getConnection(), new PersistenceContext());
   }
 
 

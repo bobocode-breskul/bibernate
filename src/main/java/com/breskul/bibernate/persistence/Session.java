@@ -1,20 +1,17 @@
 package com.breskul.bibernate.persistence;
 
-import com.breskul.bibernate.util.EntityUtil;
-import jakarta.persistence.EntityTransaction;
-import java.util.Arrays;
-import java.util.Optional;
 import com.breskul.bibernate.action.Action;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
+import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import javax.sql.DataSource;
-import org.slf4j.Logger;
-import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.slf4j.Logger;
 
 // TODO: javadoc
@@ -26,13 +23,16 @@ public class Session implements AutoCloseable {
   private final PersistenceContext persistenceContext;
   private final Queue<Action> actionQueue = new PriorityQueue<>();
   private final Connection connection;
+
   private Transaction transaction;
+  private boolean sessionStatus;
 
   public Session(DataSource dataSource) throws SQLException {
     connection = dataSource.getConnection();
     connection.setAutoCommit(true);
-    genericDao = new GenericDao(connection);
     persistenceContext = new PersistenceContext();
+    genericDao = new GenericDao(connection, persistenceContext);
+    sessionStatus = true;
   }
 
   public <T> T findById(Class<T> entityClass, Object id) {
@@ -75,7 +75,8 @@ public class Session implements AutoCloseable {
 
   /**
    * Make an instance managed and persistent.
-   * @param entity  entity instance
+   *
+   * @param entity entity instance
    */
   public <T> void persist(T entity) {
     T savedEntity = genericDao.save(entity);
@@ -84,7 +85,7 @@ public class Session implements AutoCloseable {
 
   //TODO implement
   public boolean isOpen() {
-    return true;
+    return sessionStatus;
   }
 
   //TODO: write tests
@@ -109,6 +110,7 @@ public class Session implements AutoCloseable {
     // todo: transaction commit/rollback
     persistenceContext.clear();
     actionQueue.clear();
+    sessionStatus = false;
   }
 
   private void performDirtyChecking() {
