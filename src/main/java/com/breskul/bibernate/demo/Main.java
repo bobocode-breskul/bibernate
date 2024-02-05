@@ -1,6 +1,7 @@
 package com.breskul.bibernate.demo;
 
-import com.breskul.bibernate.demo.entity.Person;
+import com.breskul.bibernate.demo.entity.Photo;
+import com.breskul.bibernate.demo.entity.PhotoComment;
 import com.breskul.bibernate.persistence.Persistence;
 import com.breskul.bibernate.persistence.Session;
 import com.breskul.bibernate.persistence.SessionFactory;
@@ -9,11 +10,14 @@ public class Main {
 
   public static void main(String[] args) {
     SessionFactory sessionFactory = Persistence.createSessionFactory();
-    try (Session session = sessionFactory.openSession()) {
-      Person person = session.findById(Person.class, 3022L);
-      System.out.println(person);
-      person.setAge(40);
-      System.out.println(person);
+    try (Session session = sessionFactory.openSession();) {
+      Photo photo = session.findById(Photo.class, 1L);
+      System.out.println(photo);
+      System.out.println(photo.getComments());
+      photo.setDescription("Updated3");
+      PhotoComment comment = photo.getComments().get(0);
+      comment.setText("New text2");
+      photo.removeComment(comment);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

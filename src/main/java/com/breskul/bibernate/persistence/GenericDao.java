@@ -20,6 +20,8 @@ import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.util.EntityUtil;
+import com.breskul.bibernate.util.Pair;
+import com.breskul.bibernate.util.Triple;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -31,7 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 
@@ -123,8 +127,8 @@ public class GenericDao {
   }
 
   /**
-   * Saves a given entity. Use the returned instance for further operations as the save operation might have changed the
-   * entity instance completely.
+   * Saves a given entity. Use the returned instance for further operations as the save operation
+   * might have changed the entity instance completely.
    *
    * @param entity must not be {@literal null}.
    * @return the saved entity; will never be {@literal null}.
@@ -206,7 +210,7 @@ public class GenericDao {
           field.set(entity, resultSet.getObject(columnName));
         }
       }
-      context.manageEntity(entity);
+      context.put(entity);
 
       for (Field field : columnFields) {
         field.setAccessible(true);
@@ -216,6 +220,11 @@ public class GenericDao {
           mapOneToManyRelationship(resultSet, cls, field, entity);
         }
       }
+
+      if (EntityUtil.hasToOneRelations(cls)) {
+        context.takeToOneRelationSnapshot(entity);
+      }
+
       return entity;
     } catch (IllegalAccessException e) {
       throw new EntityQueryException(
@@ -260,7 +269,7 @@ public class GenericDao {
     var relatedEntity = context.getEntity(field.getType(), id);
     if (relatedEntity == null) {
       relatedEntity = innerFindAllByFieldValue(field.getType(), columnName, id).get(0);
-      relatedEntity = context.manageEntity(relatedEntity);
+      relatedEntity = context.put(relatedEntity);
     }
     return relatedEntity;
   }
@@ -284,7 +293,11 @@ public class GenericDao {
     }
   }
 
-  public <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
+  private <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
+    if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
+      return prepareDynamicUpdateQuery(entityKey);
+    }
+
     Class<T> entityClass = entityKey.entityClass();
     String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
         .map("%s = ?"::formatted)
@@ -295,7 +308,34 @@ public class GenericDao {
     return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
   }
 
-  public <T> void setParameters(PreparedStatement preparedStatement,
+  private <T> String prepareDynamicUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+
+    // simple columns
+    var initialState = context.getEntitySnapshotWithColumnName(entityKey);
+    var currentState = EntityUtil.getEntitySimpleColumnValues(context.getEntity(entityKey));
+    currentState.removeAll(initialState);
+
+    // toOne relation columns 
+    var entityToOneRelationSnapshot = context.getToOneRelationSnapshot(entityKey);
+    var currentEntityToOneRelationValues =
+        EntityUtil.getEntityToOneRelationValues(context.getEntity(entityKey));
+    currentEntityToOneRelationValues.removeAll(entityToOneRelationSnapshot);
+
+    Stream<Object> simpleColumns = currentState.stream()
+        .map(Pair::left);
+    Stream<Object> toOneRelations = currentEntityToOneRelationValues.stream()
+        .map(Triple::second);
+    String setUpdatedColumnsSql = Stream.concat(simpleColumns, toOneRelations)
+        .filter(Objects::nonNull)
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
+
+  private <T> void setParameters(PreparedStatement preparedStatement,
       Object primaryKey,
       Object... params) throws SQLException {
     validatePrimaryKey(primaryKey);

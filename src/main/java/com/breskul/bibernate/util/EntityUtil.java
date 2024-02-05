@@ -1,6 +1,7 @@
 package com.breskul.bibernate.util;
 
 import com.breskul.bibernate.annotation.Column;
+import com.breskul.bibernate.annotation.DynamicUpdate;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.JoinColumn;
@@ -41,40 +42,56 @@ public class EntityUtil {
   }
 
   /**
-   * Validates if the given column exists in the entity class.
-   * Throws an exception if the column does not exist.
+   * Validates if the given column exists in the entity class. Throws an exception if the column
+   * does not exist.
    *
    * @param cls        - The entity class
    * @param columnName - The column name to validate
-   *
    * @throws IllegalArgumentException if the column does not exist in the entity class
    */
   public static void validateColumnName(Class<?> cls, String columnName) {
     validateIsEntity(cls);
     var column = getClassColumnFields(cls).stream()
-      .filter(field -> resolveColumnName(field).equals(columnName))
-      .findFirst();
+        .filter(field -> resolveColumnName(field).equals(columnName))
+        .findFirst();
     if (column.isEmpty()) {
       throw new IllegalArgumentException("Entity [%s] does not have a column: [%s]."
-        .formatted(cls, columnName));
+          .formatted(cls, columnName));
     }
   }
 
 
   /**
    * Retrieves the table name for the given entity class. If the class is annotated with the
-   * {@link Table} annotation, the table name from the annotation is returned. Otherwise, the
-   * class name is returned.
+   * {@link Table} annotation, the table name from the annotation is returned. Otherwise, the class
+   * name is returned.
    *
    * @param cls - The entity class
    * @return The table name for the entity class
    */
   public static String getEntityTableName(Class<?> cls) {
     return Optional.ofNullable(cls.getAnnotation(Table.class))
-      .map(Table::name)
-      .orElseGet(cls::getSimpleName);
+        .map(Table::name)
+        .orElseGet(cls::getSimpleName);
   }
 
+
+  /**
+   * Retrieves a list of column names from the fields of the provided entity class.
+   * The method filters out fields representing collections of other entities.
+   *
+   * @param entityClass - The entity class for which to retrieve column names
+   * @param <T> - The type of the entity class
+   * @return A list of column names representing non-collection fields in the entity class
+   * @see EntityUtil#isCollectionEntityField(Field)
+   * @see EntityUtil#resolveColumnName(Field)
+   */
+  public static <T> List<String> getEntityColumnNames(Class<? extends T> entityClass) {
+    return Arrays.stream(entityClass.getDeclaredFields())
+        .filter(field -> !EntityUtil.isCollectionEntityField(field))
+        .map(EntityUtil::resolveColumnName)
+        .collect(Collectors.toList());
+  }
 
   /**
    * Retrieves a list of fields that represent columns in the given class.
@@ -84,10 +101,55 @@ public class EntityUtil {
    */
   public static List<Field> getClassColumnFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
-      .filter(field -> !isCollectionEntityField(field))
-      .toList();
+        .filter(field -> !isCollectionEntityField(field))
+        .toList();
   }
 
+  /**
+   * Retrieves a list of fields that represent columns without relations tp other entities in the
+   * given class.
+   *
+   * @param cls - The class for which to retrieve column fields
+   * @return A list of fields representing simple columns (without relations) in the class
+   */
+  public static List<Field> getEntitySimpleColumnFields(Class<?> cls) {
+    return Arrays.stream(cls.getDeclaredFields())
+        .filter(field -> !isCollectionEntityField(field) && !isToOneRelation(field))
+        .toList();
+  }
+
+  /**
+   * Retrieves a list of pairs containing column names and their corresponding values from the provided entity.
+   * The method filters out fields representing relations to other entities, returning only simple columns.
+   *
+   * @param entity - The entity object from which to retrieve simple column values
+   * @param <T> - The type of the entity
+   * @return A list of pairs, where each pair consists of a column name and its corresponding value
+   * @see #getEntitySimpleColumnFields(Class)
+   * @see #resolveColumnName(Field)
+   * @see #readEntityColumnValue(Object, Field)
+   */
+  public static <T> List<Pair<String, Object>> getEntitySimpleColumnValues(T entity) {
+    return getEntitySimpleColumnFields(entity.getClass()).stream()
+        .map(field -> Pair.of(resolveColumnName(field), readEntityColumnValue(entity, field)))
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Retrieves a list of simple column names from the fields of the provided entity class.
+   * Simple columns are those that do not represent relations to other entities or collections.
+   *
+   * @param entityClass - The entity class for which to retrieve simple column names
+   * @param <T> - The type of the entity class
+   * @return A list of simple column names representing non-relation and non-collection fields in the entity class
+   * @see #getEntitySimpleColumnFields(Class)
+   * @see EntityUtil#resolveColumnName(Field)
+   */
+  public static <T> List<String> getEntitySimpleColumnNames(Class<T> entityClass) {
+    return getEntitySimpleColumnFields(entityClass).stream()
+        .map(EntityUtil::resolveColumnName)
+        .collect(Collectors.toList());
+  }
 
   /**
    * Determines if the given field is a collection entity field.
@@ -97,9 +159,18 @@ public class EntityUtil {
    */
   public static boolean isCollectionEntityField(Field field) {
     return field.isAnnotationPresent(OneToMany.class)
-      || field.isAnnotationPresent(ManyToMany.class);
+        || field.isAnnotationPresent(ManyToMany.class);
   }
 
+  /**
+   * Determines if the given field is a @OneToOne or @ManyToOne relation entity field.
+   *
+   * @param field - The field to check
+   * @return true if the field is a 'toOne' relation entity field, false otherwise
+   */
+  public static boolean isToOneRelation(Field field) {
+    return field.isAnnotationPresent(ManyToOne.class) || field.isAnnotationPresent(OneToOne.class);
+  }
 
   /**
    * Retrieves a list of fields that represent entity properties in the given class.
@@ -109,7 +180,7 @@ public class EntityUtil {
    */
   public static List<Field> getClassEntityFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
-      .toList();
+        .toList();
   }
 
   public static List<Field> getClassColumnFields(Class<?> cls, Predicate<Field> fieldPredicate) {
@@ -124,7 +195,7 @@ public class EntityUtil {
    * @param fields - The list of fields to search
    * @return The entity ID field
    * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *         are marked with the 'Id' annotation
+   *                              are marked with the 'Id' annotation
    */
   public static Field findEntityIdField(List<Field> fields) {
     List<Field> idFields = fields.stream()
@@ -145,16 +216,38 @@ public class EntityUtil {
    * @param cls - The entity class
    * @return The entity ID field
    * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *         are marked with the 'Id' annotation
+   *                              are marked with the 'Id' annotation
    */
   public static Field findEntityIdField(Class<?> cls) {
     validateIsEntity(cls);
     return findEntityIdField(getClassColumnFields(cls));
   }
 
-  // TODO: javadoc
+  /**
+   * Finds and returns the name of the entity ID field for the given entity class. The entity ID
+   * field is determined based on the presence of the 'Id' annotation.
+   *
+   * @param entityClass - The entity class for which to find the ID field name
+   * @param <T>         - The type of the entity class
+   * @return The name of the entity ID field
+   * @throws EntityParseException if the entity does not define an ID column or if multiple fields
+   *                              are marked with the 'Id' annotation
+   */
   public static <T> String findEntityIdFieldName(Class<T> entityClass) {
     return findEntityIdField(entityClass).getName();
+  }
+
+  /**
+   * Retrieves the ID value of the given entity.
+   *
+   * @param entity - The entity object
+   * @return The ID value of the entity object
+   * @throws EntityParseException if the entity does not define an ID column or if multiple fields
+   *                              are marked with the 'Id' annotation
+   */
+  public static Object getEntityId(Object entity) {
+    var idField = findEntityIdField(entity.getClass());
+    return readFieldValue(entity, idField);
   }
 
   /**
@@ -191,33 +284,19 @@ public class EntityUtil {
   /**
    * Retrieves the join column name for joined entity.
    *
-   * @param entityType    - The entity type
-   * @param joinedEntity  - The joined entity
+   * @param entityType   - The entity type
+   * @param joinedEntity - The joined entity
    * @return The join column name
    * @throws IllegalStateException if the related entity field cannot be found in the entity type
    */
   public static String getJoinColumnName(Class<?> entityType, Class<?> joinedEntity) {
     var joinField = Arrays.stream(entityType.getDeclaredFields())
-      .filter(field -> field.getType().equals(joinedEntity))
-      .findFirst()
-      .orElseThrow(() -> new IllegalStateException("Can't find related entity [%s] field in [%s]."
-        .formatted(joinedEntity, entityType)));
+        .filter(field -> field.getType().equals(joinedEntity))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Can't find related entity [%s] field in [%s]."
+            .formatted(joinedEntity, entityType)));
 
     return resolveColumnName(joinField);
-  }
-
-
-  /**
-   * Retrieves the ID value of the given entity.
-   *
-   * @param entity - The entity object
-   * @return The ID value of the entity object
-   * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *         are marked with the 'Id' annotation
-   */
-  public static Object getEntityId(Object entity) {
-    var idField = findEntityIdField(entity.getClass());
-    return readFieldValue(entity, idField);
   }
 
 
@@ -250,7 +329,8 @@ public class EntityUtil {
 
 
   /**
-   * Retrieves an instance of the Collection class based on the given Field representing a collection.
+   * Retrieves an instance of the Collection class based on the given Field representing a
+   * collection.
    *
    * @param collectionField - The Field representing the collection
    * @return An instance of the Collection class
@@ -267,14 +347,15 @@ public class EntityUtil {
       return new HashSet<>();
     }
 
-    throw new IllegalArgumentException("Unsupported collection: " + collectionClass); // change exception and more clear msg?
+    throw new IllegalArgumentException(
+        "Unsupported collection: " + collectionClass); // change exception and more clear msg?
   }
 
 
   /**
    * Reads the value of a field on the given entity object.
    *
-   * @param entity - The entity object
+   * @param entity  - The entity object
    * @param idField - The field to read the value from
    * @return The value of the field
    * @throws EntityParseException if failed to access the field due to illegal access
@@ -290,28 +371,78 @@ public class EntityUtil {
     }
   }
 
-
-  //todo check if we should use getClassColumnFields instead this one
-  public static <T> List<Field> getEntityColumns(Class<? extends T> entityClass) {
-    return Arrays.stream(entityClass.getDeclaredFields())
-        .filter(field -> field.isAnnotationPresent(Column.class))
-        .collect(Collectors.toList());
+  /**
+   * Checks if the specified entity class has any @OneToOne or @ManyToOne relations.
+   * This method examines the declared fields of the class to identify if any field
+   * is marked as a 'toOne' relation based on the presence of @OneToOne or @ManyToOne annotations.
+   *
+   * @param cls - The entity class to check for 'toOne' relations
+   * @param <T> - The type of the entity class
+   * @return true if the entity class has at least one 'toOne' relation, false otherwise
+   */
+  public static <T> boolean hasToOneRelations(Class<T> cls) {
+    return Arrays.stream(cls.getDeclaredFields())
+        .anyMatch(EntityUtil::isToOneRelation);
   }
 
+  /**
+   * Checks if the specified entity class is marked with the {@link DynamicUpdate} annotation,
+   * indicating that dynamic update behavior is enabled for this entity.
+   *
+   * @param entityClass - The entity class to check for dynamic update annotation
+   * @param <T> - The type of the entity class
+   * @return true if the entity class is annotated with {@link DynamicUpdate}, false otherwise
+   */
+  public static <T> boolean isDynamicUpdate(Class<T> entityClass) {
+    return entityClass.isAnnotationPresent(DynamicUpdate.class);
+  }
+
+  /**
+   * Retrieves an array of column values from the provided entity object including toOne relation
+   * columns. The method extracts values from all the columns of the entity based on its class
+   * definition.
+   *
+   * @param entity - The entity object from which to retrieve column values
+   * @param <T>    - The type of the entity
+   * @return An array of column values corresponding to the entity's columns
+   */
   public static <T> Object[] getEntityColumnValues(T entity) {
-    return getEntityColumns(entity.getClass()).stream()
-        .map(field -> readFieldValue(entity, field))
+    return getClassColumnFields(entity.getClass()).stream()
+        .map(field -> readEntityColumnValue(entity, field))
         .toArray();
   }
 
-  // todo use resolveColumnName inside?
-  public static <T> List<String> getEntityColumnNames(Class<? extends T> entityClass) {
-    return Arrays.stream(entityClass.getDeclaredFields())
-        .filter(field -> field.isAnnotationPresent(Column.class))
-        .map(field -> field.getAnnotation(Column.class).name())
+  /**
+   * Retrieves a list of pairs containing the types and associated ID values of the 'toOne' relation
+   * fields from the provided entity.
+   *
+   * @param entity - The entity object from which to retrieve 'toOne' relation values
+   * @param <T>    - The type of the entity
+   * @return A list of pairs, where each pair consists of the 'toOne' relation field type and its
+   * associated ID value (or null if the field value is null)
+   * @see EntityUtil#isToOneRelation(Field)
+   * @see #readFieldValue(Object, Field)
+   * @see #getEntityId(Object)
+   */
+  public static <T> List<Triple<? extends Class<?>, String, Object>> getEntityToOneRelationValues(T entity) {
+    return Arrays.stream(entity.getClass().getDeclaredFields())
+        .filter(EntityUtil::isToOneRelation)
+        .map(field -> {
+          Object relatedIdField = readFieldValue(entity, field);
+          return Triple.of(field.getType(), resolveColumnName(field),
+              relatedIdField != null ? getEntityId(relatedIdField) : null);
+        })
         .collect(Collectors.toList());
   }
 
-  private EntityUtil() {
+  private static <T> Object readEntityColumnValue(T entity, Field field) {
+    return isToOneRelation(field) ? readToOneRelatedEntityId(entity, field)
+        : readFieldValue(entity, field);
+  }
+
+  private static <T> Object readToOneRelatedEntityId(T entity, Field field) {
+    Object relatedEntity = readFieldValue(entity, field);
+    Field relatedEntityIdField = findEntityIdField(field.getType());
+    return relatedEntity != null ? readFieldValue(relatedEntity, relatedEntityIdField) : null;
   }
 }

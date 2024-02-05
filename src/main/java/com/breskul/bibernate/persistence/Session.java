@@ -1,11 +1,14 @@
 package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.util.EntityUtil;
+import com.breskul.bibernate.util.Pair;
+import com.breskul.bibernate.util.Triple;
 import jakarta.persistence.EntityTransaction;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,11 +22,11 @@ public class Session implements AutoCloseable {
   private final Queue<Action> actionQueue = new PriorityQueue<>();
   private EntityTransaction transaction; // todo: get rid of jakarta api
 
-    public Session(DataSource dataSource) {
-        this.persistenceContext = new PersistenceContext();
-        this.genericDao = new GenericDao(dataSource, persistenceContext);
+  public Session(DataSource dataSource) {
+    this.persistenceContext = new PersistenceContext();
+    this.genericDao = new GenericDao(dataSource, persistenceContext);
 
-    }
+  }
 
   public <T> T findById(Class<T> entityClass, Object id) {
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
@@ -65,7 +68,8 @@ public class Session implements AutoCloseable {
 
   /**
    * Make an instance managed and persistent.
-   * @param entity  entity instance
+   *
+   * @param entity entity instance
    */
   public <T> void persist(T entity) {
     T savedEntity = genericDao.save(entity);
@@ -73,7 +77,7 @@ public class Session implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     performDirtyChecking();
     // todo: transaction commit/rollback
     persistenceContext.clear();
@@ -83,19 +87,53 @@ public class Session implements AutoCloseable {
   private void performDirtyChecking() {
     persistenceContext.getEntityKeys().stream()
         .filter(this::hasChanged)
+        .peek(entityKey -> log.trace("Found not flushed changes in the cache"))
         .forEach(this::flushChanges);
   }
 
   private <T> boolean hasChanged(EntityKey<T> entityKey) {
-    Object[] currentEntityState = EntityUtil.getEntityColumnValues(
-        persistenceContext.getEntity(entityKey));
+    Object[] currentEntityState = EntityUtil.getEntitySimpleColumnValues(
+        persistenceContext.getEntity(entityKey)).stream().map(Pair::right).toArray();
     Object[] initialEntityState = persistenceContext.getEntitySnapshot(entityKey);
-    return !Arrays.equals(currentEntityState, initialEntityState);
+
+    return !Arrays.equals(currentEntityState, initialEntityState) || isToOneRelationChanged(
+        entityKey);
   }
 
+  private <T> boolean isToOneRelationChanged(EntityKey<T> entityKey) {
+    if (EntityUtil.hasToOneRelations(entityKey.entityClass())) {
+      var currentToOneRelationState =
+          EntityUtil.getEntityToOneRelationValues(persistenceContext.getEntity(entityKey));
+      var entityToOneRelationSnapshot = persistenceContext.getToOneRelationSnapshot(entityKey);
+      return !currentToOneRelationState.equals(entityToOneRelationSnapshot);
+    }
+    return false;
+  }
+
+  // TODO: reformat code
+  // TODO: write javadoc for all changes
+  // TODO: cover all changes with tests
   private <T> void flushChanges(EntityKey<T> entityKey) {
-    log.trace("Found not flushed changes in the cache");
     T updatedEntity = persistenceContext.getEntity(entityKey);
-    genericDao.executeUpdate(entityKey, EntityUtil.getEntityColumnValues(updatedEntity));
+    Object[] parameters = EntityUtil.getEntityColumnValues(updatedEntity);
+    if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
+      parameters = prepareDynamicParameters(entityKey, updatedEntity);
+    }
+    genericDao.executeUpdate(entityKey, parameters);
+  }
+
+  private <T> Object[] prepareDynamicParameters(EntityKey<T> entityKey, T updatedEntity) {
+    // simple columns
+    var entitySnapshot = persistenceContext.getEntitySnapshotWithColumnName(entityKey);
+    var currentEntity = EntityUtil.getEntitySimpleColumnValues(updatedEntity);
+    currentEntity.removeAll(entitySnapshot);
+    Stream<Object> simpleColumnParams = currentEntity.stream().map(Pair::right);
+
+    // toOne relation columns
+    var entityToOneRelationSnapshot = persistenceContext.getToOneRelationSnapshot(entityKey);
+    var currentToOneRelationState = EntityUtil.getEntityToOneRelationValues(updatedEntity);
+    currentToOneRelationState.removeAll(entityToOneRelationSnapshot);
+    Stream<Object> toOneRelationParams = currentToOneRelationState.stream().map(Triple::third);
+    return Stream.concat(simpleColumnParams, toOneRelationParams).toArray();
   }
 }
