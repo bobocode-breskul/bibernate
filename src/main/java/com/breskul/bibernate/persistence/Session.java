@@ -1,5 +1,6 @@
 package com.breskul.bibernate.persistence;
 
+import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.action.Action;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.transaction.Transaction;
@@ -16,7 +17,6 @@ import org.slf4j.Logger;
 
 // TODO: javadoc
 public class Session implements AutoCloseable {
-
   private static final Logger log = LoggerFactory.getLogger(Session.class);
 
   private final GenericDao genericDao;

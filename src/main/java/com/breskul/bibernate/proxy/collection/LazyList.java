@@ -1,5 +1,6 @@
-package com.breskul.bibernate.collection;
+package com.breskul.bibernate.proxy.collection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -14,18 +15,24 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 
+/**
+ * LazyList represents a lazily initialized list that delegates its operations to another list.
+ * The delegate list is supplied by a supplier, which allows for lazy initialization.
+ *
+ * @param <T> the type of elements in the list
+ */
 public class LazyList<T> implements List<T> {
 
-  private final Supplier<List<T>> delegateSupplier;
+  private final Supplier<Collection<? extends T>> delegateSupplier;
   private List<T> delegate;
 
-  public LazyList(Supplier<List<T>> delegateSupplier) {
+  public LazyList(Supplier<Collection<? extends T>> delegateSupplier) {
     this.delegateSupplier = delegateSupplier;
   }
 
   private List<T> getDelegateList() {
     if (delegate == null) {
-      delegate = delegateSupplier.get();
+      delegate = new ArrayList<>(delegateSupplier.get());
     }
     return delegate;
   }
@@ -170,59 +177,6 @@ public class LazyList<T> implements List<T> {
     return getDelegateList().spliterator();
   }
 
-  public static <E> List<E> of() {
-    return List.of();
-  }
-
-  public static <E> List<E> of(E e1) {
-    return List.of(e1);
-  }
-
-  public static <E> List<E> of(E e1, E e2) {
-    return List.of(e1, e2);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3) {
-    return List.of(e1, e2, e3);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4) {
-    return List.of(e1, e2, e3, e4);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5) {
-    return List.of(e1, e2, e3, e4, e5);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
-    return List.of(e1, e2, e3, e4, e5, e6);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7, e8);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7, e8, e9);
-  }
-
-  public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
-    return List.of(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10);
-  }
-
-  @SafeVarargs
-  public static <E> List<E> of(E... elements) {
-    return List.of(elements);
-  }
-
-  public static <E> List<E> copyOf(Collection<? extends E> coll) {
-    return List.copyOf(coll);
-  }
-
   @Override
   public <T1> T1[] toArray(IntFunction<T1[]> generator) {
     return getDelegateList().toArray(generator);
@@ -246,5 +200,10 @@ public class LazyList<T> implements List<T> {
   @Override
   public void forEach(Consumer<? super T> action) {
     getDelegateList().forEach(action);
+  }
+
+  @Override
+  public String toString() {
+    return getDelegateList().toString();
   }
 }
