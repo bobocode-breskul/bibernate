@@ -15,13 +15,9 @@ import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -131,25 +127,9 @@ public class EntityUtil {
    * @see #resolveColumnName(Field)
    * @see #readEntityColumnValue(Object, Field)
    */
-  public static <T> List<Pair<String, Object>> getEntitySimpleColumnValues(T entity) {
+  public static <T> List<EntityPropertySnapshot> getEntitySimpleColumnValues(T entity) {
     return getEntitySimpleColumnFields(entity.getClass()).stream()
-        .map(field -> Pair.of(resolveColumnName(field), readEntityColumnValue(entity, field)))
-        .collect(Collectors.toList());
-  }
-
-  /**
-   * Retrieves a list of simple column names from the fields of the provided entity class.
-   * Simple columns are those that do not represent relations to other entities or collections.
-   *
-   * @param entityClass - The entity class for which to retrieve simple column names
-   * @param <T> - The type of the entity class
-   * @return A list of simple column names representing non-relation and non-collection fields in the entity class
-   * @see #getEntitySimpleColumnFields(Class)
-   * @see EntityUtil#resolveColumnName(Field)
-   */
-  public static <T> List<String> getEntitySimpleColumnNames(Class<T> entityClass) {
-    return getEntitySimpleColumnFields(entityClass).stream()
-        .map(EntityUtil::resolveColumnName)
+        .map(field -> EntityPropertySnapshot.of(resolveColumnName(field), readEntityColumnValue(entity, field)))
         .collect(Collectors.toList());
   }
 
@@ -329,50 +309,6 @@ public class EntityUtil {
     return (Class<?>) actualTypeArgument;
   }
 
-
-  /**
-   * Retrieves an instance of the Collection class based on the given Field representing a
-   * collection.
-   *
-   * @param collectionField - The Field representing the collection
-   * @return An instance of the Collection class
-   * @throws IllegalArgumentException if the collection type is unsupported
-   */
-  public static Collection<Object> getCollectionInstance(Field collectionField) {
-    var collectionClass = collectionField.getType();
-
-    if (collectionClass.isAssignableFrom(List.class)) {
-      return new ArrayList<>();
-    }
-
-    if (collectionClass.isAssignableFrom(Set.class)) {
-      return new HashSet<>();
-    }
-
-    throw new IllegalArgumentException(
-        "Unsupported collection: " + collectionClass); // change exception and more clear msg?
-  }
-
-
-  /**
-   * Reads the value of a field on the given entity object.
-   *
-   * @param entity  - The entity object
-   * @param idField - The field to read the value from
-   * @return The value of the field
-   * @throws EntityParseException if failed to access the field due to illegal access
-   */
-  public static Object readFieldValue(Object entity, Field idField) {
-    try {
-      idField.setAccessible(true);
-      return idField.get(entity);
-    } catch (IllegalAccessException e) {
-      throw new EntityParseException(
-          "Failed to access field '" + idField.getName() + "' of entity type '" + entity.getClass()
-              .getName() + "': Illegal access");
-    }
-  }
-
   /**
    * Checks if the specified entity class has any @OneToOne or @ManyToOne relations.
    * This method examines the declared fields of the class to identify if any field
@@ -423,15 +359,15 @@ public class EntityUtil {
    * @return A list of pairs, where each pair consists of the 'toOne' relation field type and its
    * associated ID value (or null if the field value is null)
    * @see EntityUtil#isToOneRelation(Field)
-   * @see #readFieldValue(Object, Field)
+   * @see ReflectionUtil#readFieldValue(Object, Field)
    * @see #getEntityId(Object)
    */
-  public static <T> List<Triple<? extends Class<?>, String, Object>> getEntityToOneRelationValues(T entity) {
+  public static <T> List<EntityRelationSnapshot> getEntityToOneRelationValues(T entity) {
     return Arrays.stream(entity.getClass().getDeclaredFields())
         .filter(EntityUtil::isToOneRelation)
         .map(field -> {
-          Object relatedIdField = readFieldValue(entity, field);
-          return Triple.of(field.getType(), resolveColumnName(field),
+          Object relatedIdField = ReflectionUtil.readFieldValue(entity, field);
+          return EntityRelationSnapshot.of(field.getType(), resolveColumnName(field),
               relatedIdField != null ? getEntityId(relatedIdField) : null);
         })
         .collect(Collectors.toList());
@@ -439,11 +375,11 @@ public class EntityUtil {
 
   private static <T> Object readEntityColumnValue(T entity, Field field) {
     return isToOneRelation(field) ? readToOneRelatedEntityId(entity, field)
-        : readFieldValue(entity, field);
+        : ReflectionUtil.readFieldValue(entity, field);
   }
 
   private static <T> Object readToOneRelatedEntityId(T entity, Field field) {
-    Object relatedEntity = readFieldValue(entity, field);
+    Object relatedEntity = ReflectionUtil.readFieldValue(entity, field);
     Field relatedEntityIdField = findEntityIdField(field.getType());
     return relatedEntity != null ? readFieldValue(relatedEntity, relatedEntityIdField) : null;
   }

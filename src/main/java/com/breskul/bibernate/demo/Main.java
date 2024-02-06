@@ -14,9 +14,9 @@ public class Main {
       Photo photo = session.findById(Photo.class, 1L);
       System.out.println(photo);
       System.out.println(photo.getComments());
-      photo.setDescription("Updated3");
+      photo.setDescription("Updated6");
       PhotoComment comment = photo.getComments().get(0);
-      comment.setText("New text2");
+      comment.setText("New text3");
       photo.removeComment(comment);
     } catch (Exception e) {
       throw new RuntimeException(e);

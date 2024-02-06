@@ -25,8 +25,8 @@ import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.util.EntityUtil;
-import com.breskul.bibernate.util.Pair;
-import com.breskul.bibernate.util.Triple;
+import com.breskul.bibernate.util.EntityPropertySnapshot;
+import com.breskul.bibernate.util.EntityRelationSnapshot;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.sql.DataSource;
 import org.slf4j.Logger;
 
 
@@ -341,9 +340,9 @@ public class GenericDao {
     currentEntityToOneRelationValues.removeAll(entityToOneRelationSnapshot);
 
     Stream<Object> simpleColumns = currentState.stream()
-        .map(Pair::left);
+        .map(EntityPropertySnapshot::columnName);
     Stream<Object> toOneRelations = currentEntityToOneRelationValues.stream()
-        .map(Triple::second);
+        .map(EntityRelationSnapshot::columnName);
     String setUpdatedColumnsSql = Stream.concat(simpleColumns, toOneRelations)
         .filter(Objects::nonNull)
         .map("%s = ?"::formatted)

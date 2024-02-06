@@ -1,8 +1,8 @@
 package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.util.EntityUtil;
-import com.breskul.bibernate.util.Pair;
-import com.breskul.bibernate.util.Triple;
+import com.breskul.bibernate.util.EntityPropertySnapshot;
+import com.breskul.bibernate.util.EntityRelationSnapshot;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PersistenceContext {
 
   private final Map<EntityKey<?>, Object> firstLevelCache = new ConcurrentHashMap<>();
-  private final Map<EntityKey<?>, List<Pair<String, Object>>> entitySnapshots = new ConcurrentHashMap<>();
-  private final Map<EntityKey<?>, List<Triple<? extends Class<?>, String, Object>>> toOneRelationSnapshots = new ConcurrentHashMap<>();
+  private final Map<EntityKey<?>, List<EntityPropertySnapshot>> entitySnapshots = new ConcurrentHashMap<>();
+  private final Map<EntityKey<?>, List<EntityRelationSnapshot>> toOneRelationSnapshots = new ConcurrentHashMap<>();
 
   // persist
   // todo: docs
@@ -50,15 +50,15 @@ public class PersistenceContext {
 
   public <T> Object[] getEntitySnapshot(EntityKey<T> entityKey) {
     return entitySnapshots.get(entityKey).stream()
-        .map(Pair::right)
+        .map(EntityPropertySnapshot::columnValue)
         .toArray();
   }
 
-  public <T> List<Pair<String, Object>> getEntitySnapshotWithColumnName(EntityKey<T> entityKey) {
+  public <T> List<EntityPropertySnapshot> getEntitySnapshotWithColumnName(EntityKey<T> entityKey) {
     return entitySnapshots.get(entityKey);
   }
 
-  public <T> List<Triple<? extends Class<?>, String, Object>> getToOneRelationSnapshot(
+  public <T> List<EntityRelationSnapshot> getToOneRelationSnapshot(
       EntityKey<T> entityKey) {
     return Optional.ofNullable(toOneRelationSnapshots.get(entityKey))
         .orElse(Collections.emptyList());
@@ -89,7 +89,7 @@ public class PersistenceContext {
     EntityKey<T> entityKey = EntityKey.valueOf(entity);
 
     if (!entitySnapshots.containsKey(entityKey)) {
-      List<Pair<String, Object>> values = EntityUtil.getEntitySimpleColumnValues(entity);
+      List<EntityPropertySnapshot> values = EntityUtil.getEntitySimpleColumnValues(entity);
       entitySnapshots.put(entityKey, values);
     }
   }
@@ -98,7 +98,7 @@ public class PersistenceContext {
     EntityKey<T> entityKey = EntityKey.valueOf(entity);
 
     if (!toOneRelationSnapshots.containsKey(entityKey)) {
-      List<Triple<? extends Class<?>, String, Object>> entityToOneRelationValues =
+      List<EntityRelationSnapshot> entityToOneRelationValues =
           EntityUtil.getEntityToOneRelationValues(entity);
       toOneRelationSnapshots.put(entityKey, entityToOneRelationValues);
     }

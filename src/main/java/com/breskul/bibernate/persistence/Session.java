@@ -5,8 +5,8 @@ import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
-import com.breskul.bibernate.util.Pair;
-import com.breskul.bibernate.util.Triple;
+import com.breskul.bibernate.util.EntityPropertySnapshot;
+import com.breskul.bibernate.util.EntityRelationSnapshot;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -127,17 +127,16 @@ public class Session implements AutoCloseable {
   private void performDirtyChecking() {
     persistenceContext.getEntityKeys().stream()
         .filter(this::hasChanged)
-        .peek(entityKey -> log.trace("Found not flushed changes in the cache"))
         .forEach(this::flushChanges);
   }
 
   private <T> boolean hasChanged(EntityKey<T> entityKey) {
     Object[] currentEntityState = EntityUtil.getEntitySimpleColumnValues(
-        persistenceContext.getEntity(entityKey)).stream().map(Pair::right).toArray();
+        persistenceContext.getEntity(entityKey)).stream().map(EntityPropertySnapshot::columnValue).toArray();
     Object[] initialEntityState = persistenceContext.getEntitySnapshot(entityKey);
 
-    return !Arrays.equals(currentEntityState, initialEntityState) || isToOneRelationChanged(
-        entityKey);
+    return !Arrays.equals(currentEntityState, initialEntityState)
+        || isToOneRelationChanged(entityKey);
   }
 
   private <T> boolean isToOneRelationChanged(EntityKey<T> entityKey) {
@@ -154,6 +153,7 @@ public class Session implements AutoCloseable {
   // TODO: write javadoc for all changes
   // TODO: cover all changes with tests
   private <T> void flushChanges(EntityKey<T> entityKey) {
+    log.debug("Found not flushed changes in the cache");
     T updatedEntity = persistenceContext.getEntity(entityKey);
     Object[] parameters = EntityUtil.getEntityColumnValues(updatedEntity);
     if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
@@ -167,13 +167,14 @@ public class Session implements AutoCloseable {
     var entitySnapshot = persistenceContext.getEntitySnapshotWithColumnName(entityKey);
     var currentEntity = EntityUtil.getEntitySimpleColumnValues(updatedEntity);
     currentEntity.removeAll(entitySnapshot);
-    Stream<Object> simpleColumnParams = currentEntity.stream().map(Pair::right);
+    Stream<Object> simpleColumnParams = currentEntity.stream().map(EntityPropertySnapshot::columnValue);
 
     // toOne relation columns
     var entityToOneRelationSnapshot = persistenceContext.getToOneRelationSnapshot(entityKey);
     var currentToOneRelationState = EntityUtil.getEntityToOneRelationValues(updatedEntity);
     currentToOneRelationState.removeAll(entityToOneRelationSnapshot);
-    Stream<Object> toOneRelationParams = currentToOneRelationState.stream().map(Triple::third);
+    Stream<Object> toOneRelationParams = currentToOneRelationState.stream().map(
+        EntityRelationSnapshot::columnValue);
     return Stream.concat(simpleColumnParams, toOneRelationParams).toArray();
   }
 }
