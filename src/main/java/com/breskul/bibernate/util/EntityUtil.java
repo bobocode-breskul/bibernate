@@ -13,6 +13,8 @@ import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
+import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
+import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;

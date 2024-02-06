@@ -24,8 +24,9 @@ import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityQueryException;
-import com.breskul.bibernate.util.EntityPropertySnapshot;
-import com.breskul.bibernate.util.EntityRelationSnapshot;
+import com.breskul.bibernate.persistence.context.PersistenceContext;
+import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
+import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -246,12 +247,14 @@ public class GenericDao {
     Class<T> entityClass = entityKey.entityClass();
 
     // Obtain initial and current states for simple columns and to-one relation columns
-    var initialState = context.getEntitySnapshotWithColumnName(entityKey);
-    var currentState = EntityUtil.getEntitySimpleColumnValues(context.getEntity(entityKey));
+    List<EntityPropertySnapshot> initialState = context.getEntityPropertySnapshot(entityKey);
+    List<EntityPropertySnapshot> currentState =
+        EntityUtil.getEntitySimpleColumnValues(context.getEntity(entityKey));
     currentState.removeAll(initialState);
 
-    var entityToOneRelationSnapshot = context.getToOneRelationSnapshot(entityKey);
-    var currentEntityToOneRelationValues =
+    List<EntityRelationSnapshot> entityToOneRelationSnapshot =
+        context.getToOneRelationSnapshot(entityKey);
+    List<EntityRelationSnapshot> currentEntityToOneRelationValues =
         EntityUtil.getEntityToOneRelationValues(context.getEntity(entityKey));
     currentEntityToOneRelationValues.removeAll(entityToOneRelationSnapshot);
 
