@@ -26,6 +26,7 @@ import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityIdIsNullException;
+import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
@@ -201,7 +202,7 @@ public class GenericDao {
   public <T> void delete(T entity) {
     requireNonNull(entity, "Entity should not be null.");
     if (!context.contains(entity)) {
-      throw new EntityQueryException(
+      throw new EntityIsNotManagedException(
           "Entity [%s] could not be deleted because not found in the persistent context.".formatted(
               entity));
     }
