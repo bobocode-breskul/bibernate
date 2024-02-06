@@ -24,9 +24,9 @@ import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityQueryException;
-import com.breskul.bibernate.util.EntityUtil;
 import com.breskul.bibernate.util.EntityPropertySnapshot;
 import com.breskul.bibernate.util.EntityRelationSnapshot;
+import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -43,6 +43,11 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 
+/**
+ * Provides generic data access operations for entities, including retrieval by primary key or
+ * column value, saving entities, and executing updates. Facilitates efficient and consistent
+ * database interactions across various entity types.
+ */
 public class GenericDao {
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
@@ -186,6 +191,85 @@ public class GenericDao {
     return entity;
   }
 
+  /**
+   * Executes an update query for the specified entity key with the given parameters. This method
+   * dynamically determines whether to use a dynamic update query based on the entity class.
+   *
+   * @param <T>        the type of the entity
+   * @param entityKey  the entity key representing the entity to update
+   * @param parameters the parameters to be used in the update query
+   * @return the number of rows affected by the update query
+   * @throws BibernateException if an SQL exception occurs while executing the update query
+   */
+  public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
+    boolean isDynamicUpdate = EntityUtil.isDynamicUpdate(entityKey.entityClass());
+    String updateSql =
+        isDynamicUpdate ? prepareDynamicUpdateQuery(entityKey) : prepareUpdateQuery(entityKey);
+    log.debug("Update entity: [{}]", updateSql);
+    try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+      setParameters(preparedStatement, entityKey.id(), parameters);
+      return preparedStatement.executeUpdate();
+    } catch (SQLException e) {
+      throw new EntityQueryException("Failed to execute update query: [%s] with parameters %s"
+          .formatted(updateSql, Arrays.toString(parameters)), e);
+    }
+  }
+
+  /**
+   * Prepares an update query for the specified entity key. This method constructs an update SQL
+   * query string to update all columns of the entity.
+   *
+   * @param <T>       the type of the entity
+   * @param entityKey the entity key representing the entity to update
+   * @return a standard update SQL query string
+   */
+  private <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+    String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
+
+  /**
+   * Prepares a dynamic update query for the specified entity key. This method constructs an update
+   * SQL query string only for columns that were actually updated  based on the differences between
+   * the initial and current states of the entity.
+   *
+   * @param <T>       the type of the entity
+   * @param entityKey the entity key representing the entity to update
+   * @return a dynamic update SQL query string
+   */
+  private <T> String prepareDynamicUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+
+    // Obtain initial and current states for simple columns and to-one relation columns
+    var initialState = context.getEntitySnapshotWithColumnName(entityKey);
+    var currentState = EntityUtil.getEntitySimpleColumnValues(context.getEntity(entityKey));
+    currentState.removeAll(initialState);
+
+    var entityToOneRelationSnapshot = context.getToOneRelationSnapshot(entityKey);
+    var currentEntityToOneRelationValues =
+        EntityUtil.getEntityToOneRelationValues(context.getEntity(entityKey));
+    currentEntityToOneRelationValues.removeAll(entityToOneRelationSnapshot);
+
+    // Extract column names for simple columns and to-one relation columns
+    Stream<Object> simpleColumns = currentState.stream()
+        .map(EntityPropertySnapshot::columnName);
+    Stream<Object> toOneRelations = currentEntityToOneRelationValues.stream()
+        .map(EntityRelationSnapshot::columnName);
+    String setUpdatedColumnsSql = Stream.concat(simpleColumns, toOneRelations)
+        .filter(Objects::nonNull)
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+
+    // Construct the dynamic update SQL query string
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
 
   /**
@@ -296,60 +380,6 @@ public class GenericDao {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
     return resultSet.getObject(idColumnName);
-  }
-
-  public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
-    String updateSql = prepareUpdateQuery(entityKey);
-    log.trace("Update entity: [{}]", updateSql);
-    try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
-      setParameters(preparedStatement, entityKey.id(), parameters);
-      return preparedStatement.executeUpdate();
-    } catch (SQLException e) {
-      throw new BibernateException("Failed to execute update query: [%s] with parameters %s"
-          .formatted(updateSql, Arrays.toString(parameters)), e);
-    }
-  }
-
-  private <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
-    if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
-      return prepareDynamicUpdateQuery(entityKey);
-    }
-
-    Class<T> entityClass = entityKey.entityClass();
-    String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
-        .map("%s = ?"::formatted)
-        .collect(Collectors.joining(", "));
-    String tableName = EntityUtil.getEntityTableName(entityClass);
-    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
-
-    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
-  }
-
-  private <T> String prepareDynamicUpdateQuery(EntityKey<T> entityKey) {
-    Class<T> entityClass = entityKey.entityClass();
-
-    // simple columns
-    var initialState = context.getEntitySnapshotWithColumnName(entityKey);
-    var currentState = EntityUtil.getEntitySimpleColumnValues(context.getEntity(entityKey));
-    currentState.removeAll(initialState);
-
-    // toOne relation columns
-    var entityToOneRelationSnapshot = context.getToOneRelationSnapshot(entityKey);
-    var currentEntityToOneRelationValues =
-        EntityUtil.getEntityToOneRelationValues(context.getEntity(entityKey));
-    currentEntityToOneRelationValues.removeAll(entityToOneRelationSnapshot);
-
-    Stream<Object> simpleColumns = currentState.stream()
-        .map(EntityPropertySnapshot::columnName);
-    Stream<Object> toOneRelations = currentEntityToOneRelationValues.stream()
-        .map(EntityRelationSnapshot::columnName);
-    String setUpdatedColumnsSql = Stream.concat(simpleColumns, toOneRelations)
-        .filter(Objects::nonNull)
-        .map("%s = ?"::formatted)
-        .collect(Collectors.joining(", "));
-    String tableName = EntityUtil.getEntityTableName(entityClass);
-    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
-    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
   }
 
   private <T> void setParameters(PreparedStatement preparedStatement,
