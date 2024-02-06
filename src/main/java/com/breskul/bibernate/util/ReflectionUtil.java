@@ -36,12 +36,9 @@ public class ReflectionUtil {
     } catch (InstantiationException e) {
       throw new ReflectAccessException("Entity [%s] should be non-abstract class".formatted(cls),
           e);
-    } catch (IllegalAccessException e) {
+    } catch (IllegalAccessException | NoSuchMethodException e) {
       throw new ReflectAccessException(
           "Entity [%s] should have public no-args constructor".formatted(cls), e);
-    } catch (NoSuchMethodException e) {
-      throw new ReflectAccessException(
-          "Entity [%s] should have constructor without parameters".formatted(cls), e);
     }
   }
 
