@@ -5,9 +5,11 @@ import static com.breskul.bibernate.util.AssociationUtil.getLazyCollectionInstan
 import static com.breskul.bibernate.util.AssociationUtil.getLazyObjectProxy;
 import static com.breskul.bibernate.util.EntityUtil.composeSelectBlockFromColumns;
 import static com.breskul.bibernate.util.EntityUtil.findEntityIdField;
+import static com.breskul.bibernate.util.EntityUtil.findEntityIdFieldName;
 import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
 import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
 import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
+import static com.breskul.bibernate.util.EntityUtil.getEntityId;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
@@ -205,11 +207,9 @@ public class GenericDao {
     }
     Class<?> cls = entity.getClass();
     String tableName = getEntityTableName(cls);
-    Field idField = findEntityIdField(cls);
-    idField.setAccessible(true);
-    String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, idField.getName());
+    String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, findEntityIdFieldName(cls));
     try (PreparedStatement statement = connection.prepareStatement(deleteSql)) {
-      Object idObject = idField.get(entity);
+      Object idObject = getEntityId(entity);
       if (idObject == null) {
         throw new EntityIdIsNullException("Entity ID is null for [%s]".formatted(entity));
       }
@@ -226,10 +226,6 @@ public class GenericDao {
       throw new EntityQueryException(
           "Could not delete entity from the database for entity [%s]"
               .formatted(entity), e);
-    } catch (IllegalAccessException e) {
-      throw new EntityQueryException(
-          "Could not get field [%s] from entity [%s]"
-              .formatted(idField.getType().getSimpleName(), entity), e);
     }
   }
 
