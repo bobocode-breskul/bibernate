@@ -18,6 +18,7 @@ import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
+import com.breskul.bibernate.exception.EntityIdIsNullException;
 import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
@@ -43,7 +44,7 @@ public class GenericDao {
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
-  private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = %s;";
+  private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = ?;";
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
   private final DataSource dataSource;
@@ -204,28 +205,26 @@ public class GenericDao {
     String tableName = getEntityTableName(cls);
     Field idField = findEntityIdField(cls);
     idField.setAccessible(true);
-    try {
+    String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, idField.getName());
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement = connection.prepareStatement(deleteSql)) {
       Object idObject = idField.get(entity);
       if (idObject == null) {
-        throw new EntityQueryException("Entity ID is null for [%s]".formatted(entity));
+        throw new EntityIdIsNullException("Entity ID is null for [%s]".formatted(entity));
       }
-      String id = String.valueOf(idObject);
-      String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, idField.getName(), id);
-      try (Connection connection = dataSource.getConnection();
-          PreparedStatement statement = connection.prepareStatement(deleteSql)) {
-        log.trace("Delete entity: [{}]", deleteSql);
-        int result = statement.executeUpdate();
-        if (result != 1) {
-          throw new EntityQueryException(
-              "Could not delete entity to database for entity [%s]"
-                  .formatted(entity));
-        }
-        context.delete(entity);
-      } catch (SQLException e) {
+      statement.setObject(1, idObject);
+      log.trace("Delete entity: [{}]", deleteSql);
+      int result = statement.executeUpdate();
+      if (result != 1) {
         throw new EntityQueryException(
-            "Could not delete entity from the database for entity [%s]"
-                .formatted(entity), e);
+            "Could not delete entity to database for entity [%s]"
+                .formatted(entity));
       }
+      context.delete(entity);
+    } catch (SQLException e) {
+      throw new EntityQueryException(
+          "Could not delete entity from the database for entity [%s]"
+              .formatted(entity), e);
     } catch (IllegalAccessException e) {
       throw new EntityQueryException(
           "Could not get field [%s] from entity [%s]"
