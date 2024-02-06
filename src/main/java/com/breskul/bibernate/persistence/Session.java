@@ -1,29 +1,39 @@
 package com.breskul.bibernate.persistence;
 
+import com.breskul.bibernate.action.Action;
+import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.transaction.Transaction;
+import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
-import jakarta.persistence.EntityTransaction;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // TODO: javadoc
 public class Session implements AutoCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(Session.class);
+
   private final GenericDao genericDao;
   private final PersistenceContext persistenceContext;
   private final Queue<Action> actionQueue = new PriorityQueue<>();
-  private EntityTransaction transaction; // todo: get rid of jakarta api
+  private final Connection connection;
 
-    public Session(DataSource dataSource) {
-        this.persistenceContext = new PersistenceContext();
-        this.genericDao = new GenericDao(dataSource, persistenceContext);
+  private Transaction transaction;
+  private boolean sessionStatus;
 
-    }
+  public Session(DataSource dataSource) throws SQLException {
+    connection = dataSource.getConnection();
+    connection.setAutoCommit(true);
+    persistenceContext = new PersistenceContext();
+    genericDao = new GenericDao(connection, persistenceContext);
+    sessionStatus = true;
+  }
 
   public <T> T findById(Class<T> entityClass, Object id) {
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
@@ -65,11 +75,41 @@ public class Session implements AutoCloseable {
 
   /**
    * Make an instance managed and persistent.
-   * @param entity  entity instance
+   *
+   * @param entity entity instance
    */
   public <T> void persist(T entity) {
     T savedEntity = genericDao.save(entity);
     persistenceContext.put(savedEntity);
+  }
+
+  /**
+   * Check if current session is open
+   */
+  public boolean isOpen() {
+    return sessionStatus;
+  }
+
+  //TODO: write tests
+  /**
+   * Returns session transaction. If session does not have it or transaction was
+   * completed or rolled back then creates new {@link Transaction}
+   *
+   * @return current session status
+   */
+  public Transaction getTransaction() {
+    if (transaction == null) {
+      log.trace("Creating new transaction");
+      transaction = new Transaction(this, connection);
+    } else if (transaction.getStatus() == TransactionStatus.COMMITTED ||
+        transaction.getStatus() == TransactionStatus.ROLLED_BACK) {
+      log.trace("Creating new transaction");
+      transaction = new Transaction(this, connection);
+    } else {
+      log.trace("using current transaction");
+    }
+
+    return transaction;
   }
 
   public <T> void delete(T entity) {
@@ -82,6 +122,7 @@ public class Session implements AutoCloseable {
     // todo: transaction commit/rollback
     persistenceContext.clear();
     actionQueue.clear();
+    sessionStatus = false;
   }
 
   private void performDirtyChecking() {

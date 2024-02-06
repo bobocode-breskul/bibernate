@@ -1,5 +1,8 @@
 package com.breskul.bibernate.annotation;
 
+import static com.breskul.bibernate.annotation.FetchType.EAGER;
+import static com.breskul.bibernate.annotation.FetchType.LAZY;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -28,6 +31,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ManyToOne {
-
-  // TODO: add attributes
+  FetchType fetch() default EAGER;
+    // TODO: add attributes
 }
