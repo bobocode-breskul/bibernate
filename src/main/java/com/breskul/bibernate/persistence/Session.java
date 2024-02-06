@@ -3,10 +3,10 @@ package com.breskul.bibernate.persistence;
 import com.breskul.bibernate.action.Action;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
-import com.breskul.bibernate.transaction.Transaction;
-import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
+import com.breskul.bibernate.transaction.Transaction;
+import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -18,7 +18,20 @@ import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 
-// TODO: javadoc
+
+/**
+ * Represents a session for managing database operations and entity persistence. Provides methods
+ * for entity management, persistence, transaction handling, and session closure.</p>
+ *
+ * <p>This class encapsulates a set of operations related to database interactions within a single
+ * unit of work. It allows developers to perform database operations such as finding entities by ID,
+ * merging entity changes, managing entity state, persisting new entities, and handling
+ * transactions.</p>
+ *
+ * <p>Additionally, the session class manages the persistence context, which stores first-level
+ * cached entities and their snapshots. It also maintains an action queue to track operations
+ * performed within the session.</p>
+ */
 public class Session implements AutoCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(Session.class);
@@ -27,7 +40,6 @@ public class Session implements AutoCloseable {
   private final PersistenceContext persistenceContext;
   private final Queue<Action> actionQueue = new PriorityQueue<>();
   private final Connection connection;
-
   private Transaction transaction;
   private boolean sessionStatus;
 
@@ -117,8 +129,13 @@ public class Session implements AutoCloseable {
     return transaction;
   }
 
+  /**
+   * Closes the session, performing necessary operations such as dirty checking, clearing the
+   * persistence context, clearing the action queue, and updating the session status.
+   */
   @Override
   public void close() {
+    log.trace("Closing session and clearing context");
     performDirtyChecking();
     // todo: transaction commit/rollback
     persistenceContext.clear();
@@ -126,16 +143,22 @@ public class Session implements AutoCloseable {
     sessionStatus = false;
   }
 
+  /**
+   * Performs dirty checking on entities in the persistence context and flushes any changes found.
+   */
   private void performDirtyChecking() {
+    log.trace("Executing dirty checking...");
     persistenceContext.getEntityKeys().stream()
         .filter(persistenceContext::isDirty)
         .forEach(this::flushChanges);
   }
 
-
-  // TODO: reformat code
-  // TODO: write javadoc for all changes
-  // TODO: cover all changes with tests
+  /**
+   * Flushes changes for the specified entity found in the persistence context.
+   *
+   * @param entityKey The key representing the entity.
+   * @param <T>       The type of the entity.
+   */
   private <T> void flushChanges(EntityKey<T> entityKey) {
     log.debug("Found not flushed changes in the cache");
     T updatedEntity = persistenceContext.getEntity(entityKey);
@@ -146,7 +169,15 @@ public class Session implements AutoCloseable {
     genericDao.executeUpdate(entityKey, parameters);
   }
 
-
+  /**
+   * Prepares dynamic parameters for the entity update query based on differences between the
+   * current and snapshot states.
+   *
+   * @param entityKey     The key representing the entity.
+   * @param updatedEntity The updated entity.
+   * @param <T>           The type of the entity.
+   * @return An array of objects representing the dynamic parameters.
+   */
   private <T> Object[] prepareDynamicParameters(EntityKey<T> entityKey, T updatedEntity) {
     // simple columns
     List<EntityPropertySnapshot> entitySnapshot =
