@@ -22,11 +22,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import lombok.experimental.UtilityClass;
 
 
 /**
  * Utility class for working with entity classes.
  */
+@UtilityClass
 public class EntityUtil {
 
   /**
