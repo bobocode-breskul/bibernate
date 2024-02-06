@@ -5,9 +5,11 @@ import static com.breskul.bibernate.util.AssociationUtil.getLazyCollectionInstan
 import static com.breskul.bibernate.util.AssociationUtil.getLazyObjectProxy;
 import static com.breskul.bibernate.util.EntityUtil.composeSelectBlockFromColumns;
 import static com.breskul.bibernate.util.EntityUtil.findEntityIdField;
+import static com.breskul.bibernate.util.EntityUtil.findEntityIdFieldName;
 import static com.breskul.bibernate.util.EntityUtil.getClassColumnFields;
 import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
 import static com.breskul.bibernate.util.EntityUtil.getEntityCollectionElementType;
+import static com.breskul.bibernate.util.EntityUtil.getEntityId;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
@@ -23,6 +25,8 @@ import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
+import com.breskul.bibernate.exception.EntityIdIsNullException;
+import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
@@ -48,6 +52,7 @@ public class GenericDao {
   private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
+  private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = ?;";
 
   private final Connection connection;
   private final PersistenceContext context;
@@ -155,6 +160,7 @@ public class GenericDao {
         field.setAccessible(true);
         statement.setObject(i + 1, field.get(entity));
       }
+      log.trace("Save entity: [{}]", sql);
       int result = statement.executeUpdate();
       if (result != 1) {
         throw new EntityQueryException(
@@ -182,6 +188,49 @@ public class GenericDao {
     return entity;
   }
 
+  /**
+   * Deletes an entity from the database using its ID. This method finds the entity's ID field,
+   * constructs a DELETE SQL query, and executes it. The entity must not be null and must have a
+   * non-null ID.
+   *
+   * @param <T>    the type of the entity
+   * @param entity the entity to be deleted
+   * @throws EntityQueryException     if there's an error during deletion or if the entity or its ID
+   *                                  is null
+   * @throws IllegalArgumentException if the entity is null
+   */
+  public <T> void delete(T entity) {
+    requireNonNull(entity, "Entity should not be null.");
+    if (!context.contains(entity)) {
+      throw new EntityIsNotManagedException(
+          "Entity [%s] could not be deleted because not found in the persistent context.".formatted(
+              entity));
+    }
+    Class<?> cls = entity.getClass();
+    String tableName = getEntityTableName(cls);
+    String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, findEntityIdFieldName(cls));
+    try (PreparedStatement statement = connection.prepareStatement(deleteSql)) {
+      Object idObject = getEntityId(entity);
+      if (idObject == null) {
+        throw new EntityIdIsNullException("Entity ID is null for [%s]".formatted(entity));
+      }
+      statement.setObject(1, idObject);
+      log.trace("Delete entity: [{}]", deleteSql);
+      int result = statement.executeUpdate();
+      if (result != 1) {
+        throw new EntityQueryException(
+            "Could not delete entity to database for entity [%s]"
+                .formatted(entity));
+      }
+      context.delete(entity);
+    } catch (SQLException e) {
+      throw new EntityQueryException(
+          "Could not delete entity from the database for entity [%s]"
+              .formatted(entity), e);
+    }
+  }
+
+  // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
 
   /**

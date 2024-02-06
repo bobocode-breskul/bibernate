@@ -112,6 +112,10 @@ public class Session implements AutoCloseable {
     return transaction;
   }
 
+  public <T> void delete(T entity) {
+    genericDao.delete(entity);
+  }
+
   @Override
   public void close() {
     performDirtyChecking();
