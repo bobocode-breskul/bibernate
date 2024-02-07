@@ -28,6 +28,9 @@ import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityIdIsNullException;
 import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.exception.EntityQueryException;
+import com.breskul.bibernate.persistence.context.PersistenceContext;
+import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
+import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -39,10 +42,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 
+/**
+ * Provides generic data access operations for entities, including retrieval by primary key or
+ * column value, saving entities, and executing updates. Facilitates efficient and consistent
+ * database interactions across various entity types.
+ */
 public class GenericDao {
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
@@ -231,6 +241,87 @@ public class GenericDao {
   }
 
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
+  /**
+   * Executes an update query for the specified entity key with the given parameters. This method
+   * dynamically determines whether to use a dynamic update query based on the entity class.
+   *
+   * @param <T>        the type of the entity
+   * @param entityKey  the entity key representing the entity to update
+   * @param parameters the parameters to be used in the update query
+   * @return the number of rows affected by the update query
+   * @throws BibernateException if an SQL exception occurs while executing the update query
+   */
+  public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
+    boolean isDynamicUpdate = EntityUtil.isDynamicUpdate(entityKey.entityClass());
+    String updateSql =
+        isDynamicUpdate ? prepareDynamicUpdateQuery(entityKey) : prepareUpdateQuery(entityKey);
+    log.debug("Update entity: [{}]", updateSql);
+    try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+      setParameters(preparedStatement, entityKey.id(), parameters);
+      return preparedStatement.executeUpdate();
+    } catch (SQLException e) {
+      throw new EntityQueryException("Failed to execute update query: [%s] with parameters %s"
+          .formatted(updateSql, Arrays.toString(parameters)), e);
+    }
+  }
+
+  /**
+   * Prepares an update query for the specified entity key. This method constructs an update SQL
+   * query string to update all columns of the entity.
+   *
+   * @param <T>       the type of the entity
+   * @param entityKey the entity key representing the entity to update
+   * @return a standard update SQL query string
+   */
+  private <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+    String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
+
+  /**
+   * Prepares a dynamic update query for the specified entity key. This method constructs an update
+   * SQL query string only for columns that were actually updated  based on the differences between
+   * the initial and current states of the entity.
+   *
+   * @param <T>       the type of the entity
+   * @param entityKey the entity key representing the entity to update
+   * @return a dynamic update SQL query string
+   */
+  private <T> String prepareDynamicUpdateQuery(EntityKey<T> entityKey) {
+    Class<T> entityClass = entityKey.entityClass();
+
+    // Obtain initial and current states for simple columns and to-one relation columns
+    List<EntityPropertySnapshot> initialState = context.getEntityPropertySnapshot(entityKey);
+    List<EntityPropertySnapshot> currentState =
+        EntityUtil.getEntitySimpleColumnValues(context.getEntity(entityKey));
+    currentState.removeAll(initialState);
+
+    List<EntityRelationSnapshot> entityToOneRelationSnapshot =
+        context.getToOneRelationSnapshot(entityKey);
+    List<EntityRelationSnapshot> currentEntityToOneRelationValues =
+        EntityUtil.getEntityToOneRelationValues(context.getEntity(entityKey));
+    currentEntityToOneRelationValues.removeAll(entityToOneRelationSnapshot);
+
+    // Extract column names for simple columns and to-one relation columns
+    Stream<Object> simpleColumns = currentState.stream()
+        .map(EntityPropertySnapshot::columnName);
+    Stream<Object> toOneRelations = currentEntityToOneRelationValues.stream()
+        .map(EntityRelationSnapshot::columnName);
+    String setUpdatedColumnsSql = Stream.concat(simpleColumns, toOneRelations)
+        .filter(Objects::nonNull)
+        .map("%s = ?"::formatted)
+        .collect(Collectors.joining(", "));
+
+    // Construct the dynamic update SQL query string
+    String tableName = EntityUtil.getEntityTableName(entityClass);
+    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
+    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
+  }
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
 
   /**
@@ -257,7 +348,7 @@ public class GenericDao {
           writeFieldValue(field, entity, resultSet.getObject(columnName));
         }
       }
-      context.manageEntity(entity);
+      context.put(entity);
 
       for (Field field : columnFields) {
         field.setAccessible(true);
@@ -267,6 +358,11 @@ public class GenericDao {
           mapOneToManyRelationship(resultSet, cls, field, entity);
         }
       }
+
+      if (EntityUtil.hasToOneRelations(cls)) {
+        context.takeToOneRelationSnapshot(entity);
+      }
+
       return entity;
     } catch (SQLException e) {
       throw new EntityQueryException("Could not read single row data from database for entity [%s]"
@@ -327,7 +423,7 @@ public class GenericDao {
     var relatedEntity = context.getEntity(field.getType(), id);
     if (relatedEntity == null) {
       relatedEntity = innerFindAllByFieldValue(field.getType(), columnName, id).get(0);
-      relatedEntity = context.manageEntity(relatedEntity);
+      relatedEntity = context.put(relatedEntity);
     }
     return relatedEntity;
   }
@@ -338,30 +434,8 @@ public class GenericDao {
     return resultSet.getObject(idColumnName);
   }
 
-  public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
-    String updateSql = prepareUpdateQuery(entityKey);
-    log.trace("Update entity: [{}]", updateSql);
-    try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
-      setParameters(preparedStatement, entityKey.id(), parameters);
-      return preparedStatement.executeUpdate();
-    } catch (SQLException e) {
-      throw new BibernateException("Failed to execute update query: [%s] with parameters %s"
-          .formatted(updateSql, Arrays.toString(parameters)), e);
-    }
-  }
-
-  public <T> String prepareUpdateQuery(EntityKey<T> entityKey) {
-    Class<T> entityClass = entityKey.entityClass();
-    String setUpdatedColumnsSql = EntityUtil.getEntityColumnNames(entityClass).stream()
-        .map("%s = ?"::formatted)
-        .collect(Collectors.joining(", "));
-    String tableName = EntityUtil.getEntityTableName(entityClass);
-    String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
-
-    return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
-  }
-
-  public void setParameters(PreparedStatement preparedStatement, Object primaryKey,
+  private <T> void setParameters(PreparedStatement preparedStatement,
+      Object primaryKey,
       Object... params) throws SQLException {
     validatePrimaryKey(primaryKey);
 

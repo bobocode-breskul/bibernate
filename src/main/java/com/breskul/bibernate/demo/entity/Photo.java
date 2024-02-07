@@ -1,6 +1,7 @@
 package com.breskul.bibernate.demo.entity;
 
 import com.breskul.bibernate.annotation.Column;
+import com.breskul.bibernate.annotation.DynamicUpdate;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.OneToMany;
@@ -12,10 +13,13 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 
+@DynamicUpdate
 @Getter
 @Setter
+@ToString
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name = "photo")
@@ -32,6 +36,7 @@ public class Photo {
   private String description;
 
 
+  @ToString.Exclude
   @Setter(AccessLevel.PRIVATE)
   @OneToMany
   private List<PhotoComment> comments = new ArrayList<>();
