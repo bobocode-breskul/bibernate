@@ -159,7 +159,8 @@ class ReflectionUtilTest {
   @Test
   @DisplayName("When read valid class field value then return expected object")
   @Order(10)
-  void whenReadFieldValue_thenSuccess() throws NoSuchFieldException {
+  @SneakyThrows
+  void whenReadFieldValue_thenSuccess() {
     // data
     ClassWithSinglePublicField testClass = new ClassWithSinglePublicField();
     testClass.setStringFieldName(TEST_STRING_VALUE);
@@ -175,19 +176,24 @@ class ReflectionUtilTest {
   }
 
   @Test
-  @DisplayName("Throw ReflectAccessException when object field value is inaccessible")
+  @DisplayName("When read inaccessible class field value then return expected object")
   @Order(11)
   @SneakyThrows
-  void whenReadFieldValueIsInaccessible_thenThrowException() {
+  void whenReadFieldValueInaccessible_thenSuccess() {
     // data
-    String testObject = TEST_STRING_VALUE;
-    Field inaccessibleField = String.class.getDeclaredField("value");
+    ClassWithSinglePublicField testClass = new ClassWithSinglePublicField();
+    testClass.setStringFieldName(TEST_STRING_VALUE);
+    Field testField = testClass.getClass().getDeclaredField(TEST_CLASS_STRING_FIELD);
+    // given
+    testField.setAccessible(false);
     // when
-    assertThatThrownBy(() -> ReflectionUtil.readFieldValue(testObject, inaccessibleField))
-        .isInstanceOf(ReflectAccessException.class)
-        .hasMessage("Failed to access field '" + inaccessibleField.getName() + "' of obj type '"
-            + testObject.getClass().getName() + "': Illegal access");
-
+    Object fieldValue = ReflectionUtil.readFieldValue(testClass, testField);
+    // verify
+    assertThat(fieldValue)
+        .as("Result object is not 'null'")
+        .isNotNull()
+        .as("Result object has correct value")
+        .isEqualTo(TEST_STRING_VALUE);
   }
 
   @Test
