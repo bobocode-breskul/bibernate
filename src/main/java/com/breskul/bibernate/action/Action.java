@@ -14,7 +14,7 @@ public interface Action {
   void execute();
 
   /**
-   * Used to prioritize actions and execute them in order after {@link Session#flush()} is called
+   * Used to prioritize actions and execute them in order after Session flush is called
    *
    * @return action priority
    */

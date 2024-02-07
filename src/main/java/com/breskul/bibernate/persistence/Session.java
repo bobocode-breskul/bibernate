@@ -40,6 +40,7 @@ public class Session implements AutoCloseable {
   private final PersistenceContext persistenceContext;
   private final Queue<Action> actionQueue = new PriorityQueue<>();
   private final Connection connection;
+
   private Transaction transaction;
   private boolean sessionStatus;
 
@@ -107,7 +108,6 @@ public class Session implements AutoCloseable {
   }
 
   //TODO: write tests
-
   /**
    * Returns session transaction. If session does not have it or transaction was completed or rolled
    * back then creates new {@link Transaction}
@@ -129,13 +129,16 @@ public class Session implements AutoCloseable {
     return transaction;
   }
 
+  public <T> void delete(T entity) {
+    genericDao.delete(entity);
+  }
+
   /**
    * Closes the session, performing necessary operations such as dirty checking, clearing the
    * persistence context, clearing the action queue, and updating the session status.
    */
   @Override
   public void close() {
-    log.trace("Closing session and clearing context");
     performDirtyChecking();
     // todo: transaction commit/rollback
     persistenceContext.clear();
