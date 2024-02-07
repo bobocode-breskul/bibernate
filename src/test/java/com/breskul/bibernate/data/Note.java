@@ -1,8 +1,10 @@
 package com.breskul.bibernate.data;
 
+
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
+import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.Table;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -14,16 +16,18 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "persons")
-public class Person {
+@Table(name = "notes")
+public class Note {
 
   @Id
   private Long id;
 
-  @Column(name = "first_name")
-  private String firstName;
+  @Column
+  private String title;
 
-  @Column(name = "last_name")
-  private String lastName;
+  @Column
+  private String body;
+
+  @ManyToOne
+  private Person person;
 }
-

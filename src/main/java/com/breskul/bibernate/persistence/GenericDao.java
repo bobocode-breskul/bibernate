@@ -59,7 +59,6 @@ public class GenericDao {
 
   // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
-  private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
   private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = ?;";
@@ -251,6 +250,9 @@ public class GenericDao {
    * @return the number of rows affected by the update query
    * @throws BibernateException if an SQL exception occurs while executing the update query
    */
+  // TODO: write integration test
+  // TODO: 1. given entity without relations, when execute update then one row updated
+  // TODO: 3. given entity with one ManyToOne relation, when execute
   public <T> int executeUpdate(EntityKey<T> entityKey, Object... parameters) {
     boolean isDynamicUpdate = EntityUtil.isDynamicUpdate(entityKey.entityClass());
     String updateSql =
