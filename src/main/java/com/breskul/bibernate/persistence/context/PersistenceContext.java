@@ -145,6 +145,12 @@ public class PersistenceContext {
     return hasChanged(entityKey);
   }
 
+  /**
+   * Deletes the specified entity from the session's persistence context.
+   *
+   * @param entity The entity to be deleted.
+   * @param <T>    The type of the entity.
+   */
   public <T> void delete(T entity) {
     EntityKey<T> key = EntityKey.valueOf(entity);
     firstLevelCache.remove(key);
