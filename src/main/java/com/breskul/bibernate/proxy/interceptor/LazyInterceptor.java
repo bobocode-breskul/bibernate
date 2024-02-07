@@ -24,7 +24,7 @@ public class LazyInterceptor<T> {
 
   /**
    * Intercepts a method call on a lazily initialized object and initialize real object when lazy
-   * object relationType accessed.
+   * object first accessed.
    *
    * @param method The method being intercepted.
    * @param args   The arguments passed to the method.
