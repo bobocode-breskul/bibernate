@@ -21,16 +21,16 @@ import org.slf4j.Logger;
 
 /**
  * Represents a session for managing database operations and entity persistence. Provides methods
- * for entity management, persistence, transaction handling, and session closure.</p>
- *
- * <p>This class encapsulates a set of operations related to database interactions within a single
- * unit of work. It allows developers to perform database operations such as finding entities by ID,
+ * for entity management, persistence, transaction handling, and session closure.
+ * <p>
+ * This class encapsulates a set of operations related to database interactions within a single unit
+ * of work. It allows developers to perform database operations such as finding entities by ID,
  * merging entity changes, managing entity state, persisting new entities, and handling
- * transactions.</p>
- *
- * <p>Additionally, the session class manages the persistence context, which stores first-level
- * cached entities and their snapshots. It also maintains an action queue to track operations
- * performed within the session.</p>
+ * transactions.
+ * <p>
+ * Additionally, the session class manages the persistence context, which stores first-level cached
+ * entities and their snapshots. It also maintains an action queue to track operations performed
+ * within the session.
  */
 public class Session implements AutoCloseable {
 
