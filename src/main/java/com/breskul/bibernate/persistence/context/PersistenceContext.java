@@ -145,6 +145,13 @@ public class PersistenceContext {
     return hasChanged(entityKey);
   }
 
+  public <T> void delete(T entity) {
+    EntityKey<T> key = EntityKey.valueOf(entity);
+    firstLevelCache.remove(key);
+    entitySnapshots.remove(key);
+    toOneRelationSnapshots.remove(key);
+  }
+
   /**
    * Clears the first-level cache and entity snapshots.
    */
