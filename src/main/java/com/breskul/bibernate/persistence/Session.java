@@ -57,6 +57,14 @@ public class Session implements AutoCloseable {
     sessionStatus = true;
   }
 
+  /**
+   * Find entry by id for specified entity class
+   *
+   * @param entityClass represents table
+   * @param id          is used search
+   * @param <T>         represent type of entity
+   * @return object of entity class
+   */
   public <T> T findById(Class<T> entityClass, Object id) {
     verifyIsSessionOpen();
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
@@ -137,6 +145,12 @@ public class Session implements AutoCloseable {
     return transaction;
   }
 
+  /**
+   * Creates delete action and put it in action queue
+   *
+   * @param entity represents entity that will be deleted
+   * @param <T> represents type of entry
+   */
   public <T> void delete(T entity) {
     verifyIsSessionOpen();
     actionQueue.offer(new DeleteAction(genericDao, entity));
@@ -155,6 +169,9 @@ public class Session implements AutoCloseable {
     sessionStatus = false;
   }
 
+  /**
+   *  Flushes session action queue
+   */
   public void flush() {
     verifyIsSessionOpen();
     performDirtyChecking();
@@ -187,7 +204,7 @@ public class Session implements AutoCloseable {
     if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
       parameters = prepareDynamicParameters(entityKey, updatedEntity);
     }
-    genericDao.executeUpdate(entityKey, parameters);
+    actionQueue.offer(new UpdateAction<>(genericDao, entityKey, parameters));
   }
 
   /**
