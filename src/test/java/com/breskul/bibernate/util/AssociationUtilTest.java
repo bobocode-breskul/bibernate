@@ -202,6 +202,8 @@ class AssociationUtilTest {
   // todo: create test, created 'LazySet' has same data
   // todo: create test, throw exception for invalid field
 
+  // todo: create test cases, getLazyObjectProxy method
+
   /**
    * Class with different fields for testing purpose
    */
