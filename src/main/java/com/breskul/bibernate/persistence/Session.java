@@ -1,6 +1,11 @@
 package com.breskul.bibernate.persistence;
 
+import static java.util.Comparator.comparing;
+
 import com.breskul.bibernate.action.Action;
+import com.breskul.bibernate.action.DeleteAction;
+import com.breskul.bibernate.action.InsertAction;
+import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
@@ -21,7 +26,7 @@ public class Session implements AutoCloseable {
 
   private final GenericDao genericDao;
   private final PersistenceContext persistenceContext;
-  private final Queue<Action> actionQueue = new PriorityQueue<>();
+  private final Queue<Action> actionQueue = new PriorityQueue<>(comparing(Action::priority));
   private final Connection connection;
 
   private Transaction transaction;
@@ -36,11 +41,13 @@ public class Session implements AutoCloseable {
   }
 
   public <T> T findById(Class<T> entityClass, Object id) {
+    verifyIsSessionOpen();
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
         .orElseGet(() -> find(EntityKey.of(entityClass, id)));
   }
 
   private <T> T find(EntityKey<? extends T> entityKey) {
+    verifyIsSessionOpen();
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
     persistenceContext.put(entity);
     return entity;
@@ -79,8 +86,9 @@ public class Session implements AutoCloseable {
    * @param entity entity instance
    */
   public <T> void persist(T entity) {
-    T savedEntity = genericDao.save(entity);
-    persistenceContext.put(savedEntity);
+    verifyIsSessionOpen();
+    actionQueue.offer(new InsertAction(genericDao, entity));
+    persistenceContext.put(entity);
   }
 
   /**
@@ -106,23 +114,33 @@ public class Session implements AutoCloseable {
       log.trace("Creating new transaction");
       transaction = new Transaction(this, connection);
     } else {
-      log.trace("using current transaction");
+      log.trace("Using current transaction");
     }
 
     return transaction;
   }
 
   public <T> void delete(T entity) {
-    genericDao.delete(entity);
+    verifyIsSessionOpen();
+    actionQueue.offer(new DeleteAction(genericDao, entity));
+    persistenceContext.delete(entity);
   }
 
   @Override
   public void close() {
     performDirtyChecking();
-    // todo: transaction commit/rollback
     persistenceContext.clear();
     actionQueue.clear();
     sessionStatus = false;
+  }
+
+  public void flush() {
+    verifyIsSessionOpen();
+    performDirtyChecking();
+    log.trace("Flushing session action queue");
+    while (!actionQueue.isEmpty()) {
+      actionQueue.poll().execute();
+    }
   }
 
   private void performDirtyChecking() {
@@ -141,6 +159,13 @@ public class Session implements AutoCloseable {
   private <T> void flushChanges(EntityKey<T> entityKey) {
     log.trace("Found not flushed changes in the cache");
     T updatedEntity = persistenceContext.getEntity(entityKey);
-    genericDao.executeUpdate(entityKey, EntityUtil.getEntityColumnValues(updatedEntity));
+    actionQueue.offer(
+        new UpdateAction<>(genericDao, entityKey, EntityUtil.getEntityColumnValues(updatedEntity)));
+  }
+
+  private void verifyIsSessionOpen() {
+    if (!sessionStatus) {
+      throw new IllegalStateException("Session is closed");
+    }
   }
 }
