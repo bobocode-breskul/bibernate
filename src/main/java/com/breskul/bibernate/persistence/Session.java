@@ -11,6 +11,7 @@ import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -53,13 +54,16 @@ public class Session implements AutoCloseable {
   }
 
   public <T> T findById(Class<T> entityClass, Object id) {
+    Objects.requireNonNull(id, "Required id to load load entity, pleas provide not null value");
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
         .orElseGet(() -> find(EntityKey.of(entityClass, id)));
   }
 
   private <T> T find(EntityKey<? extends T> entityKey) {
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
-    persistenceContext.put(entity);
+    if (entity != null) {
+      persistenceContext.put(entity);
+    }
     return entity;
   }
 
