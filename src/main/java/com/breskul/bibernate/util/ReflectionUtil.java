@@ -1,9 +1,9 @@
 package com.breskul.bibernate.util;
 
 import com.breskul.bibernate.config.LoggerFactory;
-import com.breskul.bibernate.exception.EntityConstructionException;
 import com.breskul.bibernate.exception.ReflectAccessException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationTargetException;
 import org.slf4j.Logger;
 
@@ -36,12 +36,9 @@ public class ReflectionUtil {
     } catch (InstantiationException e) {
       throw new ReflectAccessException("Entity [%s] should be non-abstract class".formatted(cls),
           e);
-    } catch (IllegalAccessException e) {
+    } catch (IllegalAccessException | NoSuchMethodException e) {
       throw new ReflectAccessException(
           "Entity [%s] should have public no-args constructor".formatted(cls), e);
-    } catch (NoSuchMethodException e) {
-      throw new ReflectAccessException(
-          "Entity [%s] should have constructor without parameters".formatted(cls), e);
     }
   }
 
@@ -62,9 +59,14 @@ public class ReflectionUtil {
       throw new ReflectAccessException(
           "Object field [%s] should be accessible and not final".formatted(field), e);
     } catch (IllegalArgumentException e) {
-      throw new EntityConstructionException(
-          "Mismatched types: Expected value of type %s but received value of type %s".formatted(
-              field.getType().getSimpleName(), value.getClass().getSimpleName()), e);
+      if (!field.getType().isAssignableFrom(value.getClass())) {
+        throw new ReflectAccessException(
+            "Mismatched types: Expected value of type [%s] but received value of type [%s]".formatted(
+                field.getType().getSimpleName(), value.getClass().getSimpleName()), e);
+      }
+      throw new ReflectAccessException(
+          "Mismatched field owner object: field [%s]; object class [%s]".formatted(
+              field, obj.getClass().getName()), e);
     }
   }
 
@@ -83,10 +85,14 @@ public class ReflectionUtil {
           obj.getClass().getSimpleName(), field.getType());
       field.setAccessible(true);
       return field.get(obj);
-    } catch (IllegalAccessException e) {
+    } catch (IllegalAccessException | InaccessibleObjectException e) {
       throw new ReflectAccessException(
           "Failed to access field '" + field.getName() + "' of obj type '" + obj.getClass()
               .getName() + "': Illegal access", e);
+    } catch (IllegalArgumentException e) {
+      throw new ReflectAccessException(
+          "Mismatched field owner object: field [%s]; object class [%s]".formatted(
+              field, obj.getClass().getName()), e);
     }
   }
 }
