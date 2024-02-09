@@ -1,19 +1,83 @@
 package com.breskul.bibernate.query.hql;
 
+import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
+import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
+import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
+import static com.breskul.bibernate.util.ReflectionUtil.createEntityInstance;
+import static com.breskul.bibernate.util.ReflectionUtil.writeFieldValue;
+
+import com.breskul.bibernate.annotation.ManyToOne;
+import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.exception.EntityQueryException;
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
-public class Query {
+public class Query<T> {
+
   private final String sql;
 
-  public Query(String sql) {
+  private final Class<T> entityClass;
+
+  private final Connection connection;
+
+  public Query(String sql, Class<T> entityClass, Connection connection) {
     this.sql = sql;
+    this.entityClass = entityClass;
+    this.connection = connection;
   }
 
-  public List<Object> getResultList() {
-    return null;
+  public List<T> getResultList() {
+    List<T> result = new ArrayList<>();
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      ResultSet resultSet = statement.executeQuery();
+      while (resultSet.next()) {
+        T entity = mapResult(resultSet, entityClass);
+        result.add(entity);
+      }
+    } catch (SQLException e) {
+//      throw new EntityQueryException(
+//          "Could not read entity data from database for entity [%s] by field [%s]=%s"
+//              .formatted(cls, fieldName, fieldValue), e);
+    }
+    return result;
   }
 
-  public Object getSingleResult() {
-    return null;
+  public T getSingleResult() {
+    return getResultList().get(0);
+  }
+
+  private T mapResult(ResultSet resultSet, Class<T> cls) {
+    List<Field> columnFields = getClassEntityFields(cls);
+
+    try {
+      T entity = createEntityInstance(cls);
+      for (Field field : columnFields) {
+        field.setAccessible(true);
+
+        if (isSimpleColumn(field)) {
+          String columnName = resolveColumnName(field);
+          writeFieldValue(field, entity, resultSet.getObject(columnName));
+        }
+      }
+//      context.manageEntity(entity);
+
+      for (Field field : columnFields) {
+        field.setAccessible(true);
+        if (field.isAnnotationPresent(ManyToOne.class)) {
+//          mapManyToOneRelationship(resultSet, field, entity);
+        } else if (field.isAnnotationPresent(OneToMany.class)) {
+//          mapOneToManyRelationship(resultSet, cls, field, entity);
+        }
+      }
+      return entity;
+    } catch (SQLException e) {
+      throw new EntityQueryException("Could not read single row data from database for entity [%s]"
+          .formatted(cls), e);
+    }
   }
 }

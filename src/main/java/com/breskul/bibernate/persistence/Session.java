@@ -2,6 +2,7 @@ package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.action.Action;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.query.hql.Query;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
@@ -116,6 +117,14 @@ public class Session implements AutoCloseable {
     genericDao.delete(entity);
   }
 
+  public <T> Query<T> createNativeQuery(String sqlString, Class<T> resultClass, Connection connection){
+    return new Query<>(sqlString, resultClass, connection);
+  }
+
+  public <T> Query<T> createHQLQuery(String hqlString, Class<T> resultClass){
+    return new Query<>(hqlToSql(hqlString), resultClass, connection);
+  }
+
   @Override
   public void close() {
     performDirtyChecking();
@@ -142,5 +151,12 @@ public class Session implements AutoCloseable {
     log.trace("Found not flushed changes in the cache");
     T updatedEntity = persistenceContext.getEntity(entityKey);
     genericDao.executeUpdate(entityKey, EntityUtil.getEntityColumnValues(updatedEntity));
+  }
+
+  //TODO implement
+  private String hqlToSql(String hql) {
+    // from Person p where age > 30 and p.id < 3
+    // select p from Person p where age > 30 and p.id < 3
+    return null;
   }
 }
