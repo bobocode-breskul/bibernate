@@ -123,6 +123,7 @@ public class AssociationUtil {
    *                              proxy creation process.
    */
   public static Object getLazyObjectProxy(Field field, Supplier<?> delegateSupplier) {
+    // todo: should not create proxy for abstract class, check hibernate
     Class<?> objectType = field.getType();
     log.trace("Generating proxy object for [{}.{}.{}] field of type [{}]",
         field.getDeclaringClass().getPackageName(), field.getDeclaringClass().getSimpleName(),
@@ -146,13 +147,9 @@ public class AssociationUtil {
     } catch (InstantiationException e) {
       throw new AssociationException(
           "Proxied entity [%s] should be non-abstract class".formatted(objectType), e);
-    } catch (IllegalAccessException e) {
+    } catch (IllegalAccessException | NoSuchMethodException e) {
       throw new AssociationException(
           "Proxied entity [%s] should have public no-args constructor".formatted(objectType), e);
-    } catch (NoSuchMethodException e) {
-      throw new AssociationException(
-          "Proxied entity [%s] should have constructor without parameters".formatted(objectType),
-          e);
     }
   }
 }

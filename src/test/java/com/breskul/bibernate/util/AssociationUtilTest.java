@@ -2,6 +2,7 @@ package com.breskul.bibernate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.then;
 
 import com.breskul.bibernate.exception.AssociationException;
 import com.breskul.bibernate.proxy.collection.LazyList;
@@ -12,12 +13,18 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.mockito.Mockito;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AssociationUtilTest {
@@ -25,6 +32,7 @@ class AssociationUtilTest {
   private static final String LIST_FIELD_NAME = "listField";
   private static final String SET_FIELD_NAME = "setField";
   private static final String INTEGER_FIELD_NAME = "integerField";
+  private static final String PROXY_FIELD_NAME = "proxyField";
   private static final List<String> SAMPLE_DATA_LIST = List.of("sample_data_1", "sample_data_2");
   private static final String LAZY_DELEGATE_FIELD = "delegate";
 
@@ -34,7 +42,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithValidField_thenResultCollectionIsArrayList() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(LIST_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(LIST_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getCollectionInstance(inputListField);
     // verify
@@ -51,7 +59,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithValidField_thenResultCollectionIsHashSet() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(SET_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getCollectionInstance(inputListField);
     // verify
@@ -68,7 +76,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithInvalidField_thenThrowException() {
     // data
-    Field inputIntegerField = SampleEntity.class.getDeclaredField(INTEGER_FIELD_NAME);
+    Field inputIntegerField = EntityCollectionHolder.class.getDeclaredField(INTEGER_FIELD_NAME);
     // when
     assertThatThrownBy(() -> AssociationUtil.getCollectionInstance(inputIntegerField))
         .isInstanceOf(AssociationException.class)
@@ -83,7 +91,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithValidSourceList_thenResultCollectionIsArrayList() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(LIST_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(LIST_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getCollectionInstance(inputListField,
         SAMPLE_DATA_LIST);
@@ -98,7 +106,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithValidSourceList_thenResultCollectionHasCorrectData() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(LIST_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(LIST_FIELD_NAME);
     List<String> inputSourceCollection = SAMPLE_DATA_LIST;
     // when
     Collection<Object> resultCollection = AssociationUtil.getCollectionInstance(inputListField,
@@ -114,7 +122,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithValidSourceList_thenResultCollectionIsHashSet() {
     // data
-    Field inputSetField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    Field inputSetField = EntityCollectionHolder.class.getDeclaredField(SET_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getCollectionInstance(inputSetField,
         SAMPLE_DATA_LIST);
@@ -129,7 +137,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithValidSourceSet_thenResultCollectionHasCorrectData() {
     // data
-    Field inputSetField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    Field inputSetField = EntityCollectionHolder.class.getDeclaredField(SET_FIELD_NAME);
     List<String> inputSourceCollection = SAMPLE_DATA_LIST;
     // when
     Collection<Object> resultCollection = AssociationUtil.getCollectionInstance(inputSetField,
@@ -145,7 +153,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetCollectionInstanceWithInvalidFieldAndValidSourceList_thenThrowException() {
     // data
-    Field inputIntegerField = SampleEntity.class.getDeclaredField(INTEGER_FIELD_NAME);
+    Field inputIntegerField = EntityCollectionHolder.class.getDeclaredField(INTEGER_FIELD_NAME);
     // when
     assertThatThrownBy(
         () -> AssociationUtil.getCollectionInstance(inputIntegerField, SAMPLE_DATA_LIST))
@@ -161,7 +169,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetLazyCollectionInstanceWithValidDelegateList_thenResultCollectionIsLazyList() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(LIST_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(LIST_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
         () -> SAMPLE_DATA_LIST);
@@ -176,7 +184,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetLazyCollectionInstanceWithValidDelegateList_thenResultLazyListIsNotInitialized() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(LIST_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(LIST_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
         () -> SAMPLE_DATA_LIST);
@@ -193,7 +201,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetLazyCollectionInstanceWithValidDelegateList_thenResultCollectionHasCorrectData() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(LIST_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(LIST_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
         () -> SAMPLE_DATA_LIST);
@@ -208,7 +216,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetLazyCollectionInstanceWithValidDelegateSet_thenResultCollectionIsLazySet() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(SET_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
         () -> SAMPLE_DATA_LIST);
@@ -223,7 +231,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetLazyCollectionInstanceWithValidDelegateSet_thenResultLazySetIsNotInitialized() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(SET_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
         () -> SAMPLE_DATA_LIST);
@@ -240,7 +248,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetLazyCollectionInstanceWithValidDelegateSet_thenResultCollectionHasCorrectData() {
     // data
-    Field inputListField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    Field inputListField = EntityCollectionHolder.class.getDeclaredField(SET_FIELD_NAME);
     // when
     Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
         () -> SAMPLE_DATA_LIST);
@@ -255,7 +263,7 @@ class AssociationUtilTest {
   @SneakyThrows
   void whenGetLazyCollectionInstanceWithInvalidFieldAndValidSourceList_thenThrowException() {
     // data
-    Field inputIntegerField = SampleEntity.class.getDeclaredField(INTEGER_FIELD_NAME);
+    Field inputIntegerField = EntityCollectionHolder.class.getDeclaredField(INTEGER_FIELD_NAME);
     // when
     assertThatThrownBy(
         () -> AssociationUtil.getLazyCollectionInstance(inputIntegerField, () -> SAMPLE_DATA_LIST))
@@ -264,15 +272,226 @@ class AssociationUtilTest {
             inputIntegerField.getType()));
   }
 
-  // todo: create test cases, getLazyObjectProxy method
+  @Test
+  @SneakyThrows
+  // todo: display name
+  // todo: order
+  // todo: method name
+  void testProxyHasCorrectClass() {
+    // data
+    Field inputProxyField = EntityObjectHolder.class.getDeclaredField(PROXY_FIELD_NAME);
+    ProxyEntity testObject = new ProxyEntity("string", 100);
+    // given
+    // when
+    Object resultObject = AssociationUtil.getLazyObjectProxy(inputProxyField, () -> testObject);
+    // verify
+    assertThat(resultObject).isInstanceOf(ProxyEntity.class);
+  }
+
+  @Test
+  @SneakyThrows
+    // todo: display name
+    // todo: order
+    // todo: method name
+  void testProxyIsNotInitialized() {
+    // data
+    Field inputProxyField = EntityObjectHolder.class.getDeclaredField(PROXY_FIELD_NAME);
+    Supplier<?> mockedDelegateSupplier = Mockito.mock(Supplier.class);
+    // when
+    Object resultObject = AssociationUtil.getLazyObjectProxy(inputProxyField,
+        mockedDelegateSupplier);
+    // verify
+    then(mockedDelegateSupplier).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @SneakyThrows
+    // todo: display name
+    // todo: order
+    // todo: method name
+  void testProxyObjectHasSameValuesAsSupplied() {
+    // data
+    Field inputProxyField = EntityObjectHolder.class.getDeclaredField(PROXY_FIELD_NAME);
+    ProxyEntity proxyDelegateObject = new ProxyEntity("string", 100);
+    // when
+    ProxyEntity resultObject = (ProxyEntity) AssociationUtil.getLazyObjectProxy(
+        inputProxyField, () -> proxyDelegateObject);
+    // verify
+    assertThat(resultObject.getStringField()).isEqualTo(proxyDelegateObject.getStringField());
+    assertThat(resultObject.getIntegerField()).isEqualTo(proxyDelegateObject.getIntegerField());
+  }
+
+  @Test
+  @SneakyThrows
+    // todo: display name
+    // todo: order
+    // todo: method name
+  void testProxyConstructorThrowsException() {
+    // data
+    Field inputProxyField = EntityObjectWithConstructorException.class.getDeclaredField(
+        PROXY_FIELD_NAME);
+    // when
+    Assertions.assertThatThrownBy(
+            () -> AssociationUtil.getLazyObjectProxy(inputProxyField, Object::new))
+        .isInstanceOf(AssociationException.class)
+        .hasMessage("Could not create proxy instance of target entity [%s]"
+            .formatted(ClassWithExceptionInNoArgsConstructor.class));
+  }
+
+  @Test
+  @SneakyThrows
+    // todo: display name
+    // todo: order
+    // todo: method name
+  void testProxyOnAbstractClassThrowException() {
+    // todo: fix business logic
+    // data
+    Field inputProxyField = EntityObjectWithAbstractClass.class.getDeclaredField(
+        PROXY_FIELD_NAME);
+    // when
+    Assertions.assertThatThrownBy(
+            () -> AssociationUtil.getLazyObjectProxy(inputProxyField, Object::new))
+        .isInstanceOf(AssociationException.class)
+        .hasMessage("Proxied entity [%s] should be non-abstract class"
+            .formatted(AbstractClass.class));
+  }
+
+  @Test
+  @SneakyThrows
+    // todo: display name
+    // todo: order
+    // todo: method name
+  void testProxyOnPrivateNoArgsConstructorThrowException() {
+    // data
+    Field inputProxyField = EntityObjectWithPrivateNoArgsConstructorClass.class.getDeclaredField(
+        PROXY_FIELD_NAME);
+    // when
+    Assertions.assertThatThrownBy(
+            () -> AssociationUtil.getLazyObjectProxy(inputProxyField, Object::new))
+        .isInstanceOf(AssociationException.class)
+        .hasMessage("Proxied entity [%s] should have public no-args constructor"
+            .formatted(ClassWithoutPublicNoArgsConstructor.class));
+  }
+
+  @Test
+  @SneakyThrows
+    // todo: display name
+    // todo: order
+    // todo: method name
+  void testProxyOnMultiArgsConstructorThrowException() {
+    // data
+    Field inputProxyField = EntityObjectWithoutNoArgsConstructor.class.getDeclaredField(
+        PROXY_FIELD_NAME);
+    // when
+    Assertions.assertThatThrownBy(
+            () -> AssociationUtil.getLazyObjectProxy(inputProxyField, Object::new))
+        .isInstanceOf(AssociationException.class)
+        .hasMessage("Proxied entity [%s] should have public no-args constructor"
+            .formatted(ClassWithoutNoArgsConstructor.class));
+  }
+
+  // todo: test that result proxy has correct name
 
   /**
    * Class with different fields for testing purpose
    */
-  private static class SampleEntity {
+  private static class EntityCollectionHolder {
 
     private List<String> listField;
     private Set<String> setField;
     private Integer integerField;
+  }
+
+  /**
+   * Class with single object field for testing purpose
+   */
+  private static class EntityObjectHolder {
+
+    private ProxyEntity proxyField;
+  }
+
+  /**
+   * Represents a test field class with a string field and an integer field. Should be public to
+   * make proxy for it.
+   */
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Getter
+  public static class ProxyEntity {
+
+    private String stringField;
+    private Integer integerField;
+  }
+
+  /**
+   * Class with object field for class that throws exception in no-args constructor for testing
+   * purpose
+   */
+  private static class EntityObjectWithConstructorException {
+
+    private ClassWithExceptionInNoArgsConstructor proxyField;
+  }
+
+  /**
+   * Class with an exception thrown in its no-args constructor for testing purpose. Should be public
+   * to make proxy for it.
+   */
+  public static class ClassWithExceptionInNoArgsConstructor {
+
+    public ClassWithExceptionInNoArgsConstructor() {
+      throw new NullPointerException("TEST");
+    }
+  }
+
+  /**
+   * Class with object field for abstract class.
+   */
+  private static class EntityObjectWithAbstractClass {
+
+    private AbstractClass proxyField;
+  }
+
+  /**
+   * Abstract class for testing purpose. Should be public to make proxy for it.
+   */
+  public static abstract class AbstractClass {
+
+    public AbstractClass() {
+    }
+  }
+
+  /**
+   * Class with object field for class with private no-args constructor.
+   */
+  private static class EntityObjectWithPrivateNoArgsConstructorClass {
+
+    private ClassWithoutPublicNoArgsConstructor proxyField;
+  }
+
+  /**
+   * Class without public no-args constructor for testing purpose. Should be public to make proxy
+   * for it.
+   */
+  public static class ClassWithoutPublicNoArgsConstructor {
+
+    private ClassWithoutPublicNoArgsConstructor() {
+    }
+  }
+
+  /**
+   * Class with object field for class without no-args constructor.
+   */
+  private static class EntityObjectWithoutNoArgsConstructor {
+
+    private ClassWithoutNoArgsConstructor proxyField;
+  }
+
+  /**
+   * Class without no-args constructor for testing purpose. Should be public to make proxy for it.
+   */
+  public static class ClassWithoutNoArgsConstructor {
+
+    private ClassWithoutNoArgsConstructor(int number) {
+    }
   }
 }
