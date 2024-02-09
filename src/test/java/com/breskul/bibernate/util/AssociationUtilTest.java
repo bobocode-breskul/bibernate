@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.breskul.bibernate.exception.AssociationException;
 import com.breskul.bibernate.proxy.collection.LazyList;
+import com.breskul.bibernate.proxy.collection.LazySet;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,9 +14,12 @@ import java.util.List;
 import java.util.Set;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AssociationUtilTest {
 
   private static final String LIST_FIELD_NAME = "listField";
@@ -135,8 +139,8 @@ class AssociationUtilTest {
   }
 
   @Test
-  @DisplayName("Throw AssociationException when field type is invalid ('Integer') and "
-      + "source collection has data")
+  @DisplayName("Throw AssociationException when generating lazy collection with invalid field type "
+      + "('Integer') and source collection has data")
   @Order(8)
   @SneakyThrows
   void whenGetCollectionInstanceWithInvalidFieldAndValidSourceList_thenThrowException() {
@@ -197,10 +201,68 @@ class AssociationUtilTest {
     assertThat(resultCollection).containsExactlyElementsOf(SAMPLE_DATA_LIST);
   }
 
-  // todo: create test, created collection is LazySet
-  // todo: create test, created 'LazySet' is not initialized
-  // todo: create test, created 'LazySet' has same data
-  // todo: create test, throw exception for invalid field
+  @Test
+  @DisplayName("When field type is 'Set' and delegate collection has data then "
+      + "created collection is 'LazySet'")
+  @Order(12)
+  @SneakyThrows
+  void whenGetLazyCollectionInstanceWithValidDelegateSet_thenResultCollectionIsLazySet() {
+    // data
+    Field inputListField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    // when
+    Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
+        () -> SAMPLE_DATA_LIST);
+    // verify
+    assertThat(resultCollection).isInstanceOf(LazySet.class);
+  }
+
+  @Test
+  @DisplayName("When field type is 'Set' and delegate collection has data then "
+      + "created 'LazySet' is not initialized")
+  @Order(13)
+  @SneakyThrows
+  void whenGetLazyCollectionInstanceWithValidDelegateSet_thenResultLazySetIsNotInitialized() {
+    // data
+    Field inputListField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    // when
+    Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
+        () -> SAMPLE_DATA_LIST);
+    // verify
+    Field lazyDelegateField = LazySet.class.getDeclaredField(LAZY_DELEGATE_FIELD);
+    lazyDelegateField.setAccessible(true);
+    assertThat(lazyDelegateField.get(resultCollection)).isNull();
+  }
+
+  @Test
+  @DisplayName("When field type is 'Set' and delegate collection has data then "
+      + "'LazySet' collection has the same data")
+  @Order(14)
+  @SneakyThrows
+  void whenGetLazyCollectionInstanceWithValidDelegateSet_thenResultCollectionHasCorrectData() {
+    // data
+    Field inputListField = SampleEntity.class.getDeclaredField(SET_FIELD_NAME);
+    // when
+    Collection<Object> resultCollection = AssociationUtil.getLazyCollectionInstance(inputListField,
+        () -> SAMPLE_DATA_LIST);
+    // verify
+    assertThat(resultCollection).containsExactlyElementsOf(SAMPLE_DATA_LIST);
+  }
+
+  @Test
+  @DisplayName("Throw AssociationException when generating lazy collection with invalid field type "
+      + "('Integer') and source collection has data provided")
+  @Order(15)
+  @SneakyThrows
+  void whenGetLazyCollectionInstanceWithInvalidFieldAndValidSourceList_thenThrowException() {
+    // data
+    Field inputIntegerField = SampleEntity.class.getDeclaredField(INTEGER_FIELD_NAME);
+    // when
+    assertThatThrownBy(
+        () -> AssociationUtil.getLazyCollectionInstance(inputIntegerField, () -> SAMPLE_DATA_LIST))
+        .isInstanceOf(AssociationException.class)
+        .hasMessage("Entity association collection is not supported. Collection: [%s]".formatted(
+            inputIntegerField.getType()));
+  }
 
   // todo: create test cases, getLazyObjectProxy method
 
