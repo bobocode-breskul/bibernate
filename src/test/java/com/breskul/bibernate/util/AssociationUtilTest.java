@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,6 +36,7 @@ class AssociationUtilTest {
   private static final String PROXY_FIELD_NAME = "proxyField";
   private static final List<String> SAMPLE_DATA_LIST = List.of("sample_data_1", "sample_data_2");
   private static final String LAZY_DELEGATE_FIELD = "delegate";
+  private static final Pattern NAME_ENDS_WITH_8_CHARS_PATTERN = Pattern.compile(".+\\$\\w{8}$");
 
   @Test
   @DisplayName("When field type is 'List' then created collection is empty 'ArrayList'")
@@ -273,27 +275,46 @@ class AssociationUtilTest {
   }
 
   @Test
+  @DisplayName("When field type is valid object class then result proxy class is same "
+      + "as field class")
+  @Order(16)
   @SneakyThrows
-  // todo: display name
-  // todo: order
-  // todo: method name
-  void testProxyHasCorrectClass() {
+  void whenGetLazyObjectProxyWithValidField_thenResultProxyClassHasCorrectClass() {
     // data
     Field inputProxyField = EntityObjectHolder.class.getDeclaredField(PROXY_FIELD_NAME);
-    ProxyEntity testObject = new ProxyEntity("string", 100);
-    // given
+    ProxyEntity proxyDelegateObject = getDelegateObject();
     // when
-    Object resultObject = AssociationUtil.getLazyObjectProxy(inputProxyField, () -> testObject);
+    Object resultObject = AssociationUtil.getLazyObjectProxy(inputProxyField,
+        () -> proxyDelegateObject);
     // verify
     assertThat(resultObject).isInstanceOf(ProxyEntity.class);
   }
 
   @Test
+  @DisplayName("When field type is valid object class then result proxy class has correct name")
+  @Order(17)
   @SneakyThrows
-    // todo: display name
-    // todo: order
-    // todo: method name
-  void testProxyIsNotInitialized() {
+  void whenGetLazyObjectProxyWithValidField_thenResultProxyClassHasCorrectName() {
+    // data
+    Field inputProxyField = EntityObjectHolder.class.getDeclaredField(PROXY_FIELD_NAME);
+    ProxyEntity proxyDelegateObject = getDelegateObject();
+    // when
+    String resultName = AssociationUtil.getLazyObjectProxy(inputProxyField,
+        () -> proxyDelegateObject).getClass().getName();
+    // verify
+    assertThat(resultName)
+        .as("Proxy name has delegate full name ending with 'BibernateProxy'")
+        .startsWith(inputProxyField.getType().getName() + "$BibernateProxy$")
+        .as("Proxy name ends with 8 random alphanumeric characters")
+        .matches(NAME_ENDS_WITH_8_CHARS_PATTERN);
+  }
+
+  @Test
+  @DisplayName("When field type is valid object class then result proxy delegate "
+      + "object is not initialized")
+  @Order(18)
+  @SneakyThrows
+  void whenGetLazyObjectProxyWithValidField_thenResultProxyDelegateObjectIsNotInitialized() {
     // data
     Field inputProxyField = EntityObjectHolder.class.getDeclaredField(PROXY_FIELD_NAME);
     Supplier<?> mockedDelegateSupplier = Mockito.mock(Supplier.class);
@@ -301,34 +322,36 @@ class AssociationUtilTest {
     Object resultObject = AssociationUtil.getLazyObjectProxy(inputProxyField,
         mockedDelegateSupplier);
     // verify
+    assertThat(resultObject).isNotNull();
     then(mockedDelegateSupplier).shouldHaveNoInteractions();
   }
 
   @Test
+  @DisplayName("When field type is valid object class then result proxy has correct field values")
+  @Order(19)
   @SneakyThrows
-    // todo: display name
-    // todo: order
-    // todo: method name
-  void testProxyObjectHasSameValuesAsSupplied() {
+  void whenGetLazyObjectProxyWithValidField_thenResultProxyHasCorrectFieldValues() {
     // data
     Field inputProxyField = EntityObjectHolder.class.getDeclaredField(PROXY_FIELD_NAME);
-    ProxyEntity proxyDelegateObject = new ProxyEntity("string", 100);
+    ProxyEntity proxyDelegateObject = getDelegateObject();
     // when
     ProxyEntity resultObject = (ProxyEntity) AssociationUtil.getLazyObjectProxy(
         inputProxyField, () -> proxyDelegateObject);
     // verify
-    assertThat(resultObject.getStringField()).isEqualTo(proxyDelegateObject.getStringField());
-    assertThat(resultObject.getIntegerField()).isEqualTo(proxyDelegateObject.getIntegerField());
+    assertThat(resultObject.getStringField())
+        .isEqualTo(proxyDelegateObject.getStringField());
+    assertThat(resultObject.getIntegerField())
+        .isEqualTo(proxyDelegateObject.getIntegerField());
   }
 
   @Test
+  @DisplayName("Throw AssociationException when proxy delegate no-args constructor "
+      + "throws exception")
+  @Order(20)
   @SneakyThrows
-    // todo: display name
-    // todo: order
-    // todo: method name
-  void testProxyConstructorThrowsException() {
+  void whenGetLazyObjectProxyOnDelegateClassWithConstructorWithException_thenExceptionIsThrown() {
     // data
-    Field inputProxyField = EntityObjectWithConstructorException.class.getDeclaredField(
+    Field inputProxyField = EntityWithProxyConstructorException.class.getDeclaredField(
         PROXY_FIELD_NAME);
     // when
     Assertions.assertThatThrownBy(
@@ -339,48 +362,30 @@ class AssociationUtilTest {
   }
 
   @Test
+  @DisplayName("Throw AssociationException when proxy delegate class no-args "
+      + "constructor is private")
+  @Order(21)
   @SneakyThrows
-    // todo: display name
-    // todo: order
-    // todo: method name
-  void testProxyOnAbstractClassThrowException() {
-    // todo: fix business logic
+  void whenGetLazyObjectProxyOnDelegateClassWithPrivateNoArgsConstructor_thenExceptionIsThrown() {
     // data
-    Field inputProxyField = EntityObjectWithAbstractClass.class.getDeclaredField(
-        PROXY_FIELD_NAME);
-    // when
-    Assertions.assertThatThrownBy(
-            () -> AssociationUtil.getLazyObjectProxy(inputProxyField, Object::new))
-        .isInstanceOf(AssociationException.class)
-        .hasMessage("Proxied entity [%s] should be non-abstract class"
-            .formatted(AbstractClass.class));
-  }
-
-  @Test
-  @SneakyThrows
-    // todo: display name
-    // todo: order
-    // todo: method name
-  void testProxyOnPrivateNoArgsConstructorThrowException() {
-    // data
-    Field inputProxyField = EntityObjectWithPrivateNoArgsConstructorClass.class.getDeclaredField(
+    Field inputProxyField = EntityWithProxyPrivateNoArgsConstructorClass.class.getDeclaredField(
         PROXY_FIELD_NAME);
     // when
     Assertions.assertThatThrownBy(
             () -> AssociationUtil.getLazyObjectProxy(inputProxyField, Object::new))
         .isInstanceOf(AssociationException.class)
         .hasMessage("Proxied entity [%s] should have public no-args constructor"
-            .formatted(ClassWithoutPublicNoArgsConstructor.class));
+            .formatted(ClassWithPrivateNoArgsConstructor.class));
   }
 
   @Test
+  @DisplayName("Throw AssociationException when proxy delegate class has only "
+      + "multi-args constructor")
+  @Order(22)
   @SneakyThrows
-    // todo: display name
-    // todo: order
-    // todo: method name
-  void testProxyOnMultiArgsConstructorThrowException() {
+  void whenGetLazyObjectProxyOnDelegateClassWithMultiArgsConstructor_thenExceptionIsThrown() {
     // data
-    Field inputProxyField = EntityObjectWithoutNoArgsConstructor.class.getDeclaredField(
+    Field inputProxyField = EntityWithProxyWithoutNoArgsConstructor.class.getDeclaredField(
         PROXY_FIELD_NAME);
     // when
     Assertions.assertThatThrownBy(
@@ -390,7 +395,9 @@ class AssociationUtilTest {
             .formatted(ClassWithoutNoArgsConstructor.class));
   }
 
-  // todo: test that result proxy has correct name
+  private ProxyEntity getDelegateObject() {
+    return new ProxyEntity("string", 100);
+  }
 
   /**
    * Class with different fields for testing purpose
@@ -427,7 +434,7 @@ class AssociationUtilTest {
    * Class with object field for class that throws exception in no-args constructor for testing
    * purpose
    */
-  private static class EntityObjectWithConstructorException {
+  private static class EntityWithProxyConstructorException {
 
     private ClassWithExceptionInNoArgsConstructor proxyField;
   }
@@ -444,44 +451,27 @@ class AssociationUtilTest {
   }
 
   /**
-   * Class with object field for abstract class.
-   */
-  private static class EntityObjectWithAbstractClass {
-
-    private AbstractClass proxyField;
-  }
-
-  /**
-   * Abstract class for testing purpose. Should be public to make proxy for it.
-   */
-  public static abstract class AbstractClass {
-
-    public AbstractClass() {
-    }
-  }
-
-  /**
    * Class with object field for class with private no-args constructor.
    */
-  private static class EntityObjectWithPrivateNoArgsConstructorClass {
+  private static class EntityWithProxyPrivateNoArgsConstructorClass {
 
-    private ClassWithoutPublicNoArgsConstructor proxyField;
+    private ClassWithPrivateNoArgsConstructor proxyField;
   }
 
   /**
-   * Class without public no-args constructor for testing purpose. Should be public to make proxy
+   * Class with private no-args constructor for testing purpose. Should be public to make proxy
    * for it.
    */
-  public static class ClassWithoutPublicNoArgsConstructor {
+  public static class ClassWithPrivateNoArgsConstructor {
 
-    private ClassWithoutPublicNoArgsConstructor() {
+    private ClassWithPrivateNoArgsConstructor() {
     }
   }
 
   /**
    * Class with object field for class without no-args constructor.
    */
-  private static class EntityObjectWithoutNoArgsConstructor {
+  private static class EntityWithProxyWithoutNoArgsConstructor {
 
     private ClassWithoutNoArgsConstructor proxyField;
   }
