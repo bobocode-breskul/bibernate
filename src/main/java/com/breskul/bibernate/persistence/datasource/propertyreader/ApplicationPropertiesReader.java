@@ -1,7 +1,7 @@
 package com.breskul.bibernate.persistence.datasource.propertyreader;
 
 import com.breskul.bibernate.config.PropertiesConfiguration;
-import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
+import com.breskul.bibernate.persistence.datasource.PersistenceProperties;
 import java.util.Objects;
 
 /**
@@ -17,6 +17,7 @@ public class ApplicationPropertiesReader implements PropertyReader {
   private static final String CONNECTION_USERNAME = "bibernate.connection.username";
   private static final String CONNECTION_PASSWORD = "bibernate.connection.password";
   private static final String CONNECTION_DRIVER_CLASS = "bibernate.connection.driver_class";
+  private static final String DIALECT_CLASS = "bibernate.dialect";
 
   private static final ApplicationPropertiesReader INSTANCE = new ApplicationPropertiesReader();
 
@@ -38,16 +39,17 @@ public class ApplicationPropertiesReader implements PropertyReader {
    *
    * @return DataSourceProperties containing the connection URL, username, password, and driver class.
    * @throws NullPointerException If any of the required properties is null.
-   * @see DataSourceProperties
+   * @see PersistenceProperties
    */
   @Override
-  public DataSourceProperties readProperty() {
+  public PersistenceProperties readProperty() {
     String url = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_URL), "Connection URL cannot be null");
     String username = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_USERNAME), "Connection username cannot be null");
     String password = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_PASSWORD), "Connection password cannot be null");
     String driverClass = PropertiesConfiguration.getPropertyOrDefault(CONNECTION_DRIVER_CLASS, null);
+    String dialectClass = PropertiesConfiguration.getPropertyOrDefault(DIALECT_CLASS, null);
 
-    return new DataSourceProperties(url, username, password, driverClass);
+    return new PersistenceProperties(url, username, password, driverClass, dialectClass);
   }
 }
 

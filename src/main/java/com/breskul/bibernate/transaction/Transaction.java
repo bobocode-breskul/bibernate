@@ -36,7 +36,7 @@ public class Transaction {
    */
   public void begin() {
     try {
-      validateIfSessionOpenAndTransactionActive();
+//      validateIfSessionOpenAndTransactionActive();
       connection.setAutoCommit(false);
       status = TransactionStatus.ACTIVE;
       log.trace("Begin transaction");

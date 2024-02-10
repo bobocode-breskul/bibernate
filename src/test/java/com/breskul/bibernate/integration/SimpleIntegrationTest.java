@@ -10,7 +10,7 @@ public class SimpleIntegrationTest extends AbstractIntegrationTest {
   @SneakyThrows
   @Test
   public void test() {
-    try (Session session = new Session(dataSource)) {
+    try (Session session = new Session(dataSource, null)) {
       Person person = session.findById(Person.class, 1L);;
       System.out.println(person);
     }
@@ -20,7 +20,7 @@ public class SimpleIntegrationTest extends AbstractIntegrationTest {
   @SneakyThrows
   @Test
   public void test2() {
-    try (Session session = new Session(dataSource)) {
+    try (Session session = new Session(dataSource, null)) {
       Person person = session.findById(Person.class, 1L);;
       System.out.println(person);
     }

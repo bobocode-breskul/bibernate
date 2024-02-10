@@ -31,6 +31,7 @@ import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
+import com.breskul.bibernate.persistence.dialect.Dialect;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -58,8 +59,7 @@ public class GenericDao {
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
   // TODO: change to select '*'
-  private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
-  private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
+  private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ? %s";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
   private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = ?;";
@@ -67,20 +67,24 @@ public class GenericDao {
   private final Connection connection;
   private final PersistenceContext context;
 
-  public GenericDao(Connection connection, PersistenceContext context) {
+  private final Dialect dialect;
+
+  public GenericDao(Connection connection, PersistenceContext context, Dialect dialect) {
     this.connection = connection;
     this.context = context;
+    this.dialect = dialect;
   }
 
   /**
-   * Find by primary key. Search for an entity of the specified class and primary key. If the entity
-   * instance is contained in the persistence context, it is returned from there.
+   * Find by primary key. Search for an entity of the specified class and primary key. If the entity instance is contained in the
+   * persistence context, it is returned from there.
    *
-   * @param cls – entity class
-   * @param id  - primary key
+   * @param cls      – entity class
+   * @param id       - primary key
+   * @param lockType - the lock mode with which we do select
    * @return the found entity instance or null if the entity does not exist
    */
-  public <T> T findById(Class<T> cls, Object id) {
+  public <T> T findById(Class<T> cls, Object id, LockType lockType) {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
     checkEntityIdType(cls, id);
@@ -88,7 +92,7 @@ public class GenericDao {
     if (cachedEntity != null) {
       return cachedEntity;
     }
-    List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id);
+    List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id, lockType);
     return searchResult.isEmpty() ? null : searchResult.get(0);
   }
 
@@ -106,7 +110,6 @@ public class GenericDao {
     return innerFindAllByFieldValue(cls, columnName, columnValue);
   }
 
-
   /**
    * Perform an internal search for entities of the specified class filtered by a field value.
    *
@@ -118,11 +121,27 @@ public class GenericDao {
    * @throws EntityQueryException if an error occurs during the search
    */
   private <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue) {
+    return innerFindAllByFieldValue(cls, fieldName, fieldValue, null);
+  }
+
+  /**
+   * Perform an internal search for entities of the specified class filtered by a field value.
+   *
+   * @param <T>        the type parameter
+   * @param cls        the entity class
+   * @param fieldName  the field name to filter by
+   * @param fieldValue the field value to filter by
+   * @param lockType   the lock mode with which we do select
+   * @return the list of found entities or an empty list if no entities match the search criteria
+   * @throws EntityQueryException if an error occurs during the search
+   */
+  private <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue, LockType lockType) {
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
 
+    String lockClause = dialect == null ? "" : dialect.getLockClause(lockType);
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
-        tableName, fieldName);
+        tableName, fieldName, lockClause);
 
     // todo make this print depend on property.
     log.info("Bibernate: {}", sql);

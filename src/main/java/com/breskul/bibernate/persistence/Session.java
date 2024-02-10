@@ -5,6 +5,7 @@ import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
+import com.breskul.bibernate.persistence.dialect.Dialect;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
@@ -44,21 +45,26 @@ public class Session implements AutoCloseable {
   private Transaction transaction;
   private boolean sessionStatus;
 
-  public Session(DataSource dataSource) throws SQLException {
+  public Session(DataSource dataSource, Dialect dialect) throws SQLException {
     connection = dataSource.getConnection();
     connection.setAutoCommit(true);
     persistenceContext = new PersistenceContext();
-    genericDao = new GenericDao(connection, persistenceContext);
+    genericDao = new GenericDao(connection, persistenceContext, dialect);
     sessionStatus = true;
   }
 
   public <T> T findById(Class<T> entityClass, Object id) {
-    return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
-        .orElseGet(() -> find(EntityKey.of(entityClass, id)));
+    return findById(entityClass, id, null);
   }
 
-  private <T> T find(EntityKey<? extends T> entityKey) {
-    T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
+  public <T> T findById(Class<T> entityClass, Object id, LockType lockType) {
+    return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
+        .filter(entity -> lockType == null)
+        .orElseGet(() -> find(EntityKey.of(entityClass, id), lockType));
+  }
+
+  private <T> T find(EntityKey<? extends T> entityKey, LockType lockType) {
+    T entity = genericDao.findById(entityKey.entityClass(), entityKey.id(), lockType);
     persistenceContext.put(entity);
     return entity;
   }
@@ -74,7 +80,7 @@ public class Session implements AutoCloseable {
       }
       return cachedEntity;
     }
-    T newEntity = find(key);
+    T newEntity = find(key, null);
     persistenceContext.put(newEntity);
     return newEntity;
   }

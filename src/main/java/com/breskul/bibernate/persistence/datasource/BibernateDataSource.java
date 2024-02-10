@@ -40,7 +40,7 @@ public class BibernateDataSource extends AbstractDataSource {
    * @param properties The properties containing the connection URL, username, password, and driver class.
    * @throws BibernateException If the Driver with the specified name is not found or if there is an issue loading the class.
    */
-  public BibernateDataSource(DataSourceProperties properties) {
+  public BibernateDataSource(PersistenceProperties properties) {
     this.url = properties.url();
     this.username = properties.username();
     this.password = properties.password();
