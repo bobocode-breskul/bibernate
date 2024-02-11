@@ -36,11 +36,14 @@ public class Transaction {
    */
   public void begin() {
     try {
+      status = TransactionStatus.ACTIVE;
       validateIfSessionOpenAndTransactionActive();
       connection.setAutoCommit(false);
-      status = TransactionStatus.ACTIVE;
       log.trace("Begin transaction");
     } catch (SQLException e) {
+      if (status == TransactionStatus.ACTIVE) {
+        status = TransactionStatus.NOT_ACTIVE;
+      }
       setAutoCommitTrue();
       throw new BibernateException("Error occurred during opening transaction", e);
     }
