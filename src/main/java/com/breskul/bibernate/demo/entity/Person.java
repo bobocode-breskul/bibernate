@@ -3,7 +3,9 @@ package com.breskul.bibernate.demo.entity;
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
+import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.annotation.Table;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,6 +30,9 @@ public class Person {
 
   @Column(name = "age")
   private Integer age;
+
+  @OneToMany
+  List<Notes> notes;
 
   public Person(String firstName, String lastName, Integer age) {
     this.firstName = firstName;

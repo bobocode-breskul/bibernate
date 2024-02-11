@@ -1,29 +1,28 @@
 package com.breskul.bibernate.demo;
 
-import com.breskul.bibernate.demo.entity.Person;
+import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.persistence.Persistence;
 import com.breskul.bibernate.persistence.Session;
 import com.breskul.bibernate.persistence.SessionFactory;
+import org.atteo.classindex.ClassIndex;
 
 public class Main {
 
   public static void main(String[] args) {
     SessionFactory sessionFactory = Persistence.createSessionFactory();
     try (Session session = sessionFactory.openSession()) {
-      // Create
-      Person person = new Person("Taras", "TEST", 20);
-      session.persist(person);
+//      Person person = session.findById(Person.class, 3022L);
+//      System.out.println(person);
+//      person.setAge(40);
+//      System.out.println(person);
 
-      // Find
-      Person foundPerson = session.findById(Person.class, person.getId());
-      System.out.println(foundPerson);
+//      ScanUtils scanUtils = new ScanUtilsImpl();
+//      var e = scanUtils.searchClassesByFilter("", cls -> true);
 
-      // Update
-      foundPerson.setAge(40);
-      System.out.println(foundPerson);
 
-      // Delete
-      session.delete(foundPerson);
+      Iterable<Class<?>> klasses = ClassIndex.getAnnotated(Entity.class);
+
+      klasses.forEach(System.out::println);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

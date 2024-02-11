@@ -152,6 +152,12 @@
       <artifactId>byte-buddy</artifactId>
       <version>1.14.11</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.atteo.classindex/classindex -->
+    <dependency>
+      <groupId>org.atteo.classindex</groupId>
+      <artifactId>classindex</artifactId>
+      <version>3.13</version>
+    </dependency>
   </dependencies>
 
   <distributionManagement>

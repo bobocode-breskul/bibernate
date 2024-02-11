@@ -9,7 +9,7 @@ public class SimpleIntegrationTest extends AbstractIntegrationTest {
 
   @SneakyThrows
   @Test
-  public void test() {
+  public void test() throws Exception {
     try (Session session = new Session(dataSource)) {
       Person person = session.findById(Person.class, 1L);;
       System.out.println(person);
@@ -19,12 +19,11 @@ public class SimpleIntegrationTest extends AbstractIntegrationTest {
 
   @SneakyThrows
   @Test
-  public void test2() {
+  public void test2() throws Exception {
     try (Session session = new Session(dataSource)) {
       Person person = session.findById(Person.class, 1L);;
       System.out.println(person);
     }
-
   }
 
 }

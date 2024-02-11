@@ -1,7 +1,9 @@
 package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.config.PropertiesConfiguration;
+import com.breskul.bibernate.ddl.TableCreationService;
 import com.breskul.bibernate.exception.BibernateException;
+import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
@@ -31,8 +33,16 @@ public class Persistence {
    * @see PropertiesConfiguration
    */
   public static SessionFactory createSessionFactory() {
-    DataSourceProperties dataSourceProperties = ApplicationPropertiesReader.getInstance().readProperty();
+    ApplicationPropertiesReader propertiesReader = ApplicationPropertiesReader.getInstance();
+    DataSourceProperties dataSourceProperties = propertiesReader.readProperty();
     BibernateDataSource dataSource = new BibernateDataSource(dataSourceProperties);
+    EntitiesMetadataPersistence entitiesMetadataPersistence = new EntitiesMetadataPersistence();
+
+    TableCreationService tableCreationService = new TableCreationService(dataSource,
+        propertiesReader, entitiesMetadataPersistence);
+    tableCreationService.processDdl();
+    // TODO: trigger entity table creation
+
     return new SessionFactory(dataSource);
   }
 }
