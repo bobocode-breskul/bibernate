@@ -2,13 +2,14 @@ package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.action.Action;
 import com.breskul.bibernate.config.LoggerFactory;
-import com.breskul.bibernate.query.hql.Query;
+import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -92,6 +93,7 @@ public class Session implements AutoCloseable {
   }
 
   //TODO: write tests
+
   /**
    * Returns session transaction. If session does not have it or transaction was
    * completed or rolled back then creates new {@link Transaction}
@@ -117,12 +119,28 @@ public class Session implements AutoCloseable {
     genericDao.delete(entity);
   }
 
-  public <T> Query<T> createNativeQuery(String sqlString, Class<T> resultClass, Connection connection){
-    return new Query<>(sqlString, resultClass, connection);
+  /**
+   * Executes a SQL query and returns the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param sqlString the SQL query to execute
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeNativeQuery(String sqlString, Class<T> resultClass) {
+    return genericDao.executeNativeQuery(sqlString, resultClass);
   }
 
-  public <T> Query<T> createHQLQuery(String hqlString, Class<T> resultClass){
-    return new Query<>(hqlToSql(hqlString), resultClass, connection);
+  /**
+   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param bglString the BiQL query string
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeBiQLQuery(String bglString, Class<T> resultClass) {
+    return executeNativeQuery(BiQLMapper.bqlToSql(bglString, resultClass), resultClass);
   }
 
   @Override
@@ -153,10 +171,4 @@ public class Session implements AutoCloseable {
     genericDao.executeUpdate(entityKey, EntityUtil.getEntityColumnValues(updatedEntity));
   }
 
-  //TODO implement
-  private String hqlToSql(String hql) {
-    // from Person p where age > 30 and p.id < 3
-    // select p from Person p where age > 30 and p.id < 3
-    return null;
-  }
 }
