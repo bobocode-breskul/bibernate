@@ -140,19 +140,12 @@ public class AssociationUtil {
           .getLoaded()
           .getConstructor()
           .newInstance();
-    } catch (InvocationTargetException e) {
+    } catch (InvocationTargetException | InstantiationException e) {
       throw new AssociationException(
           "Could not create proxy instance of target entity [%s]".formatted(objectType), e);
-    } catch (InstantiationException e) {
-      throw new AssociationException(
-          "Proxied entity [%s] should be non-abstract class".formatted(objectType), e);
-    } catch (IllegalAccessException e) {
+    } catch (IllegalAccessException | NoSuchMethodException e) {
       throw new AssociationException(
           "Proxied entity [%s] should have public no-args constructor".formatted(objectType), e);
-    } catch (NoSuchMethodException e) {
-      throw new AssociationException(
-          "Proxied entity [%s] should have constructor without parameters".formatted(objectType),
-          e);
     }
   }
 }
