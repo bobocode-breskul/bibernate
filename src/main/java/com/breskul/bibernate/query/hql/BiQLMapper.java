@@ -20,6 +20,10 @@ import java.util.Objects;
  */
 public class BiQLMapper {
 
+  private BiQLMapper() {
+
+  }
+
   /**
    * Converts a BiQL query string to an SQL query string, based on the provided entity class.
    * This method interprets the BiQL syntax, translates entity class references to table names,
@@ -31,6 +35,13 @@ public class BiQLMapper {
    * @return A string representing the SQL query corresponding to the given BiQL query.
    * @throws BiQLException If the BiQL query is malformed or if the conversion process encounters an error.
    */
+  //TODO: given Null bql then should throw BiQLException
+  //TODO: given empty string then should throw BiQLException
+  //TODO: given valid bql but contains different entity class
+  //TODO: given valid bql but entity class is null
+  //TODO: given bql without sql and valid entity class then should generate sql with asterisk select
+  //TODO: given bql with table alias then should generate correct sql
+  //TODO: given bql when select specific columns then should return correct sql
   public static <T> String bqlToSql(String bgl, Class<T> entityClass) {
     String entityClassName = entityClass.getSimpleName();
 
@@ -72,9 +83,12 @@ public class BiQLMapper {
    *
    * @param bql             The BiQL query string to validate.
    * @param entityClassName The name of the entity class expected to be referenced in the query.
-   * @throws BiQLException If the BiQL query is invalid, null, or does not reference the expected entity class.
+   * @throws BiQLException  If the entityClassName is null, the BiQL query is invalid, null, or does not reference the expected entity class.
    */
   private static void validateBiQL(String bql, String entityClassName) {
+    if (Objects.isNull(entityClassName)) {
+      throw new BiQLException("entityClassName should not be null");
+    }
     if (Objects.isNull(bql) || bql.isEmpty()) {
       throw new BiQLException("BiQL should not be null or empty");
     }
