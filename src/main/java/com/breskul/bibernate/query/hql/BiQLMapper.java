@@ -35,36 +35,23 @@ public class BiQLMapper {
    * @return A string representing the SQL query corresponding to the given BiQL query.
    * @throws BiQLException If the BiQL query is malformed or if the conversion process encounters an error.
    */
-  //TODO: given Null bql then should throw BiQLException
-  //TODO: given empty string then should throw BiQLException
-  //TODO: given valid bql but contains different entity class
-  //TODO: given valid bql but entity class is null
-  //TODO: given bql without sql and valid entity class then should generate sql with asterisk select
-  //TODO: given bql with table alias then should generate correct sql
-  //TODO: given bql when select specific columns then should return correct sql
   public static <T> String bqlToSql(String bgl, Class<T> entityClass) {
-    String entityClassName = entityClass.getSimpleName();
+    validateBiQL(bgl, entityClass);
 
-    validateBiQL(bgl, entityClassName);
+    String entityClassName = entityClass.getSimpleName();
 
     List<String> bqlParts = Arrays.stream(bgl.toLowerCase().split("\\s+")).toList();
     if (bqlParts.get(0).equalsIgnoreCase(SqlKeyword.SELECT.name())) {
       int entityIndex = bqlParts.indexOf(entityClassName.toLowerCase());
-      int whereIndex = bqlParts.indexOf(SqlKeyword.WHERE.name().toLowerCase());
-      // there is no "where" and one element after entity in bgl
-      if (whereIndex == -1 && bqlParts.size() == entityIndex + 2
-          // there is "where" in bgl and one element between "where" and entity
-          // ex.: FROM Person WHERE age > 0
-          || whereIndex == entityIndex + 2) {
+
+      if (isSelectAll(bqlParts, entityIndex)) {
         String entityAlias = bqlParts.get(entityIndex + 1);
         bgl = bgl.replaceFirst(entityAlias, "*");
-      } else {
-        throw new BiQLException("BiQL has incorrect structure");
       }
-    }
-    if (bqlParts.get(0).equalsIgnoreCase(SqlKeyword.FROM.name())) {
+    } else {
       bgl = "%s * %s".formatted(SqlKeyword.SELECT.name(), bgl);
     }
+
     String entityTableName = EntityUtil.getEntityTableName(entityClass);
     String result = bgl.replace(entityClassName, entityTableName);
     List<Field> entityFields = getClassEntityFields(entityClass);
@@ -76,26 +63,56 @@ public class BiQLMapper {
     return result;
   }
 
+  private static boolean isSelectAll(List<String> bqlParts, int entityIndex) {
+    int whereIndex = bqlParts.indexOf(SqlKeyword.WHERE.name().toLowerCase());
+    int fromIndex = bqlParts.indexOf(SqlKeyword.FROM.name().toLowerCase());
+    // there is "from" on 2nd position
+    return fromIndex == 2 &&
+        // there is no "where" and one element after entity in bgl
+        (
+            whereIndex == -1 &&
+                bqlParts.size() == entityIndex + 2 ||
+                // there is "where" in bgl and one element between "where" and entity
+                // ex.: FROM Person WHERE age > 0
+                whereIndex == entityIndex + 2
+        );
+  }
+
   /**
    * Validates the given BiQL query to ensure it meets the required syntax and contains the necessary
    * references to the entity class. This method checks for the presence of the entity class within the
    * BiQL query and ensures the query is not null or empty.
    *
    * @param bql             The BiQL query string to validate.
-   * @param entityClassName The name of the entity class expected to be referenced in the query.
-   * @throws BiQLException  If the entityClassName is null, the BiQL query is invalid, null, or does not reference the expected entity class.
+   * @param entityClass     The entity class expected to be referenced in the query.
+   * @throws BiQLException  If the entityClass is null, the BiQL query is invalid, null, or does not reference the expected entity class.
    */
-  private static void validateBiQL(String bql, String entityClassName) {
-    if (Objects.isNull(entityClassName)) {
-      throw new BiQLException("entityClassName should not be null");
+  // TODO: add validation for alias example:
+  // valid - select p.id, p.age from Person p;
+  // not valid - select id, age from Person p;
+  // not valid - select p.id, p.age from Person;
+  private static <T> void validateBiQL(String bql, Class<T> entityClass) {
+
+    if (Objects.isNull(entityClass)) {
+      throw new BiQLException("EntityClass should not be null");
     }
     if (Objects.isNull(bql) || bql.isEmpty()) {
       throw new BiQLException("BiQL should not be null or empty");
     }
+    if (bql.contains("*")) {
+      throw new BiQLException("BiQL has incorrect structure");
+    }
+
+    String entityClassName = entityClass.getSimpleName();
     if (!bql.contains(entityClassName)) {
       throw new BiQLException(
           "BiQL does not contain entity with type %s".formatted(entityClassName));
     }
-  }
 
+    String allowedQueryStartWord = bql.toLowerCase().split("\\s+")[0];
+    if (!(allowedQueryStartWord.equalsIgnoreCase(SqlKeyword.SELECT.name()) ||
+        allowedQueryStartWord.equalsIgnoreCase(SqlKeyword.FROM.name()))) {
+      throw new BiQLException("BiQL has incorrect structure");
+    }
+  }
 }

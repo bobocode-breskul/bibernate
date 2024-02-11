@@ -35,6 +35,11 @@ public class Person {
     this.age = age;
   }
 
+  public Person(Long id, Integer age) {
+    this.id = id;
+    this.age = age;
+  }
+
   @Override
   public String toString() {
     return "Person{" +

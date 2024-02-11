@@ -13,7 +13,7 @@ public class Main {
     try (Session session = sessionFactory.openSession()) {
 //      TypedQuery<Person> typedQuery = new TypedQuery<>("from Person p where age > 30 and p.id < 4", Person.class, connection);
       List<Person> resultList = session.executeBiQLQuery(
-          "select p from Person p where p.firstName in (5, 7, 10)", null);
+          "select p.id, p.age from Person p", Person.class);
 //      List<Person> sqlQuery = session.executeNativeQuery("select * from persons where id in (5, 7, 10)", Person.class);
       // Create
       Person person = new Person("Taras", "TEST", 20);
