@@ -4,7 +4,10 @@ import com.breskul.bibernate.config.PropertiesConfiguration;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
+import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
+import com.breskul.bibernate.persistence.datasource.connectionpools.ConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
+import java.sql.Connection;
 
 /**
  * The Persistence class provides a convenient way to create a Bibernate SessionFactory based on configuration properties. It retrieves
@@ -32,7 +35,9 @@ public class Persistence {
    */
   public static SessionFactory createSessionFactory() {
     DataSourceProperties dataSourceProperties = ApplicationPropertiesReader.getInstance().readProperty();
-    BibernateDataSource dataSource = new BibernateDataSource(dataSourceProperties);
+//    BibernateDataSource dataSource = new BibernateDataSource(dataSourceProperties);
+    ConnectionPoolFactory factory = CentralConnectionPoolFactory.getConnectionPoolFactory(dataSourceProperties.type());
+    var dataSource = factory.createDataSource(dataSourceProperties);
     return new SessionFactory(dataSource);
   }
 }
