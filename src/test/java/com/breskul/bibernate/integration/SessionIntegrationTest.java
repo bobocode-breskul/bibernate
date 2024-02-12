@@ -1,8 +1,10 @@
 package com.breskul.bibernate.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.breskul.bibernate.data.Person;
+import com.breskul.bibernate.exception.BiQLException;
 import com.breskul.bibernate.persistence.Persistence;
 import com.breskul.bibernate.persistence.Session;
 import java.sql.SQLException;
@@ -80,6 +82,16 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
     assertThat(result.get(0).getId()).isNull();
     assertThat(result.get(0).getFirstName()).isEqualTo(person.getFirstName());
     assertThat(result.get(0).getLastName()).isEqualTo(person.getLastName());
+  }
+
+  @Test
+  @DisplayName("Given invalid query when execute native query then should throw BiQLException")
+  void givenPersonInDb_whenInvalidSqlFromDb_thenThrowBiQLException() {
+    String invalidQuery = "select p.first_name, p.last_name from persons p where order by";
+
+    assertThatThrownBy(() -> session.executeNativeQuery(invalidQuery, Person.class))
+        .isInstanceOf(BiQLException.class)
+        .hasMessage("Could not execute native query [%s] for entity [%s]".formatted(invalidQuery, Person.class));
   }
 
   private Person prepareRandomPerson() {
