@@ -59,7 +59,6 @@ public class GenericDao {
 
   // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
-  private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
   private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = ?;";
@@ -84,10 +83,6 @@ public class GenericDao {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
     checkEntityIdType(cls, id);
-    T cachedEntity = context.getEntity(cls, id);
-    if (cachedEntity != null) {
-      return cachedEntity;
-    }
     List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id);
     return searchResult.isEmpty() ? null : searchResult.get(0);
   }
@@ -434,7 +429,7 @@ public class GenericDao {
     return resultSet.getObject(idColumnName);
   }
 
-  private <T> void setParameters(PreparedStatement preparedStatement,
+  private void setParameters(PreparedStatement preparedStatement,
       Object primaryKey,
       Object... params) throws SQLException {
     validatePrimaryKey(primaryKey);
@@ -458,7 +453,7 @@ public class GenericDao {
     Class<?> entityIdType = findEntityIdField(entityClass).getType();
     if (!entityIdType.equals(id.getClass())) {
       throw new BibernateException(
-          "Mismatched types: Expected ID of type %s  but received ID of type %s".formatted(
+          "Mismatched types: Expected ID of type %s but received ID of type %s".formatted(
               entityIdType.getSimpleName(), id.getClass().getSimpleName()));
     }
   }
