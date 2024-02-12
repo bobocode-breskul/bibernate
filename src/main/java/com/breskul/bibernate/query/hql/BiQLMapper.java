@@ -3,12 +3,15 @@ package com.breskul.bibernate.query.hql;
 import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 
+import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BiQLException;
+import com.breskul.bibernate.persistence.Session;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
 
 
 /**
@@ -19,6 +22,8 @@ import java.util.Objects;
  * the original intent.
  */
 public class BiQLMapper {
+
+  private static final Logger log = LoggerFactory.getLogger(Session.class);
 
   private BiQLMapper() {
 
@@ -49,7 +54,7 @@ public class BiQLMapper {
         bgl = bgl.replaceFirst(entityAlias, "*");
       }
     } else {
-      bgl = "%s * %s".formatted(SqlKeyword.SELECT.name(), bgl);
+      bgl = "%s * %s".formatted(SqlKeyword.SELECT.name().toLowerCase(), bgl);
     }
 
     String entityTableName = EntityUtil.getEntityTableName(entityClass);
@@ -87,11 +92,8 @@ public class BiQLMapper {
    * @param entityClass     The entity class expected to be referenced in the query.
    * @throws BiQLException  If the entityClass is null, the BiQL query is invalid, null, or does not reference the expected entity class.
    */
-  // TODO: add validation for alias example:
-  // valid - select p.id, p.age from Person p;
-  // not valid - select id, age from Person p;
-  // not valid - select p.id, p.age from Person;
   private static <T> void validateBiQL(String bql, Class<T> entityClass) {
+    log.trace("Starting to validate bql:[{}] for entity:[{}]", bql, entityClass);
 
     if (Objects.isNull(entityClass)) {
       throw new BiQLException("EntityClass should not be null");
@@ -99,7 +101,9 @@ public class BiQLMapper {
     if (Objects.isNull(bql) || bql.isEmpty()) {
       throw new BiQLException("BiQL should not be null or empty");
     }
+
     if (bql.contains("*")) {
+      log.error("bql contains not valid symbol [*]");
       throw new BiQLException("BiQL has incorrect structure");
     }
 
@@ -109,10 +113,75 @@ public class BiQLMapper {
           "BiQL does not contain entity with type %s".formatted(entityClassName));
     }
 
-    String allowedQueryStartWord = bql.toLowerCase().split("\\s+")[0];
+    List<String> bqlParts = List.of(bql.toLowerCase().split("\\s+"));
+    int selectIndex = bqlParts.indexOf(SqlKeyword.SELECT.name().toLowerCase());
+    int fromIndex = bqlParts.indexOf(SqlKeyword.FROM.name().toLowerCase());
+
+    if (fromIndex == -1) {
+      log.error("Bql not contains from keyword");
+      throw new BiQLException("BiQL has incorrect structure");
+    }
+
+    String allowedQueryStartWord = bqlParts.get(0);
     if (!(allowedQueryStartWord.equalsIgnoreCase(SqlKeyword.SELECT.name()) ||
         allowedQueryStartWord.equalsIgnoreCase(SqlKeyword.FROM.name()))) {
       throw new BiQLException("BiQL has incorrect structure");
     }
+
+    String alias = getAlias(bqlParts, entityClassName);
+    if (Objects.isNull(alias) && selectIndex == 0) {
+      validateParamWithoutAlias(bqlParts, fromIndex);
+    }
+
+    if (Objects.nonNull(alias) && selectIndex == 0 && fromIndex > selectIndex + 1) {
+      validateParam(bqlParts, fromIndex, alias);
+    }
+
+    log.trace("Bql [{}] for entity [{}] successfully validated", bql, entityClass);
+  }
+
+  private static void validateParamWithoutAlias(List<String> bqlParts, int fromIndex) {
+    boolean isValidParam = bqlParts.subList(1, fromIndex)
+        .stream()
+        .noneMatch(el -> el.contains("."));
+
+    if (!isValidParam) {
+      log.error("Bql contains not valid symbol '.' in select params [{}]", bqlParts);
+      throw new BiQLException("BiQL has incorrect structure");
+    }
+  }
+
+  private static void validateParam(List<String> bqlParts, int fromIndex, String alias) {
+    var subList = bqlParts.subList(1, fromIndex);
+
+    if (subList.size() == 1 && !subList.get(0).equals(alias)) {
+      log.error("Bql does not contain select param");
+      throw new BiQLException("BiQL has incorrect structure");
+    } else if (subList.size() == 1) {
+      return;
+    }
+
+    boolean isValidParam = subList.stream()
+        .allMatch(el -> el.startsWith(alias.concat(".")));
+
+    if (!isValidParam) {
+      log.error("Bql contains not valid select param [{}]", bqlParts);
+      throw new BiQLException("BiQL has incorrect structure");
+    }
+  }
+
+  private static String getAlias(List<String> bqlParts, String entityClassName) {
+    int whereIndex = bqlParts.indexOf(SqlKeyword.WHERE.name().toLowerCase());
+    int entityIndex = bqlParts.indexOf(entityClassName.toLowerCase());
+    // there is no "where" and one element after entity in bgl
+    if (whereIndex == -1 &&
+        bqlParts.size() == entityIndex + 2 ||
+        // there is "where" in bgl and one element between "where" and entity
+        // ex.: FROM Person WHERE age > 0
+        whereIndex == entityIndex + 2
+    ) {
+      return bqlParts.get(entityIndex + 1);
+    }
+    return null;
   }
 }
