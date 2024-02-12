@@ -1,6 +1,11 @@
 package com.breskul.bibernate.persistence;
 
+import static java.util.Comparator.comparing;
+
 import com.breskul.bibernate.action.Action;
+import com.breskul.bibernate.action.DeleteAction;
+import com.breskul.bibernate.action.InsertAction;
+import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
@@ -39,7 +44,7 @@ public class Session implements AutoCloseable {
 
   private final GenericDao genericDao;
   private final PersistenceContext persistenceContext;
-  private final Queue<Action> actionQueue = new PriorityQueue<>();
+  private final Queue<Action> actionQueue = new PriorityQueue<>(comparing(Action::priority));
   private final Connection connection;
 
   private Transaction transaction;
@@ -53,13 +58,23 @@ public class Session implements AutoCloseable {
     sessionStatus = true;
   }
 
+  /**
+   * Find entry by id for specified entity class
+   *
+   * @param entityClass represents table
+   * @param id          is used search
+   * @param <T>         represent type of entity
+   * @return object of entity class
+   */
   public <T> T findById(Class<T> entityClass, Object id) {
+    verifyIsSessionOpen();
     Objects.requireNonNull(id, "Required id to load load entity, pleas provide not null value");
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
         .orElseGet(() -> find(EntityKey.of(entityClass, id)));
   }
 
   private <T> T find(EntityKey<? extends T> entityKey) {
+    verifyIsSessionOpen();
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
     if (entity != null) {
       persistenceContext.put(entity);
@@ -100,8 +115,9 @@ public class Session implements AutoCloseable {
    * @param entity entity instance
    */
   public <T> void persist(T entity) {
-    T savedEntity = genericDao.save(entity);
-    persistenceContext.put(savedEntity);
+    verifyIsSessionOpen();
+    actionQueue.offer(new InsertAction(genericDao, entity));
+    persistenceContext.put(entity);
   }
 
   /**
@@ -127,14 +143,22 @@ public class Session implements AutoCloseable {
       log.trace("Creating new transaction");
       transaction = new Transaction(this, connection);
     } else {
-      log.trace("using current transaction");
+      log.trace("Using current transaction");
     }
 
     return transaction;
   }
 
+  /**
+   * Creates delete action and put it in action queue
+   *
+   * @param entity represents entity that will be deleted
+   * @param <T> represents type of entry
+   */
   public <T> void delete(T entity) {
-    genericDao.delete(entity);
+    verifyIsSessionOpen();
+    actionQueue.offer(new DeleteAction(genericDao, entity));
+    persistenceContext.delete(entity);
   }
 
   /**
@@ -144,10 +168,21 @@ public class Session implements AutoCloseable {
   @Override
   public void close() {
     performDirtyChecking();
-    // todo: transaction commit/rollback
     persistenceContext.clear();
     actionQueue.clear();
     sessionStatus = false;
+  }
+
+  /**
+   *  Flushes session action queue
+   */
+  public void flush() {
+    verifyIsSessionOpen();
+    performDirtyChecking();
+    log.trace("Flushing session action queue");
+    while (!actionQueue.isEmpty()) {
+      actionQueue.poll().execute();
+    }
   }
 
   /**
@@ -173,7 +208,7 @@ public class Session implements AutoCloseable {
     if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
       parameters = prepareDynamicParameters(entityKey, updatedEntity);
     }
-    genericDao.executeUpdate(entityKey, parameters);
+    actionQueue.offer(new UpdateAction<>(genericDao, entityKey, parameters));
   }
 
   /**
@@ -204,5 +239,11 @@ public class Session implements AutoCloseable {
     Stream<Object> toOneRelationParams = currentToOneRelationState.stream()
         .map(EntityRelationSnapshot::columnValue);
     return Stream.concat(simpleColumnParams, toOneRelationParams).toArray();
+  }
+
+  private void verifyIsSessionOpen() {
+    if (!sessionStatus) {
+      throw new IllegalStateException("Session is closed");
+    }
   }
 }
