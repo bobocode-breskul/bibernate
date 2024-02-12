@@ -116,7 +116,7 @@ public class Session implements AutoCloseable {
    */
   public <T> void persist(T entity) {
     verifyIsSessionOpen();
-    actionQueue.offer(new InsertAction(genericDao, entity));
+    new InsertAction(genericDao, entity).execute();
     persistenceContext.put(entity);
   }
 
