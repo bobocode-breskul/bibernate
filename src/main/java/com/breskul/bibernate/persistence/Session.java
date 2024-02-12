@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -70,6 +71,7 @@ public class Session implements AutoCloseable {
    */
   public <T> T findById(Class<T> entityClass, Object id) {
     verifyIsSessionOpen();
+    Objects.requireNonNull(id, "Required id to load load entity, pleas provide not null value");
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
         .orElseGet(() -> find(EntityKey.of(entityClass, id)));
   }
@@ -77,7 +79,9 @@ public class Session implements AutoCloseable {
   private <T> T find(EntityKey<? extends T> entityKey) {
     verifyIsSessionOpen();
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
-    persistenceContext.put(entity);
+    if (entity != null) {
+      persistenceContext.put(entity);
+    }
     return entity;
   }
 
