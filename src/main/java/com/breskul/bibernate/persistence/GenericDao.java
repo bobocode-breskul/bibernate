@@ -237,6 +237,7 @@ public class GenericDao {
   }
 
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
+
   /**
    * Executes an update query for the specified entity key with the given parameters. This method
    * dynamically determines whether to use a dynamic update query based on the entity class.
@@ -341,7 +342,7 @@ public class GenericDao {
 
         if (isSimpleColumn(field)) {
           String columnName = resolveColumnName(field);
-          writeFieldValue(field, entity, resultSet.getObject(columnName));
+          writeFieldValue(field, entity, resultSet, columnName);
         }
       }
       context.put(entity);
