@@ -7,7 +7,6 @@ import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
 import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.connectionpools.ConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
-import java.sql.Connection;
 
 /**
  * The Persistence class provides a convenient way to create a Bibernate SessionFactory based on configuration properties. It retrieves
