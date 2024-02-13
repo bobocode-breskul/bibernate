@@ -7,6 +7,7 @@ import com.breskul.bibernate.action.DeleteAction;
 import com.breskul.bibernate.action.InsertAction;
 import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
@@ -15,6 +16,8 @@ import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -159,6 +162,30 @@ public class Session implements AutoCloseable {
     verifyIsSessionOpen();
     actionQueue.offer(new DeleteAction(genericDao, entity));
     persistenceContext.delete(entity);
+  }
+
+  /**
+   * Executes a SQL query and returns the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param sqlString the SQL query to execute
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeNativeQuery(String sqlString, Class<T> resultClass) {
+    return genericDao.executeNativeQuery(sqlString, resultClass);
+  }
+
+  /**
+   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param bglString the BiQL query string
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeBiQLQuery(String bglString, Class<T> resultClass) {
+    return executeNativeQuery(BiQLMapper.bqlToSql(bglString, resultClass), resultClass);
   }
 
   /**
