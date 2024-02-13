@@ -36,9 +36,9 @@ public class Transaction {
    */
   public void begin() {
     try {
-//      validateIfSessionOpenAndTransactionActive();
-      connection.setAutoCommit(false);
+      validateIfSessionOpen();
       status = TransactionStatus.ACTIVE;
+      connection.setAutoCommit(false);
       log.trace("Begin transaction");
     } catch (SQLException e) {
       setAutoCommitTrue();
@@ -92,10 +92,14 @@ public class Transaction {
     return status;
   }
 
-  private void validateIfSessionOpenAndTransactionActive() throws SQLException {
+  private void validateIfSessionOpen() throws SQLException {
     if (!session.isOpen()) {
       throw new IllegalStateException("Cannot operate Transaction on closed session");
     }
+  }
+
+  private void validateIfSessionOpenAndTransactionActive() throws SQLException {
+    validateIfSessionOpen();
     if (status != TransactionStatus.ACTIVE) {
       throw new IllegalStateException("Transaction is not active");
     }

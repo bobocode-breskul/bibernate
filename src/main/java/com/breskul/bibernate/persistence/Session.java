@@ -1,7 +1,13 @@
 package com.breskul.bibernate.persistence;
 
+import static java.util.Comparator.comparing;
+
 import com.breskul.bibernate.action.Action;
+import com.breskul.bibernate.action.DeleteAction;
+import com.breskul.bibernate.action.InsertAction;
+import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
@@ -11,7 +17,10 @@ import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -39,7 +48,7 @@ public class Session implements AutoCloseable {
 
   private final GenericDao genericDao;
   private final PersistenceContext persistenceContext;
-  private final Queue<Action> actionQueue = new PriorityQueue<>();
+  private final Queue<Action> actionQueue = new PriorityQueue<>(comparing(Action::priority));
   private final Connection connection;
 
   private Transaction transaction;
@@ -53,19 +62,32 @@ public class Session implements AutoCloseable {
     sessionStatus = true;
   }
 
+  /**
+   * Find entry by id for specified entity class
+   *
+   * @param entityClass represents table
+   * @param id          is used search
+   * @param <T>         represent type of entity
+   * @return object of entity class
+   */
   public <T> T findById(Class<T> entityClass, Object id) {
     return findById(entityClass, id, null);
   }
 
   public <T> T findById(Class<T> entityClass, Object id, LockType lockType) {
+    verifyIsSessionOpen();
+    Objects.requireNonNull(id, "Required id to load load entity, pleas provide not null value");
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
         .filter(entity -> lockType == null)
         .orElseGet(() -> find(EntityKey.of(entityClass, id), lockType));
   }
 
   private <T> T find(EntityKey<? extends T> entityKey, LockType lockType) {
+    verifyIsSessionOpen();
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id(), lockType);
-    persistenceContext.put(entity);
+    if (entity != null) {
+      persistenceContext.put(entity);
+    }
     return entity;
   }
 
@@ -102,8 +124,9 @@ public class Session implements AutoCloseable {
    * @param entity entity instance
    */
   public <T> void persist(T entity) {
-    T savedEntity = genericDao.save(entity);
-    persistenceContext.put(savedEntity);
+    verifyIsSessionOpen();
+    new InsertAction(genericDao, entity).execute();
+    persistenceContext.put(entity);
   }
 
   /**
@@ -129,14 +152,46 @@ public class Session implements AutoCloseable {
       log.trace("Creating new transaction");
       transaction = new Transaction(this, connection);
     } else {
-      log.trace("using current transaction");
+      log.trace("Using current transaction");
     }
 
     return transaction;
   }
 
+  /**
+   * Creates delete action and put it in action queue
+   *
+   * @param entity represents entity that will be deleted
+   * @param <T> represents type of entry
+   */
   public <T> void delete(T entity) {
-    genericDao.delete(entity);
+    verifyIsSessionOpen();
+    actionQueue.offer(new DeleteAction(genericDao, entity));
+    persistenceContext.delete(entity);
+  }
+
+  /**
+   * Executes a SQL query and returns the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param sqlString the SQL query to execute
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeNativeQuery(String sqlString, Class<T> resultClass) {
+    return genericDao.executeNativeQuery(sqlString, resultClass);
+  }
+
+  /**
+   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param bglString the BiQL query string
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeBiQLQuery(String bglString, Class<T> resultClass) {
+    return executeNativeQuery(BiQLMapper.bqlToSql(bglString, resultClass), resultClass);
   }
 
   /**
@@ -146,10 +201,21 @@ public class Session implements AutoCloseable {
   @Override
   public void close() {
     performDirtyChecking();
-    // todo: transaction commit/rollback
     persistenceContext.clear();
     actionQueue.clear();
     sessionStatus = false;
+  }
+
+  /**
+   *  Flushes session action queue
+   */
+  public void flush() {
+    verifyIsSessionOpen();
+    performDirtyChecking();
+    log.trace("Flushing session action queue");
+    while (!actionQueue.isEmpty()) {
+      actionQueue.poll().execute();
+    }
   }
 
   /**
@@ -175,7 +241,7 @@ public class Session implements AutoCloseable {
     if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
       parameters = prepareDynamicParameters(entityKey, updatedEntity);
     }
-    genericDao.executeUpdate(entityKey, parameters);
+    actionQueue.offer(new UpdateAction<>(genericDao, entityKey, parameters));
   }
 
   /**
@@ -206,5 +272,11 @@ public class Session implements AutoCloseable {
     Stream<Object> toOneRelationParams = currentToOneRelationState.stream()
         .map(EntityRelationSnapshot::columnValue);
     return Stream.concat(simpleColumnParams, toOneRelationParams).toArray();
+  }
+
+  private void verifyIsSessionOpen() {
+    if (!sessionStatus) {
+      throw new IllegalStateException("Session is closed");
+    }
   }
 }
