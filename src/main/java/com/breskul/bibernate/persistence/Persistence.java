@@ -42,25 +42,28 @@ public class Persistence {
   }
 
   private static Dialect getDialectInstance(PersistenceProperties persistenceProperties) {
+    String dialectClassName = persistenceProperties.dialectClass();
+    if (dialectClassName == null) {
+      return null;
+    }
     try {
-      String dialectClassName = persistenceProperties.dialectClass();
       Class<?> dialectClass = Class.forName(dialectClassName);
       Constructor<?> declaredConstructor = dialectClass.getDeclaredConstructor();
       Object instance = declaredConstructor.newInstance();
-      if (instance instanceof Dialect dialect){
+      if (instance instanceof Dialect dialect) {
         return dialect;
       }
       throw new BibernateException("Provided dialect class '%s' is not a instance of Dialect interface".formatted(dialectClassName));
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
+      throw new BibernateException("Provided dialect class '%s' is not found in classPath", e);
     } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
+      throw new BibernateException("Provided dialect class '%s' is not have required default constructor", e);
     } catch (InvocationTargetException e) {
-      throw new RuntimeException(e);
+      throw new BibernateException("Creation of dialect class '%s' failed due to exception inside of constructor", e);
     } catch (InstantiationException e) {
-      throw new RuntimeException(e);
+      throw new BibernateException("Default constructor of dialect class '%s' represents an abstract class", e);
     } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
+      throw new BibernateException("Creation of dialect class '%s' failed due to parameter issue", e);
     }
   }
 }

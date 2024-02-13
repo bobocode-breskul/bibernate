@@ -7,18 +7,16 @@ import com.breskul.bibernate.action.DeleteAction;
 import com.breskul.bibernate.action.InsertAction;
 import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
-import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
 import com.breskul.bibernate.persistence.dialect.Dialect;
+import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,17 +28,15 @@ import org.slf4j.Logger;
 
 
 /**
- * Represents a session for managing database operations and entity persistence. Provides methods
- * for entity management, persistence, transaction handling, and session closure.
+ * Represents a session for managing database operations and entity persistence. Provides methods for entity management, persistence,
+ * transaction handling, and session closure.
  * <p>
- * This class encapsulates a set of operations related to database interactions within a single unit
- * of work. It allows developers to perform database operations such as finding entities by ID,
- * merging entity changes, managing entity state, persisting new entities, and handling
- * transactions.
+ * This class encapsulates a set of operations related to database interactions within a single unit of work. It allows developers to
+ * perform database operations such as finding entities by ID, merging entity changes, managing entity state, persisting new entities, and
+ * handling transactions.
  * <p>
- * Additionally, the session class manages the persistence context, which stores first-level cached
- * entities and their snapshots. It also maintains an action queue to track operations performed
- * within the session.
+ * Additionally, the session class manages the persistence context, which stores first-level cached entities and their snapshots. It also
+ * maintains an action queue to track operations performed within the session.
  */
 public class Session implements AutoCloseable {
 
@@ -82,6 +78,10 @@ public class Session implements AutoCloseable {
         .orElseGet(() -> find(EntityKey.of(entityClass, id), lockType));
   }
 
+  private <T> T find(EntityKey<? extends T> entityKey) {
+    return find(entityKey, null);
+  }
+
   private <T> T find(EntityKey<? extends T> entityKey, LockType lockType) {
     verifyIsSessionOpen();
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id(), lockType);
@@ -102,7 +102,7 @@ public class Session implements AutoCloseable {
       }
       return cachedEntity;
     }
-    T newEntity = find(key, null);
+    T newEntity = find(key);
     persistenceContext.put(newEntity);
     return newEntity;
   }
@@ -137,9 +137,10 @@ public class Session implements AutoCloseable {
   }
 
   //TODO: write tests
+
   /**
-   * Returns session transaction. If session does not have it or transaction was completed or rolled
-   * back then creates new {@link Transaction}
+   * Returns session transaction. If session does not have it or transaction was completed or rolled back then creates new
+   * {@link Transaction}
    *
    * @return current session status
    */
@@ -162,7 +163,7 @@ public class Session implements AutoCloseable {
    * Creates delete action and put it in action queue
    *
    * @param entity represents entity that will be deleted
-   * @param <T> represents type of entry
+   * @param <T>    represents type of entry
    */
   public <T> void delete(T entity) {
     verifyIsSessionOpen();
@@ -173,8 +174,8 @@ public class Session implements AutoCloseable {
   /**
    * Executes a SQL query and returns the results as a list of the specified type.
    *
-   * @param <T> the type of the result list
-   * @param sqlString the SQL query to execute
+   * @param <T>         the type of the result list
+   * @param sqlString   the SQL query to execute
    * @param resultClass the class of the results
    * @return a list of objects of type T
    */
@@ -185,8 +186,8 @@ public class Session implements AutoCloseable {
   /**
    * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified type.
    *
-   * @param <T> the type of the result list
-   * @param bglString the BiQL query string
+   * @param <T>         the type of the result list
+   * @param bglString   the BiQL query string
    * @param resultClass the class of the results
    * @return a list of objects of type T
    */
@@ -195,8 +196,8 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Closes the session, performing necessary operations such as dirty checking, clearing the
-   * persistence context, clearing the action queue, and updating the session status.
+   * Closes the session, performing necessary operations such as dirty checking, clearing the persistence context, clearing the action
+   * queue, and updating the session status.
    */
   @Override
   public void close() {
@@ -207,7 +208,7 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   *  Flushes session action queue
+   * Flushes session action queue
    */
   public void flush() {
     verifyIsSessionOpen();
@@ -245,8 +246,7 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Prepares dynamic parameters for the entity update query based on differences between the
-   * current and snapshot states.
+   * Prepares dynamic parameters for the entity update query based on differences between the current and snapshot states.
    *
    * @param entityKey     The key representing the entity.
    * @param updatedEntity The updated entity.
