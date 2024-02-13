@@ -7,6 +7,7 @@ import com.breskul.bibernate.action.DeleteAction;
 import com.breskul.bibernate.action.InsertAction;
 import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;

@@ -27,7 +27,6 @@ import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BiQLException;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityIdIsNullException;
-import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.exception.EntityQueryException;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
