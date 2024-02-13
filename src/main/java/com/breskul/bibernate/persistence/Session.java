@@ -159,6 +159,7 @@ public class Session implements AutoCloseable {
    * @param <T> represents type of entry
    */
   public <T> void delete(T entity) {
+    verifyEntityManaged(entity);
     verifyIsSessionOpen();
     actionQueue.offer(new DeleteAction(genericDao, entity));
     persistenceContext.delete(entity);
@@ -271,6 +272,14 @@ public class Session implements AutoCloseable {
   private void verifyIsSessionOpen() {
     if (!sessionStatus) {
       throw new IllegalStateException("Session is closed");
+    }
+  }
+
+  private <T> void verifyEntityManaged(T entity) {
+    if (!persistenceContext.contains(entity)) {
+      throw new EntityIsNotManagedException(
+          "Entity [%s] could not be deleted because not found in the persistent context.".formatted(
+              entity));
     }
   }
 }
