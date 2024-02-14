@@ -8,17 +8,15 @@ import com.breskul.bibernate.action.InsertAction;
 import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.EntityIsNotManagedException;
-import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
+import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -131,7 +129,6 @@ public class Session implements AutoCloseable {
     return sessionStatus;
   }
 
-  //TODO: write tests
   /**
    * Returns session transaction. If session does not have it or transaction was completed or rolled
    * back then creates new {@link Transaction}
@@ -198,6 +195,11 @@ public class Session implements AutoCloseable {
   public void close() {
     persistenceContext.clear();
     actionQueue.clear();
+
+    if (transaction != null) {
+      transaction.rollback();
+    }
+
     sessionStatus = false;
   }
 
