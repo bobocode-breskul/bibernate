@@ -14,7 +14,6 @@ public class CentralConnectionPoolFactory {
    * Retrieves an instance of {@link ConnectionPoolFactory} based on the specified type.
    * This method allows for the dynamic selection of connection pool implementations
    * at runtime, offering flexibility in choosing the underlying connection pooling mechanism.
-   * <p>
    * Supported types and their corresponding returned instances include:
    * <ul>
    *   <li>"Apache" - Returns an instance of Apache DBCP connection pool.</li>
@@ -23,7 +22,7 @@ public class CentralConnectionPoolFactory {
    * </ul>
    * For any other type, this method defaults to returning an instance of
    * BibernateDataSource, providing a fallback option for database connectivity.
-   * </p>
+   *
    * @param type The type of connection pool factory to create, specified as a case-sensitive string.
    * @return An instance of {@link ConnectionPoolFactory} corresponding to the specified type,
    *         or a BibernateDataSource as the default option.
