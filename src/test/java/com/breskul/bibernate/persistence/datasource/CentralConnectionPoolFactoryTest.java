@@ -2,7 +2,6 @@ package com.breskul.bibernate.persistence.datasource;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.connectionpools.ApacheDBCP;
 import com.breskul.bibernate.persistence.datasource.connectionpools.C3P0;
 import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;

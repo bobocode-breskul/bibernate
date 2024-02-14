@@ -1,6 +1,7 @@
 package com.breskul.bibernate.persistence.datasource.connectiopool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -28,7 +29,7 @@ public class HikariCPTest {
 
     // Assert
     assertNotNull(dataSource);
-    assertTrue(dataSource instanceof HikariDataSource);
+    assertInstanceOf(HikariDataSource.class, dataSource);
     HikariDataSource hikariDataSource = (HikariDataSource) dataSource;
     assertEquals("jdbc:h2:mem:testdb", hikariDataSource.getJdbcUrl());
     assertEquals("sa", hikariDataSource.getUsername());
