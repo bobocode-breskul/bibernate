@@ -4,8 +4,10 @@ import com.breskul.bibernate.config.PropertiesConfiguration;
 import com.breskul.bibernate.ddl.TableCreationService;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
+import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
+import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
 
 /**
@@ -21,27 +23,33 @@ import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPr
  * </pre>
  */
 public class Persistence {
-
-
   /**
-   * Creates a Hibernate SessionFactory based on configuration properties.
-   *
-   * @return The created Hibernate SessionFactory.
-   * @throws BibernateException If there is an issue with the DataSource or loading the JDBC driver class.
-   * @see BibernateDataSource
-   * @see SessionFactory
-   * @see PropertiesConfiguration
+   * Creates a {@link SessionFactory} instance for managing database sessions.
+   * This method leverages the application's properties to configure and initialize
+   * the data source, and subsequently, the session factory.
+   * <p>
+   * The process involves reading the {@link DataSourceProperties} using the
+   * {@link ApplicationPropertiesReader}, determining the appropriate connection pool
+   * factory based on the type of data source specified in the properties, and then
+   * creating a data source instance. Finally, a new {@link SessionFactory} is instantiated
+   * with the created data source.
+   * </p>
+   * @return A newly created {@link SessionFactory} instance ready for use in creating
+   *         and managing database sessions.
    */
   public static SessionFactory createSessionFactory() {
-    ApplicationPropertiesReader propertiesReader = ApplicationPropertiesReader.getInstance();
-    DataSourceProperties dataSourceProperties = propertiesReader.readProperty();
-    BibernateDataSource dataSource = new BibernateDataSource(dataSourceProperties);
-    EntitiesMetadataPersistence entitiesMetadataPersistence = new EntitiesMetadataPersistence();
+    DataSourceProperties dataSourceProperties = ApplicationPropertiesReader.getInstance().readProperty();
+    var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(dataSourceProperties.type());
+    var dataSource = factory.createDataSource(dataSourceProperties);
 
-    TableCreationService tableCreationService = new TableCreationService(dataSource,
-        propertiesReader, entitiesMetadataPersistence);
-    tableCreationService.processDdl();
-    // TODO: trigger entity table creation
+//    ApplicationPropertiesReader propertiesReader = ApplicationPropertiesReader.getInstance();
+//    DataSourceProperties dataSourceProperties = propertiesReader.readProperty();
+//    BibernateDataSource dataSource = new BibernateDataSource(dataSourceProperties);
+//    EntitiesMetadataPersistence entitiesMetadataPersistence = new EntitiesMetadataPersistence();
+//
+//    TableCreationService tableCreationService = new TableCreationService(dataSource,
+//        propertiesReader, entitiesMetadataPersistence);
+//    tableCreationService.processDdl();
 
     return new SessionFactory(dataSource);
   }
