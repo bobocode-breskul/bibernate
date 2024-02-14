@@ -22,7 +22,7 @@ public abstract class AbstractIntegrationTest {
   @BeforeAll
   public static void beforeAll() {
     DataSourceProperties properties = ApplicationPropertiesReader.getInstance().readProperty();
-    dataSource = new BibernateDataSource(properties);
+    dataSource = new BibernateDataSource().createDataSource(properties);
   }
 
   @SneakyThrows
