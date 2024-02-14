@@ -119,7 +119,7 @@ public class GenericDao {
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
         tableName, fieldName);
 
-    // todo make this print depend on property.
+    // TODO: show sql
     log.info("Bibernate: {}", sql);
     List<T> result = new ArrayList<>();
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -163,8 +163,10 @@ public class GenericDao {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
         field.setAccessible(true);
+        // TODO: throws exception when entity has ANY association
         statement.setObject(i + 1, field.get(entity));
       }
+      // TODO: show sql
       log.trace("Save entity: [{}]", sql);
       int result = statement.executeUpdate();
       if (result != 1) {
@@ -245,6 +247,7 @@ public class GenericDao {
     boolean isDynamicUpdate = EntityUtil.isDynamicUpdate(entityKey.entityClass());
     String updateSql =
         isDynamicUpdate ? prepareDynamicUpdateQuery(entityKey) : prepareUpdateQuery(entityKey);
+    // TODO: show sql
     log.debug("Update entity: [{}]", updateSql);
     try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
       setParameters(preparedStatement, entityKey.id(), parameters);
