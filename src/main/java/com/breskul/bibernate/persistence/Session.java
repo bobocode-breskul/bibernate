@@ -194,7 +194,6 @@ public class Session implements AutoCloseable {
    */
   @Override
   public void close() {
-    performDirtyChecking();
     persistenceContext.clear();
     actionQueue.clear();
     sessionStatus = false;
