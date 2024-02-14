@@ -7,6 +7,7 @@ import com.breskul.bibernate.action.DeleteAction;
 import com.breskul.bibernate.action.InsertAction;
 import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
@@ -15,7 +16,10 @@ import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -67,6 +71,7 @@ public class Session implements AutoCloseable {
    */
   public <T> T findById(Class<T> entityClass, Object id) {
     verifyIsSessionOpen();
+    Objects.requireNonNull(id, "Required id to load load entity, pleas provide not null value");
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
         .orElseGet(() -> find(EntityKey.of(entityClass, id)));
   }
@@ -74,7 +79,9 @@ public class Session implements AutoCloseable {
   private <T> T find(EntityKey<? extends T> entityKey) {
     verifyIsSessionOpen();
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
-    persistenceContext.put(entity);
+    if (entity != null) {
+      persistenceContext.put(entity);
+    }
     return entity;
   }
 
@@ -112,7 +119,7 @@ public class Session implements AutoCloseable {
    */
   public <T> void persist(T entity) {
     verifyIsSessionOpen();
-    actionQueue.offer(new InsertAction(genericDao, entity));
+    new InsertAction(genericDao, entity).execute();
     persistenceContext.put(entity);
   }
 
@@ -158,12 +165,35 @@ public class Session implements AutoCloseable {
   }
 
   /**
+   * Executes a SQL query and returns the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param sqlString the SQL query to execute
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeNativeQuery(String sqlString, Class<T> resultClass) {
+    return genericDao.executeNativeQuery(sqlString, resultClass);
+  }
+
+  /**
+   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified type.
+   *
+   * @param <T> the type of the result list
+   * @param bglString the BiQL query string
+   * @param resultClass the class of the results
+   * @return a list of objects of type T
+   */
+  public <T> List<T> executeBiQLQuery(String bglString, Class<T> resultClass) {
+    return executeNativeQuery(BiQLMapper.bqlToSql(bglString, resultClass), resultClass);
+  }
+
+  /**
    * Closes the session, performing necessary operations such as dirty checking, clearing the
    * persistence context, clearing the action queue, and updating the session status.
    */
   @Override
   public void close() {
-    performDirtyChecking();
     persistenceContext.clear();
     actionQueue.clear();
     sessionStatus = false;

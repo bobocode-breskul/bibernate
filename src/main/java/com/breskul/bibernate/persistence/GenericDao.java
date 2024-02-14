@@ -24,6 +24,7 @@ import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.BiQLException;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityIdIsNullException;
 import com.breskul.bibernate.exception.EntityIsNotManagedException;
@@ -59,7 +60,6 @@ public class GenericDao {
 
   // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ?";
-  private static final String SELECT_BY_ID_QUERY = "SELECT %s FROM %s WHERE %s = ?";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
   private static final String DELETE_ENTITY_QUERY = "DELETE FROM %s WHERE %s = ?;";
@@ -84,10 +84,6 @@ public class GenericDao {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
     checkEntityIdType(cls, id);
-    T cachedEntity = context.getEntity(cls, id);
-    if (cachedEntity != null) {
-      return cachedEntity;
-    }
     List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id);
     return searchResult.isEmpty() ? null : searchResult.get(0);
   }
@@ -241,6 +237,7 @@ public class GenericDao {
   }
 
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
+
   /**
    * Executes an update query for the specified entity key with the given parameters. This method
    * dynamically determines whether to use a dynamic update query based on the entity class.
@@ -345,7 +342,7 @@ public class GenericDao {
 
         if (isSimpleColumn(field)) {
           String columnName = resolveColumnName(field);
-          writeFieldValue(field, entity, resultSet.getObject(columnName));
+          writeFieldValue(field, entity, resultSet, columnName);
         }
       }
       context.put(entity);
@@ -434,7 +431,7 @@ public class GenericDao {
     return resultSet.getObject(idColumnName);
   }
 
-  private <T> void setParameters(PreparedStatement preparedStatement,
+  private void setParameters(PreparedStatement preparedStatement,
       Object primaryKey,
       Object... params) throws SQLException {
     validatePrimaryKey(primaryKey);
@@ -458,8 +455,38 @@ public class GenericDao {
     Class<?> entityIdType = findEntityIdField(entityClass).getType();
     if (!entityIdType.equals(id.getClass())) {
       throw new BibernateException(
-          "Mismatched types: Expected ID of type %s  but received ID of type %s".formatted(
+          "Mismatched types: Expected ID of type %s but received ID of type %s".formatted(
               entityIdType.getSimpleName(), id.getClass().getSimpleName()));
     }
   }
+
+  /**
+   * Executes a native SQL query and maps the result set to a list of entities of the specified class.
+   * This method prepares and executes the SQL query using a {@code PreparedStatement}, iterates over the
+   * {@code ResultSet}, and for each row, it maps the result to an instance of the specified entity class.
+   * The mapping is handled by the {@code mapResult} method. In case of SQL exceptions, a {@code BiQLException}
+   * is thrown, indicating failure to execute the query or map the results.
+   *
+   * @param <T> the generic type of the entity class
+   * @param sql the SQL query to be executed
+   * @param entityClass the class of the entities in the result list
+   * @return a list of entities of type {@code T}, mapped from the result set
+   * @throws BiQLException if there is an error executing the query or mapping the results
+   */
+  public <T> List<T> executeNativeQuery(String sql, Class<T> entityClass) {
+    List<T> result = new ArrayList<>();
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      ResultSet resultSet = statement.executeQuery();
+      while (resultSet.next()) {
+        T entity = mapResult(resultSet, entityClass);
+        result.add(entity);
+      }
+    } catch (SQLException e) {
+      throw new BiQLException(
+          "Could not execute native query [%s] for entity [%s]"
+              .formatted(sql, entityClass), e);
+    }
+    return result;
+  }
+
 }

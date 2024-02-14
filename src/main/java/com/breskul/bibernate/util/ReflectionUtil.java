@@ -5,6 +5,8 @@ import com.breskul.bibernate.exception.ReflectAccessException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.slf4j.Logger;
 
 
@@ -67,6 +69,15 @@ public class ReflectionUtil {
       throw new ReflectAccessException(
           "Mismatched field owner object: field [%s]; object class [%s]".formatted(
               field, obj.getClass().getName()), e);
+    }
+  }
+
+  public static void writeFieldValue(Field field, Object obj, ResultSet resultSet,
+      String columnName) {
+    try {
+      writeFieldValue(field, obj, resultSet.getObject(columnName));
+    } catch (SQLException ex) {
+      log.debug("Will not map not selected column [{}]", columnName);
     }
   }
 
