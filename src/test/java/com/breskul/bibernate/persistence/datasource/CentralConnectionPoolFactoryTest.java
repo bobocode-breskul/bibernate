@@ -1,4 +1,4 @@
-package com.breskul.bibernate.datasource;
+package com.breskul.bibernate.persistence.datasource;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
