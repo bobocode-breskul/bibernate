@@ -46,7 +46,7 @@ public class BiQLMapper {
 
     String entityClassName = entityClass.getSimpleName();
 
-    List<String> bqlParts = Arrays.stream(bgl.toLowerCase().split("\\s+")).toList();
+    List<String> bqlParts = Arrays.stream(bgl.replace(",", " ").toLowerCase().split("\\s+")).toList();
     if (bqlParts.get(0).equalsIgnoreCase(SqlKeyword.SELECT.name())) {
       int entityIndex = bqlParts.indexOf(entityClassName.toLowerCase());
 
@@ -61,9 +61,10 @@ public class BiQLMapper {
     String entityTableName = EntityUtil.getEntityTableName(entityClass);
     String result = bgl.replace(entityClassName, entityTableName);
     List<Field> entityFields = getClassEntityFields(entityClass);
+    String alias = getAlias(bqlParts, entityClassName);
     for (Field field : entityFields) {
       String fieldName = field.getName();
-      if (bqlParts.contains(fieldName.toLowerCase())) {
+      if (bqlParts.contains(fieldName.toLowerCase()) || bqlParts.contains("%s.%s".formatted(alias, fieldName.toLowerCase()))) {
         String columnName = resolveColumnName(field);
         result = result.replace(fieldName, columnName);
       }
