@@ -2,6 +2,7 @@ package com.breskul.bibernate.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.breskul.bibernate.data.Person;
 import com.breskul.bibernate.exception.BibernateException;
@@ -26,7 +27,7 @@ class CrudIntegrationTest extends AbstractIntegrationTest {
   @Test
   @DisplayName("Find person by primary key when it exist in DB")
   void givenPersonInDb_whenFindByIdFromDb_thenReturnExpectedPerson() {
-    Person expected = prepareRandomPerson();
+    Person expected = createRandomPersonInDb();
 
     Person result = session.findById(Person.class, expected.getId());
 
@@ -38,7 +39,7 @@ class CrudIntegrationTest extends AbstractIntegrationTest {
   @Test
   @DisplayName("Select person by primary key twice when it exist in DB and return same instance of person from context")
   void givenPerson_whenItRequestedSecondTimeFromDB_thenReturnSamePerson() {
-    Person expected = prepareRandomPerson();
+    Person expected = createRandomPersonInDb();
 
     Person firstRequestResult = session.findById(Person.class, expected.getId());
     Person secondRequestResult = session.findById(Person.class, expected.getId());
@@ -49,7 +50,7 @@ class CrudIntegrationTest extends AbstractIntegrationTest {
   @Test
   @DisplayName("Find person by primary key but send wrong type of id to the method")
   void givenPersonInDb_whenFindByIdFromDbWithWrongIdType_thenReturnExpectedPerson() {
-    Person expected = prepareRandomPerson();
+    Person expected = createRandomPersonInDb();
 
     assertThatThrownBy(() -> session.findById(Person.class, expected.getId().toString()))
         .isInstanceOf(BibernateException.class)
@@ -65,13 +66,48 @@ class CrudIntegrationTest extends AbstractIntegrationTest {
     assertThat(result).isNull();
   }
 
+  @Test
+  void givenPerson_whenPersist_thenShouldPersistNewPerson() {
+    Person expectedPerson = prepareRandomPerson();
+
+    session.persist(expectedPerson);
+
+    Person resultPerson = session.findById(Person.class, expectedPerson.getId());
+
+    assertThat(resultPerson.getId()).isEqualTo(expectedPerson.getId());
+    assertThat(resultPerson.getFirstName()).isEqualTo(expectedPerson.getFirstName());
+    assertThat(resultPerson.getLastName()).isEqualTo(expectedPerson.getLastName());
+  }
+
+  @Test
+  void givenExistedPerson_whenDelete_thenShouldDeletePerson() {
+    Person createdPerson = createRandomPersonInDb();
+
+    Person retrievedPerson = session.findById(Person.class, createdPerson.getId());
+
+    assertThat(retrievedPerson.getId()).isEqualTo(createdPerson.getId());
+
+    session.delete(createdPerson);
+    session.flush();
+
+    Person deletedPerson = session.findById(Person.class, createdPerson.getId());
+
+    assertNull(deletedPerson);
+  }
+
+  private Person createRandomPersonInDb() {
+    Person person = prepareRandomPerson();
+    createPerson(person);
+    return person;
+  }
+
   private Person prepareRandomPerson() {
     long id = ids.incrementAndGet();
+
     Person person = new Person();
     person.setId(id);
     person.setFirstName("Mykola" + id);
     person.setLastName("Filimonov" + id);
-    createPerson(person);
     return person;
   }
 
