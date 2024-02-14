@@ -5,7 +5,6 @@ import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BiQLException;
-import com.breskul.bibernate.persistence.Session;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -23,7 +22,9 @@ import org.slf4j.Logger;
  */
 public class BiQLMapper {
 
-  private static final Logger log = LoggerFactory.getLogger(Session.class);
+  private static final Logger log = LoggerFactory.getLogger(BiQLMapper.class);
+
+  private static final String BIQL_HAS_INCORRECT_STRUCTURE = "BiQL has incorrect structure";
 
   private BiQLMapper() {
 
@@ -62,8 +63,10 @@ public class BiQLMapper {
     List<Field> entityFields = getClassEntityFields(entityClass);
     for (Field field : entityFields) {
       String fieldName = field.getName();
-      String columnName = resolveColumnName(field);
-      result = result.replace(fieldName, columnName);
+      if (bqlParts.contains(fieldName.toLowerCase())) {
+        String columnName = resolveColumnName(field);
+        result = result.replace(fieldName, columnName);
+      }
     }
     return result;
   }
@@ -104,7 +107,7 @@ public class BiQLMapper {
 
     if (bql.contains("*")) {
       log.error("bql contains not valid symbol [*]");
-      throw new BiQLException("BiQL has incorrect structure");
+      throw new BiQLException(BIQL_HAS_INCORRECT_STRUCTURE);
     }
 
     String entityClassName = entityClass.getSimpleName();
@@ -119,13 +122,13 @@ public class BiQLMapper {
 
     if (fromIndex == -1) {
       log.error("Bql not contains from keyword");
-      throw new BiQLException("BiQL has incorrect structure");
+      throw new BiQLException(BIQL_HAS_INCORRECT_STRUCTURE);
     }
 
     String allowedQueryStartWord = bqlParts.get(0);
     if (!(allowedQueryStartWord.equalsIgnoreCase(SqlKeyword.SELECT.name()) ||
         allowedQueryStartWord.equalsIgnoreCase(SqlKeyword.FROM.name()))) {
-      throw new BiQLException("BiQL has incorrect structure");
+      throw new BiQLException(BIQL_HAS_INCORRECT_STRUCTURE);
     }
 
     String alias = getAlias(bqlParts, entityClassName);
@@ -147,7 +150,7 @@ public class BiQLMapper {
 
     if (!isValidParam) {
       log.error("Bql contains not valid symbol '.' in select params [{}]", bqlParts);
-      throw new BiQLException("BiQL has incorrect structure");
+      throw new BiQLException(BIQL_HAS_INCORRECT_STRUCTURE);
     }
   }
 
@@ -156,7 +159,7 @@ public class BiQLMapper {
 
     if (subList.size() == 1 && !subList.get(0).equals(alias)) {
       log.error("Bql does not contain select param");
-      throw new BiQLException("BiQL has incorrect structure");
+      throw new BiQLException(BIQL_HAS_INCORRECT_STRUCTURE);
     } else if (subList.size() == 1) {
       return;
     }
@@ -166,7 +169,7 @@ public class BiQLMapper {
 
     if (!isValidParam) {
       log.error("Bql contains not valid select param [{}]", bqlParts);
-      throw new BiQLException("BiQL has incorrect structure");
+      throw new BiQLException(BIQL_HAS_INCORRECT_STRUCTURE);
     }
   }
 
