@@ -44,7 +44,7 @@ public class BibernateDataSource extends AbstractDataSource implements Connectio
    */
 
   @Override
-  public BibernateDataSource createDataSource(DataSourceProperties properties) {
+  public BibernateDataSource createDataSource(PersistenceProperties properties) {
     this.url = properties.url();
     this.username = properties.username();
     this.password = properties.password();

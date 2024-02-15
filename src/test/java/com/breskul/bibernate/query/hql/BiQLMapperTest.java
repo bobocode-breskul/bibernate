@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.breskul.bibernate.data.Note;
 import com.breskul.bibernate.data.Person;
+import com.breskul.bibernate.data.PhotoComment;
 import com.breskul.bibernate.exception.BiQLException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -70,6 +71,21 @@ class BiQLMapperTest {
   void givenValidBql_whenBqlToSql_thenShouldGenerateValidSql(String bql, String expected) {
     //when
     String actual = BiQLMapper.bqlToSql(bql, Person.class);
+    //then
+    assertThat(actual).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+      "'from PhotoComment', 'select * from photo_comment'",
+      "'from PhotoComment p', 'select * from photo_comment p'",
+      "'select p from PhotoComment p', 'select * from photo_comment p'",
+      "'select p.text, p.id from PhotoComment p', 'select p.text, p.id from photo_comment p'"
+  })
+  void givenValidBqlWithFieldLikeTable_whenBqlToSql_thenShouldGenerateValidSql(String bql,
+      String expected) {
+    //when
+    String actual = BiQLMapper.bqlToSql(bql, PhotoComment.class);
     //then
     assertThat(actual).isEqualTo(expected);
   }

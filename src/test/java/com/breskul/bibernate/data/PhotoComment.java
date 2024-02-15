@@ -1,11 +1,9 @@
-package com.breskul.bibernate.demo.entity;
+package com.breskul.bibernate.data;
 
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.DynamicUpdate;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
-import com.breskul.bibernate.annotation.JoinColumn;
-import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,7 +26,6 @@ public class PhotoComment {
   @Column(name = "text")
   private String text;
 
-  @ManyToOne
-  @JoinColumn(name = "photo_id", nullable = false)
-  private Photo photo;
+  @Column(name = "photo_id")
+  private int photo;
 }
