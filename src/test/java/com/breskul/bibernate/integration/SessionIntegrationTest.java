@@ -94,6 +94,25 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
         .hasMessage("Could not execute native query [%s] for entity [%s]".formatted(invalidQuery, Person.class));
   }
 
+  @Test
+  void givenPersonInDb_whenSessionClose_thenShouldNotFlushUnflushedChanges() throws SQLException {
+    Person createdPerson = prepareRandomPerson();
+
+    Person retrievedPerson = session.findById(Person.class, createdPerson.getId());
+
+    assertThat(retrievedPerson.getId()).isEqualTo(createdPerson.getId());
+
+    session.delete(createdPerson);
+    session.close();
+
+    session = Persistence.createSessionFactory().openSession();
+
+    Person unFlushedPerson = session.findById(Person.class, createdPerson.getId());
+    assertThat(unFlushedPerson.getId()).isEqualTo(createdPerson.getId());
+    assertThat(unFlushedPerson.getFirstName()).isEqualTo(createdPerson.getFirstName());
+    assertThat(unFlushedPerson.getLastName()).isEqualTo(createdPerson.getLastName());
+  }
+
   private Person prepareRandomPerson() {
     long id = ids.incrementAndGet();
     Person person = new Person();
