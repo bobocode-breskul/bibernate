@@ -1,11 +1,8 @@
 package com.breskul.bibernate.metadata;
 
-import lombok.Data;
-
 /**
  * Represents a column metadata.
  */
-
 public class Column {
   private Integer length;
   private Integer precision;
