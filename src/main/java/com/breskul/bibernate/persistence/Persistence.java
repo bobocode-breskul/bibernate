@@ -2,13 +2,12 @@ package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.config.PropertiesConfiguration;
 import com.breskul.bibernate.ddl.TableCreationService;
-import com.breskul.bibernate.exception.BibernateException;
-import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
 import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
 import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
+import com.breskul.bibernate.util.EntityUtil;
 
 /**
  * The Persistence class provides a convenient way to create a Bibernate SessionFactory based on configuration properties. It retrieves
@@ -41,16 +40,12 @@ public class Persistence {
     DataSourceProperties dataSourceProperties = ApplicationPropertiesReader.getInstance().readProperty();
     var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(dataSourceProperties.type());
     var dataSource = factory.createDataSource(dataSourceProperties);
-
-//    ApplicationPropertiesReader propertiesReader = ApplicationPropertiesReader.getInstance();
-//    DataSourceProperties dataSourceProperties = propertiesReader.readProperty();
-//    BibernateDataSource dataSource = new BibernateDataSource(dataSourceProperties);
-//    EntitiesMetadataPersistence entitiesMetadataPersistence = new EntitiesMetadataPersistence();
-//
-//    TableCreationService tableCreationService = new TableCreationService(dataSource,
-//        propertiesReader, entitiesMetadataPersistence);
-//    tableCreationService.processDdl();
+    EntitiesMetadataPersistence entitiesMetadataPersistence = EntitiesMetadataPersistence.createInstance(
+        EntityUtil::getAllEntitiesClasses);
+    TableCreationService tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence);
+    tableCreationService.processDdl();
 
     return new SessionFactory(dataSource);
   }
 }
+

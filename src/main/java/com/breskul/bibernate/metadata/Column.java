@@ -1,8 +1,10 @@
 package com.breskul.bibernate.metadata;
 
-import java.sql.JDBCType;
 import lombok.Data;
 
+/**
+ * Represents a column metadata.
+ */
 @Data
 public class Column {
   private Integer length;
@@ -13,4 +15,5 @@ public class Column {
   private boolean unique;
   private String sqlTypeName;
   private boolean isPrimaryKey;
+  private Class<?> javaType;
 }

@@ -1,53 +1,66 @@
 package com.breskul.bibernate.ddl;
 
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.config.PropertiesConfiguration;
 import com.breskul.bibernate.metadata.Column;
 import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
 import com.breskul.bibernate.metadata.Table;
 import com.breskul.bibernate.metadata.dto.ForeignKey;
-import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import java.util.Set;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 
+
+/**
+ * The TableCreationService class is responsible for creating, dropping, and adding foreign keys to database tables.
+ */
 public class TableCreationService {
   private static final Logger logger = LoggerFactory.getLogger(TableCreationService.class);
+  static final String CREATE_TABLES_PROPERTY_NAME = "bibernate.ddl.create_tables";
   private static final String DROP_TABLE_SQL = "drop table if exists %s cascade";
   private static final String UNIQUE = "UNIQUE";
   private static final String NOT_NULL = "NOT NULL";
   private static final String PRIMARY_KEY = "PRIMARY KEY";
   String ADD_FOREIGN_KEY_SQL = """
         ALTER TABLE IF EXISTS %s
-        ADD CONSTRAINT %s 
+        ADD CONSTRAINT %s
         FOREIGN KEY (%s)
         REFERENCES %s
         """;
 
   private final DataSource dataSource;
-  private final ApplicationPropertiesReader propertiesReader;
   private final EntitiesMetadataPersistence entitiesMetadataPersistence;
 
 
 
-  public TableCreationService(DataSource dataSource, ApplicationPropertiesReader propertiesReader,
-      EntitiesMetadataPersistence entitiesMetadataPersistence) {
+  public TableCreationService(DataSource dataSource, EntitiesMetadataPersistence entitiesMetadataPersistence) {
     this.dataSource = dataSource;
-    this.propertiesReader = propertiesReader;
     this.entitiesMetadataPersistence = entitiesMetadataPersistence;
   }
 
+  /**
+   * Processes Data Definition Language (DDL) statements to create tables and add foreign keys if specified by the configuration.
+   * The process involves dropping all existing tables, creating new tables, and adding foreign keys if necessary.
+   * If the 'CREATE_TABLES_PROPERTY_NAME' property is set to 'true' in the configuration, the table creation process is executed.
+   *
+   * @see TableCreationService#dropAllTables()
+   * @see TableCreationService#createTables()
+   * @see TableCreationService#addForeignKeys()
+   * @see PropertiesConfiguration#getPropertyOrDefault(String, String)
+   */
   public void processDdl(){
-    dropAllTables();
-    createTables();
-    addForeignKeys();
-    // todo: read property and decide if DLL generation is required
-    // todo: drop and create tables for found entities
+    boolean createTables = Boolean.parseBoolean(
+        PropertiesConfiguration.getPropertyOrDefault(CREATE_TABLES_PROPERTY_NAME, "false"));
+    if (createTables) {
+      dropAllTables();
+      createTables();
+      addForeignKeys();
+    }
   }
 
-  public void dropAllTables() {
+  private void dropAllTables() {
     try(var connection = dataSource.getConnection()) {
       Statement statement = connection.createStatement();
       for (Table table : entitiesMetadataPersistence.getTables()) {
@@ -59,7 +72,8 @@ public class TableCreationService {
       throw new RuntimeException(e);
     }
   }
-  public void createTables() {
+
+  private void createTables() {
     try (var connection = dataSource.getConnection()) {
       Statement statement = connection.createStatement();
       for (Table table : entitiesMetadataPersistence.getTables()) {

@@ -1,18 +1,18 @@
 package com.breskul.bibernate.metadata;
 
-import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.metadata.dto.DataType;
 import java.lang.reflect.Field;
 
-public abstract class ColumnDefinitionHandler {
-  DataType getDataType(Field field) {
-    var columnAnnotation = field.getAnnotation(Column.class);
-    if (columnAnnotation != null && !columnAnnotation.columnDefinition().isBlank()) {
-      var colDefinition = columnAnnotation.columnDefinition();
-      return new DataType(colDefinition);
-    }
-    return this.resolveDataType(field);
-  }
+/**
+ * Represents an interface for resolving the sql data type from an entity field definition.
+ */
+public interface ColumnDefinitionHandler {
 
-  abstract DataType resolveDataType(Field field);
+  /**
+   * Resolves the SQL data type from an entity field definition.
+   *
+   * @param field the field whose data type needs to be resolved
+   * @return the resolved sql data type
+   */
+  DataType resolveDataType(Field field);
 }

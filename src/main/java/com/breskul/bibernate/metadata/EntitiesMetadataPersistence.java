@@ -1,6 +1,6 @@
 package com.breskul.bibernate.metadata;
 
-import static com.breskul.bibernate.metadata.PGprovider.DEFAULT_VARCHAR_LENGTH;
+import static com.breskul.bibernate.metadata.CommonSQLTypesConverter.DEFAULT_VARCHAR_LENGTH;
 import static com.breskul.bibernate.util.EntityUtil.getClassEntityFields;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
@@ -11,39 +11,72 @@ import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.metadata.dto.ForeignKey;
 import com.breskul.bibernate.util.EntityUtil;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
+
+/**
+ * The EntitiesMetadataPersistence class represents the persistence mechanism for storing and retrieving metadata about entities.
+ * It initializes and maintains a collection of Table objects that represent the entity tables in the database.
+ */
 public class EntitiesMetadataPersistence {
 
-  private PGprovider pGprovider = new PGprovider();
+  private final Map<String, Table> tables = new HashMap<>();
 
-  private final List<Table> tables = new ArrayList<>();
-  private volatile boolean initialized;
+  private final Supplier<Set<Class<?>>> entitiesSupplier;
 
-  public List<Table> getTables() {
-    if (!initialized) {
-      synchronized (this) {
-        if (!initialized) {
-          init();
-          initialized = true;
-        }
-      }
-    }
-    return tables;
+  private EntitiesMetadataPersistence(Supplier<Set<Class<?>>> entitiesSupplier) {
+    this.entitiesSupplier = entitiesSupplier;
   }
 
+  /**
+   * Creates an instance of EntitiesMetadataPersistence by using the provided entitiesSupplier to retrieve the set of entity classes.
+   * The method initializes the EntitiesMetadataPersistence object by populating the metadata for each entity class.
+   *
+   * @param entitiesSupplier the supplier function to retrieve the set of entity classes
+   * @return the initialized EntitiesMetadataPersistence object
+   */
+  public static EntitiesMetadataPersistence createInstance(Supplier<Set<Class<?>>> entitiesSupplier) {
+    return new EntitiesMetadataPersistence(entitiesSupplier).init();
+  }
+  /**
+   * Retrieves all the Table objects in the EntitiesMetadataPersistence.
+   *
+   * @return a Set of Table objects
+   */
+  public Set<Table> getTables() {
+    return new HashSet<>(tables.values());
+  }
 
-  private void init() {
-    Set<Class<?>> entities = EntityUtil.getAllEntitiesClasses();
+  /**
+   * Retrieves the Table object corresponding to the given table name.
+   *
+   * @param tableName the name of the table
+   * @return the Table object corresponding to the given table name, null if no match is found
+   */
+  public Table getTable(String tableName) {
+    return tables.get(tableName);
+  }
+
+  /**
+   * Initializes the EntitiesMetadataPersistence object by populating the metadata for each entity class.
+   *
+   * @return this, initialized EntitiesMetadataPersistence object.
+   */
+  private EntitiesMetadataPersistence init() {
+    Set<Class<?>> entities = entitiesSupplier.get();
     for (Class<?> entity: entities) {
       Table table = new Table();
-      table.setName(getEntityTableName(entity));
+      String tableName = getEntityTableName(entity);
+      table.setName(tableName);
       if (entity.isAnnotationPresent(com.breskul.bibernate.annotation.Table.class)) {
         var tableAnnotation = entity.getAnnotation(com.breskul.bibernate.annotation.Table.class);
         table.setSchema(tableAnnotation.schema());
@@ -53,8 +86,9 @@ public class EntitiesMetadataPersistence {
       GeneratedColumnsData columnsData = generatedColumnsData(entity);
       table.setColumns(columnsData.columns());
       columnsData.foreignKeys().forEach(table::addForeignKey);
-      tables.add(table);
+      tables.put(tableName, table);
     }
+    return this;
   }
 
 
@@ -82,11 +116,11 @@ public class EntitiesMetadataPersistence {
       } else {
         if (field.isAnnotationPresent(OneToOne.class)) {
           OneToOne oneToOne = field.getAnnotation(OneToOne.class);
-          if (oneToOne.mappedBy() == null) {
+          if (oneToOne.mappedBy().isBlank()) {
             column = generateOneToOneColumn(field);
             foreignKeys.add(generateForeignKey(entity, field));
           } else {
-            // todo validate mappedBy
+            validateMappedByExists(field, oneToOne.mappedBy());
             continue;
           }
         } else if (field.isAnnotationPresent(ManyToOne.class)) {
@@ -103,6 +137,16 @@ public class EntitiesMetadataPersistence {
       columns.put(column.getName(), column);
     }
     return new GeneratedColumnsData(columns, foreignKeys);
+  }
+
+  private void validateMappedByExists(Field field, String mappedByField) {
+    boolean isPresent = Arrays.stream(field.getType().getDeclaredFields())
+        .anyMatch(f -> mappedByField.equals(f.getName()));
+
+    if (!isPresent) {
+      throw new IllegalStateException("mappedBy %s field is not exists in %s"
+          .formatted(mappedByField, field.getType()));
+    }
   }
 
   private Column generateManyToOneColumn(Field field) {
@@ -144,8 +188,9 @@ public class EntitiesMetadataPersistence {
       column.setPrecision(0);
       column.setScale(0);
     }
+    column.setJavaType(field.getType());
     column.setName(resolveColumnName(field));
-    column.setSqlTypeName(PGprovider.getSQLType(field).getName());
+    column.setSqlTypeName(CommonSQLTypesConverter.getSQLType(field).getName());
     return column;
   }
 

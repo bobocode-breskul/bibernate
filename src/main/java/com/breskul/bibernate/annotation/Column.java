@@ -10,20 +10,22 @@ import java.lang.annotation.Target;
  * Specifies the mapped column for a persistent property or field. If no <code>Column</code>
  * annotation is specified, the default values apply.
  */
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Column {
-
-  // TODO: add attributes
-
+  /**
+   * (Optional) The name of the column. Defaults to
+   * the property or field name.
+   */
   String name() default "";
 
-
+  /**
+   * (Optional) The unique constraint, used when generating the DDL for the column.
+   */
   boolean unique() default false;
 
   /**
-   * (Optional) Whether the database column is nullable.
+   * (Optional) Whether the database column is nullable, used when generating the DDL for the column.
    */
   boolean nullable() default true;
 
@@ -55,10 +57,4 @@ public @interface Column {
    * (Applies only if a decimal column is used.)
    */
   int scale() default 0;
-
-  /**
-   * (Optional) Name of field handler which will resolve sql type name for this field
-   * @see com.breskul.bibernate.metadata.ColumnDefinitionHandler
-   */
-  String fieldHandler() default "";
 }

@@ -10,7 +10,6 @@ import static java.sql.JDBCType.REAL;
 import static java.sql.JDBCType.VARCHAR;
 
 import com.breskul.bibernate.annotation.Column;
-import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.metadata.dto.DataType;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -18,11 +17,8 @@ import java.math.BigInteger;
 import java.sql.JDBCType;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
 
-public class PGprovider {
-
-  Logger logger = LoggerFactory.getLogger(PGprovider.class);
+public class CommonSQLTypesConverter {
   static final int DEFAULT_VARCHAR_LENGTH = 255;
 
   /**
@@ -37,8 +33,10 @@ public class PGprovider {
   private static final int DEFAULT_BIG_DECIMAL_SCALE = 2;
   private static final double LOG_BASE2OF10 = log(10)/log(2);
 
+  static final String SCALE_IN_FLOAT_ERR_MSG = "Scale has no meaning for floating point numbers";
 
-  static final Map<String, ColumnDefinitionHandler> columnHandlers;
+
+  protected static final Map<String, ColumnDefinitionHandler> columnHandlers;
 
   static {
     Map<String, ColumnDefinitionHandler> tempMap = new ConcurrentHashMap<>();
@@ -59,41 +57,46 @@ public class PGprovider {
     tempMap.put(BigDecimal.class.getName(), new NumericHandler());
     tempMap.put(BigInteger.class.getName(), new NumericHandler());
 
-
     columnHandlers = tempMap;
   }
 
 
+  /**
+   * Retrieves the SQL data type of given field.
+   * If {@code @Column.columnDefinition() } is overridden than sql method will return data from it,
+   * otherwise sql type calculates by {@code ColumnDefinitionHandler's} from the given field
+   *
+   * @param field the field whose SQL data type needs to be retrieved
+   * @return the SQL data type of the field
+   * @throws IllegalArgumentException if the SQL type for the given field cannot be found
+   */
   public static DataType getSQLType(Field field) {
     String fieldHandlerName = field.getType().getName();
-    Column columnAnnotation = field.getAnnotation(Column.class);
-    if (columnAnnotation != null) {
-      fieldHandlerName = columnAnnotation.fieldHandler().isBlank()
-          ? fieldHandlerName
-          : columnAnnotation.fieldHandler();
+    var columnAnnotation = field.getAnnotation(Column.class);
+    if (columnAnnotation != null && !columnAnnotation.columnDefinition().isBlank()) {
+      var colDefinition = columnAnnotation.columnDefinition();
+      return new DataType(colDefinition);
     }
     ColumnDefinitionHandler handler = columnHandlers.get(fieldHandlerName);
     if (handler == null) {
-      throw new IllegalArgumentException("Not existing field handler: [%s] for type: [%s]"
-          .formatted(fieldHandlerName, field.getType()));
+      throw new IllegalArgumentException(("Can't find sql type for class:[%s] field [%s]. Please set it "
+          + "manually in @Column.columnDefinition property").formatted(field.getDeclaringClass(), field.getName()));
     }
-    return handler.getDataType(field);
+    return handler.resolveDataType(field);
   }
 
-
-
-  static class LongColumnHandler extends ColumnDefinitionHandler {
+  static class LongColumnHandler implements ColumnDefinitionHandler {
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       return new DataType(BIGINT.getName());
     }
 
   }
 
-  static class StringConverter extends ColumnDefinitionHandler {
+  static class StringConverter implements ColumnDefinitionHandler {
 
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       var fieldAnnotation = field.getAnnotation(Column.class);
       int length = DEFAULT_VARCHAR_LENGTH;
       if (fieldAnnotation != null) {
@@ -104,63 +107,67 @@ public class PGprovider {
     }
   }
 
-  static class IntConverter extends ColumnDefinitionHandler {
+  static class IntConverter implements ColumnDefinitionHandler {
 
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       return new DataType(INTEGER.getName());
     }
   }
 
-  static class CharacterConverter extends ColumnDefinitionHandler {
+  static class CharacterConverter implements ColumnDefinitionHandler {
 
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       return new DataType("%s(%d)".formatted(CHAR.getName(), 1));
     }
   }
 
-  static class FloatDefinitionHandler extends ColumnDefinitionHandler {
+  static class FloatDefinitionHandler implements ColumnDefinitionHandler {
 
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       var fieldAnnotation = field.getAnnotation(Column.class);
-      if (fieldAnnotation != null && fieldAnnotation.precision() != 0) {
-        int precision = fieldAnnotation.precision();
-
+      if (fieldAnnotation != null) {
         if (fieldAnnotation.scale() != 0) {
-          throw new IllegalArgumentException("scale has no meaning for floating point numbers");
-        };
-        // convert from base 10 (as specified in @Column) to base 2 (as specified by SQL)
-        // using the magic of high school math: log_2(10^n) = n*log_2(10) = n*ln(10)/ln(2)
-        precision = (int) ceil( precision * LOG_BASE2OF10 );
-        if (precision <= FLOAT_PRECISION_THRESHOLD) {
-          return new DataType(REAL.getName());
+          throw new IllegalArgumentException(SCALE_IN_FLOAT_ERR_MSG);
         }
-        return new DataType("%s(%d)".formatted(FLOAT.toString(), precision));
+        int precision = fieldAnnotation.precision();
+        if (fieldAnnotation.precision() != 0) {
+          // convert from base 10 (as specified in @Column) to base 2 (as specified by SQL)
+          // using the magic of high school math: log_2(10^n) = n*log_2(10) = n*ln(10)/ln(2)
+          precision = (int) ceil( precision * LOG_BASE2OF10 );
+          if (precision <= FLOAT_PRECISION_THRESHOLD) {
+            return new DataType(REAL.getName());
+          }
+          return new DataType("%s(%d)".formatted(FLOAT.toString(), precision));
+        }
+      }
+      if (field.getType() == float.class || field.getType() == Float.class) {
+        return new DataType(REAL.getName());
       }
       return new DataType("%s(%d)".formatted(FLOAT.toString(), DOUBLE_PRECISION_THRESHOLD));
     }
   }
 
-  static class BooleanConverter extends ColumnDefinitionHandler {
+  static class BooleanConverter implements ColumnDefinitionHandler {
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       return new DataType(JDBCType.BOOLEAN.getName());
     }
   }
 
-  static class ByteArrayConverter extends ColumnDefinitionHandler {
+  static class ByteArrayConverter implements ColumnDefinitionHandler {
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       return new DataType("BYTEA");
     }
   }
 
-  static class NumericHandler extends ColumnDefinitionHandler {
+  static class NumericHandler implements ColumnDefinitionHandler {
 
     @Override
-    DataType resolveDataType(Field field) {
+    public DataType resolveDataType(Field field) {
       var fieldAnnotation = field.getAnnotation(Column.class);
       int precision = DEFAULT_NUMERIC_PRECISION;
       int scale = field.getType() == BigDecimal.class
@@ -173,6 +180,4 @@ public class PGprovider {
       return new DataType("NUMERIC(%d,%d)".formatted(precision, scale));
     }
   }
-
-
 }
