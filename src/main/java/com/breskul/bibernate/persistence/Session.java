@@ -95,28 +95,53 @@ public class Session implements AutoCloseable {
     }
     persistenceContext.put(entity);
     return entity;
-
   }
 
-  // todo: docs
+  /**
+   * Merges the provided entity with the existing entity in the persistence context or database. If
+   * the entity is already present in the persistence context, it copies the changed values from the
+   * provided entity to the existing entity. If the entity is not present in the persistence
+   * context, it attempts to find the entity in the database and copies the changed values from the
+   * provided entity to the found entity. If the entity is not found in the database, it persists a
+   * copy of the provided entity. Provided entity object never becomes managed.
+   *
+   * @param mergeEntity The entity to be merged.
+   * @param <T>         The type of the entity.
+   * @return The updated managed entity.
+   */
   // todo: tests
-  public <T> T mergeEntity(T entity) {
-    var key = EntityKey.valueOf(entity);
-    if (persistenceContext.contains(key)) {
-      T cachedEntity = persistenceContext.getEntity(key);
-      if (!persistenceContext.isDirty(key)) {
-        merge(entity, cachedEntity);
+  public <T> T mergeEntity(T mergeEntity) {
+    // TODO: no associations
+    var mergeEntityKey = EntityKey.valueOf(mergeEntity);
+    if (persistenceContext.contains(mergeEntity)) {
+      T cachedEntity = persistenceContext.getEntity(mergeEntityKey);
+      if (mergeEntity != cachedEntity) {
+        EntityUtil.copyChangedValues(mergeEntity, cachedEntity);
       }
       return cachedEntity;
     }
-    T newEntity = find(key);
-    persistenceContext.put(newEntity);
-    return newEntity;
+    T foundEntity = find(mergeEntityKey);
+    if (foundEntity != null) {
+      EntityUtil.copyChangedValues(mergeEntity, foundEntity);
+      return foundEntity;
+    }
+    T entityInstance = persistCopy(mergeEntity);
+    return persistenceContext.getEntity(EntityKey.valueOf(entityInstance));
   }
 
-  private <T> T merge(T entity, T cachedEntity) {
-    // todo: update
-    return entity;
+  /**
+   * Makes a copy of the provided entity and persists it. Provided entity object ID value will be
+   * changed too.
+   *
+   * @param mergeEntity The entity to be persisted and copied.
+   * @param <T>         The type of the entity.
+   * @return The persisted entity copy
+   */
+  private <T> T persistCopy(T mergeEntity) {
+    T entityCopy = EntityUtil.copyEntity(mergeEntity);
+    persist(entityCopy);
+    EntityUtil.copyEntityId(entityCopy, mergeEntity);
+    return entityCopy;
   }
 
   public <T> void manageEntity(T entity) {
@@ -131,6 +156,7 @@ public class Session implements AutoCloseable {
    * @param entity entity instance
    */
   public <T> void persist(T entity) {
+    // TODO: throw exception if entity has ID value
     verifyIsSessionOpen();
     new InsertAction(genericDao, entity).execute();
     persistenceContext.put(entity);
@@ -144,7 +170,6 @@ public class Session implements AutoCloseable {
   }
 
   //TODO: write tests
-
   /**
    * Returns session transaction. If session does not have it or transaction was completed or rolled back then creates new
    * {@link Transaction}
@@ -192,7 +217,8 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified type.
+   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified
+   * type.
    *
    * @param <T>         the type of the result list
    * @param bglString   the BiQL query string
@@ -249,6 +275,7 @@ public class Session implements AutoCloseable {
    */
   private <T> void flushChanges(EntityKey<T> entityKey) {
     log.debug("Found not flushed changes in the cache");
+    // todo: if ID was altered - throw exception
     T updatedEntity = persistenceContext.getEntity(entityKey);
     Object[] parameters = EntityUtil.getEntityColumnValues(updatedEntity);
     if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
