@@ -1,8 +1,9 @@
 package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.config.PropertiesConfiguration;
-import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
+import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
+import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.PersistenceProperties;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
 import com.breskul.bibernate.persistence.dialect.Dialect;
@@ -22,20 +23,24 @@ import java.lang.reflect.InvocationTargetException;
  * </pre>
  */
 public class Persistence {
-
-
   /**
-   * Creates a Hibernate SessionFactory based on configuration properties.
-   *
-   * @return The created Hibernate SessionFactory.
-   * @throws BibernateException If there is an issue with the DataSource or loading the JDBC driver class.
-   * @see BibernateDataSource
-   * @see SessionFactory
-   * @see PropertiesConfiguration
+   * Creates a {@link SessionFactory} instance for managing database sessions.
+   * This method leverages the application's properties to configure and initialize
+   * the data source, and subsequently, the session factory.
+   * <p>
+   * The process involves reading the {@link DataSourceProperties} using the
+   * {@link ApplicationPropertiesReader}, determining the appropriate connection pool
+   * factory based on the type of data source specified in the properties, and then
+   * creating a data source instance. Finally, a new {@link SessionFactory} is instantiated
+   * with the created data source.
+   * </p>
+   * @return A newly created {@link SessionFactory} instance ready for use in creating
+   *         and managing database sessions.
    */
   public static SessionFactory createSessionFactory() {
     PersistenceProperties persistenceProperties = ApplicationPropertiesReader.getInstance().readProperty();
-    BibernateDataSource dataSource = new BibernateDataSource(persistenceProperties);
+    var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(persistenceProperties.type());
+    var dataSource = factory.createDataSource(persistenceProperties);
 
     Dialect dialect = getDialectInstance(persistenceProperties);
     return new SessionFactory(dataSource, dialect);

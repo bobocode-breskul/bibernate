@@ -2,6 +2,7 @@ package com.breskul.bibernate.persistence.datasource;
 
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BibernateException;
+import com.breskul.bibernate.persistence.datasource.connectionpools.ConnectionPoolFactory;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -9,6 +10,7 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import javax.sql.DataSource;
 import lombok.Setter;
 
 /**
@@ -16,7 +18,7 @@ import lombok.Setter;
  * the default DriverManager-based mechanism for finding the appropriate Driver class or a specified custom Driver class.
  */
 @Setter
-public class BibernateDataSource extends AbstractDataSource {
+public class BibernateDataSource extends AbstractDataSource implements ConnectionPoolFactory {
 
   protected final org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -40,7 +42,9 @@ public class BibernateDataSource extends AbstractDataSource {
    * @param properties The properties containing the connection URL, username, password, and driver class.
    * @throws BibernateException If the Driver with the specified name is not found or if there is an issue loading the class.
    */
-  public BibernateDataSource(PersistenceProperties properties) {
+
+  @Override
+  public BibernateDataSource createDataSource(PersistenceProperties properties) {
     this.url = properties.url();
     this.username = properties.username();
     this.password = properties.password();
@@ -53,8 +57,8 @@ public class BibernateDataSource extends AbstractDataSource {
     } catch (ClassNotFoundException e) {
       throw new BibernateException("Error loading the Driver class: " + driverClassName, e);
     }
+    return this;
   }
-
 
   @Override
   public Connection getConnection() throws SQLException {

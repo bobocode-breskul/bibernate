@@ -7,10 +7,12 @@ import com.breskul.bibernate.action.DeleteAction;
 import com.breskul.bibernate.action.InsertAction;
 import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
 import com.breskul.bibernate.persistence.dialect.Dialect;
+import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
@@ -166,6 +168,7 @@ public class Session implements AutoCloseable {
    * @param <T>    represents type of entry
    */
   public <T> void delete(T entity) {
+    verifyEntityManaged(entity);
     verifyIsSessionOpen();
     actionQueue.offer(new DeleteAction(genericDao, entity));
     persistenceContext.delete(entity);
@@ -201,9 +204,13 @@ public class Session implements AutoCloseable {
    */
   @Override
   public void close() {
-    performDirtyChecking();
     persistenceContext.clear();
     actionQueue.clear();
+
+    if (transaction != null) {
+      transaction.rollback();
+    }
+
     sessionStatus = false;
   }
 
@@ -277,6 +284,14 @@ public class Session implements AutoCloseable {
   private void verifyIsSessionOpen() {
     if (!sessionStatus) {
       throw new IllegalStateException("Session is closed");
+    }
+  }
+
+  private <T> void verifyEntityManaged(T entity) {
+    if (!persistenceContext.contains(entity)) {
+      throw new EntityIsNotManagedException(
+          "Entity [%s] could not be deleted because not found in the persistent context.".formatted(
+              entity));
     }
   }
 }

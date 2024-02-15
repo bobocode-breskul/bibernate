@@ -107,7 +107,7 @@ public class Transaction {
 
   private void validateIfCanRollback() throws SQLException {
     if (!session.isOpen()) {
-      throw new IllegalStateException("Cannot begin Transaction on closed session");
+      throw new IllegalStateException("Cannot operate Transaction on closed session");
     }
     if (!status.canRollback()) {
       throw new IllegalStateException(

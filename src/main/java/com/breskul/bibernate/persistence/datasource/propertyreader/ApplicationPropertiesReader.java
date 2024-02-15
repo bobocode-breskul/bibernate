@@ -18,6 +18,7 @@ public class ApplicationPropertiesReader implements PropertyReader {
   private static final String CONNECTION_PASSWORD = "bibernate.connection.password";
   private static final String CONNECTION_DRIVER_CLASS = "bibernate.connection.driver_class";
   private static final String DIALECT_CLASS = "bibernate.dialect";
+  private static final String DATASOURCE_TYPE = "bibernate.datasource.type";
 
   private static final ApplicationPropertiesReader INSTANCE = new ApplicationPropertiesReader();
 
@@ -46,10 +47,11 @@ public class ApplicationPropertiesReader implements PropertyReader {
     String url = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_URL), "Connection URL cannot be null");
     String username = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_USERNAME), "Connection username cannot be null");
     String password = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_PASSWORD), "Connection password cannot be null");
+    String type = Objects.requireNonNull(PropertiesConfiguration.getProperty(DATASOURCE_TYPE), "Datasource type cannot be null");
     String driverClass = PropertiesConfiguration.getPropertyOrDefault(CONNECTION_DRIVER_CLASS, null);
     String dialectClass = PropertiesConfiguration.getPropertyOrDefault(DIALECT_CLASS, null);
 
-    return new PersistenceProperties(url, username, password, driverClass, dialectClass);
+    return new PersistenceProperties(url, username, password, driverClass, type, dialectClass);
   }
 }
 
