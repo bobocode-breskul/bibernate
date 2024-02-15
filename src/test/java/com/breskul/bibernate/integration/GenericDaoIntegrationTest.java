@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class GenericDaoIntegrationTest extends AbstractIntegrationTest {
+class GenericDaoIntegrationTest extends AbstractIntegrationTest {
 
   @SneakyThrows
   @Order(1)
