@@ -11,6 +11,7 @@ import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
+import com.breskul.bibernate.persistence.dialect.Dialect;
 import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
@@ -28,17 +29,15 @@ import org.slf4j.Logger;
 
 
 /**
- * Represents a session for managing database operations and entity persistence. Provides methods
- * for entity management, persistence, transaction handling, and session closure.
+ * Represents a session for managing database operations and entity persistence. Provides methods for entity management, persistence,
+ * transaction handling, and session closure.
  * <p>
- * This class encapsulates a set of operations related to database interactions within a single unit
- * of work. It allows developers to perform database operations such as finding entities by ID,
- * merging entity changes, managing entity state, persisting new entities, and handling
- * transactions.
+ * This class encapsulates a set of operations related to database interactions within a single unit of work. It allows developers to
+ * perform database operations such as finding entities by ID, merging entity changes, managing entity state, persisting new entities, and
+ * handling transactions.
  * <p>
- * Additionally, the session class manages the persistence context, which stores first-level cached
- * entities and their snapshots. It also maintains an action queue to track operations performed
- * within the session.
+ * Additionally, the session class manages the persistence context, which stores first-level cached entities and their snapshots. It also
+ * maintains an action queue to track operations performed within the session.
  */
 public class Session implements AutoCloseable {
 
@@ -52,11 +51,11 @@ public class Session implements AutoCloseable {
   private Transaction transaction;
   private boolean sessionStatus;
 
-  public Session(DataSource dataSource) throws SQLException {
+  public Session(DataSource dataSource, Dialect dialect) throws SQLException {
     connection = dataSource.getConnection();
     connection.setAutoCommit(true);
     persistenceContext = new PersistenceContext();
-    genericDao = new GenericDao(connection, persistenceContext);
+    genericDao = new GenericDao(connection, persistenceContext, dialect);
     sessionStatus = true;
   }
 
@@ -69,18 +68,32 @@ public class Session implements AutoCloseable {
    * @return object of entity class
    */
   public <T> T findById(Class<T> entityClass, Object id) {
+    return findById(entityClass, id, null);
+  }
+
+  public <T> T findById(Class<T> entityClass, Object id, LockType lockType) {
     verifyIsSessionOpen();
     Objects.requireNonNull(id, "Required id to load load entity, pleas provide not null value");
     return Optional.ofNullable(persistenceContext.getEntity(entityClass, id))
-        .orElseGet(() -> find(EntityKey.of(entityClass, id)));
+        .filter(entity -> lockType == null)
+        .orElseGet(() -> find(EntityKey.of(entityClass, id), lockType));
   }
 
   private <T> T find(EntityKey<? extends T> entityKey) {
+    return find(entityKey, null);
+  }
+
+  private <T> T find(EntityKey<? extends T> entityKey, LockType lockType) {
     verifyIsSessionOpen();
-    T entity = genericDao.findById(entityKey.entityClass(), entityKey.id());
-    if (entity != null) {
-      persistenceContext.put(entity);
+    T entity = genericDao.findById(entityKey.entityClass(), entityKey.id(), lockType);
+    if (entity == null) {
+      return null;
     }
+    T persistEntity = persistenceContext.getEntity(EntityKey.valueOf(entity));
+    if (persistEntity != null) {
+      return persistEntity;
+    }
+    persistenceContext.put(entity);
     return entity;
   }
 
@@ -158,8 +171,8 @@ public class Session implements AutoCloseable {
 
   //TODO: write tests
   /**
-   * Returns session transaction. If session does not have it or transaction was completed or rolled
-   * back then creates new {@link Transaction}
+   * Returns session transaction. If session does not have it or transaction was completed or rolled back then creates new
+   * {@link Transaction}
    *
    * @return current session status
    */
@@ -217,8 +230,8 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Closes the session, performing necessary operations such as dirty checking, clearing the
-   * persistence context, clearing the action queue, and updating the session status.
+   * Closes the session, performing necessary operations such as dirty checking, clearing the persistence context, clearing the action
+   * queue, and updating the session status.
    */
   @Override
   public void close() {
@@ -272,8 +285,7 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Prepares dynamic parameters for the entity update query based on differences between the
-   * current and snapshot states.
+   * Prepares dynamic parameters for the entity update query based on differences between the current and snapshot states.
    *
    * @param entityKey     The key representing the entity.
    * @param updatedEntity The updated entity.
