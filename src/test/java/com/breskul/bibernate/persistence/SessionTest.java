@@ -28,7 +28,7 @@ class SessionTest {
   void setUp() throws SQLException {
     when(dataSource.getConnection()).thenReturn(connection);
 
-    session = new Session(dataSource);
+    session = new Session(dataSource, null);
   }
 
   @Test

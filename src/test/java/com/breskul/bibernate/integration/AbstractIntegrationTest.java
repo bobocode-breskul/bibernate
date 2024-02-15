@@ -21,8 +21,6 @@ public abstract class AbstractIntegrationTest {
   @BeforeAll
   public static void beforeAll() {
     PersistenceProperties properties = ApplicationPropertiesReader.getInstance().readProperty();
-    dataSource = new BibernateDataSource(properties);
-    DataSourceProperties properties = ApplicationPropertiesReader.getInstance().readProperty();
     dataSource = new BibernateDataSource().createDataSource(properties);
   }
 

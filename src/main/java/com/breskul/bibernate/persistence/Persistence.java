@@ -1,8 +1,8 @@
 package com.breskul.bibernate.persistence;
 
 import com.breskul.bibernate.config.PropertiesConfiguration;
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
-import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
 import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.PersistenceProperties;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
@@ -28,7 +28,7 @@ public class Persistence {
    * This method leverages the application's properties to configure and initialize
    * the data source, and subsequently, the session factory.
    * <p>
-   * The process involves reading the {@link DataSourceProperties} using the
+   * The process involves reading the {@link PersistenceProperties} using the
    * {@link ApplicationPropertiesReader}, determining the appropriate connection pool
    * factory based on the type of data source specified in the properties, and then
    * creating a data source instance. Finally, a new {@link SessionFactory} is instantiated

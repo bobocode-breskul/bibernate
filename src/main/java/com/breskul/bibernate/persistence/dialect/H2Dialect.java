@@ -10,7 +10,6 @@ public class H2Dialect implements Dialect {
       return "";
     }
     return switch (lockType) {
-      case PESSIMISTIC_READ -> "FOR SHARE";
       case PESSIMISTIC_WRITE -> "FOR UPDATE";
       default -> "";
     };

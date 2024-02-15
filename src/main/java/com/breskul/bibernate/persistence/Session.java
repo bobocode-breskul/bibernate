@@ -13,7 +13,6 @@ import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
 import com.breskul.bibernate.persistence.dialect.Dialect;
 import com.breskul.bibernate.query.hql.BiQLMapper;
-import com.breskul.bibernate.query.hql.BiQLMapper;
 import com.breskul.bibernate.transaction.Transaction;
 import com.breskul.bibernate.transaction.TransactionStatus;
 import com.breskul.bibernate.util.EntityUtil;
@@ -87,10 +86,16 @@ public class Session implements AutoCloseable {
   private <T> T find(EntityKey<? extends T> entityKey, LockType lockType) {
     verifyIsSessionOpen();
     T entity = genericDao.findById(entityKey.entityClass(), entityKey.id(), lockType);
-    if (entity != null) {
-      persistenceContext.put(entity);
+    if (entity == null) {
+      return null;
     }
+    T persistEntity = persistenceContext.getEntity(EntityKey.valueOf(entity));
+    if (persistEntity != null) {
+      return persistEntity;
+    }
+    persistenceContext.put(entity);
     return entity;
+
   }
 
   // todo: docs

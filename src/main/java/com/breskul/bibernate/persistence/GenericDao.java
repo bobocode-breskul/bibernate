@@ -88,7 +88,7 @@ public class GenericDao {
     Field idField = findEntityIdField(cls);
     String idColumnName = resolveColumnName(idField);
     checkEntityIdType(cls, id);
-    List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id);
+    List<T> searchResult = innerFindAllByFieldValue(cls, idColumnName, id, lockType);
     return searchResult.isEmpty() ? null : searchResult.get(0);
   }
 

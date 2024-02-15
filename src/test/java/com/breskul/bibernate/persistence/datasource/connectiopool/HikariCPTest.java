@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
+import com.breskul.bibernate.persistence.datasource.PersistenceProperties;
 import com.breskul.bibernate.persistence.datasource.connectionpools.HikariCP;
 import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
@@ -16,7 +16,7 @@ public class HikariCPTest {
 
   @Test
   void testCreateDataSource() {
-    DataSourceProperties mockProperties = mock(DataSourceProperties.class);
+    PersistenceProperties mockProperties = mock(PersistenceProperties.class);
     when(mockProperties.url()).thenReturn("jdbc:h2:mem:testdb");
     when(mockProperties.username()).thenReturn("sa");
     when(mockProperties.password()).thenReturn("");
