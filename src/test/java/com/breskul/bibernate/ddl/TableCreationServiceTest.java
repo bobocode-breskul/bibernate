@@ -13,9 +13,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.sql.DataSource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,11 +47,15 @@ public class TableCreationServiceTest {
   @Mock
   private Statement statement;
 
-  @InjectMocks
   private TableCreationService tableCreationService;
 
+  @BeforeEach
+  void beforeMethod() {
+    tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence, true);
+  }
+
   @Test
-  public void given_existsTable_when_processDdl_then_executeDDLs() throws SQLException {
+  void given_existsTable_when_processDdl_then_executeDDLs() throws SQLException {
     // Arrange
     Mockito.when(entitiesMetadataPersistence.getTables()).thenReturn(prepareTable());
     Mockito.when(dataSource.getConnection()).thenReturn(connection);

@@ -19,6 +19,7 @@ public class ApplicationPropertiesReader implements PropertyReader {
   private static final String CONNECTION_DRIVER_CLASS = "bibernate.connection.driver_class";
   private static final String DIALECT_CLASS = "bibernate.dialect";
   private static final String DATASOURCE_TYPE = "bibernate.datasource.type";
+  private static final String SHOW_SQL = "bibernate.show_sql";
 
   private static final ApplicationPropertiesReader INSTANCE = new ApplicationPropertiesReader();
 
@@ -50,8 +51,9 @@ public class ApplicationPropertiesReader implements PropertyReader {
     String type = Objects.requireNonNull(PropertiesConfiguration.getProperty(DATASOURCE_TYPE), "Datasource type cannot be null");
     String driverClass = PropertiesConfiguration.getPropertyOrDefault(CONNECTION_DRIVER_CLASS, null);
     String dialectClass = PropertiesConfiguration.getPropertyOrDefault(DIALECT_CLASS, null);
+    boolean showSql = Boolean.parseBoolean(PropertiesConfiguration.getPropertyOrDefault(SHOW_SQL, "").toLowerCase());
 
-    return new PersistenceProperties(url, username, password, driverClass, type, dialectClass);
+    return new PersistenceProperties(url, username, password, driverClass, type, dialectClass, showSql);
   }
 }
 

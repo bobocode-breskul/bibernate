@@ -51,11 +51,11 @@ public class Session implements AutoCloseable {
   private Transaction transaction;
   private boolean sessionStatus;
 
-  public Session(DataSource dataSource, Dialect dialect) throws SQLException {
+  public Session(DataSource dataSource, Dialect dialect, boolean showSql) throws SQLException {
     connection = dataSource.getConnection();
     connection.setAutoCommit(true);
     persistenceContext = new PersistenceContext();
-    genericDao = new GenericDao(connection, persistenceContext, dialect);
+    genericDao = new GenericDao(connection, persistenceContext, dialect, showSql);
     sessionStatus = true;
   }
 

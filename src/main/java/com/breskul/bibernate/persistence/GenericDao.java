@@ -69,15 +69,19 @@ public class GenericDao {
 
   private final Dialect dialect;
 
-  public GenericDao(Connection connection, PersistenceContext context, Dialect dialect) {
+  private final boolean showSql;
+
+  public GenericDao(Connection connection, PersistenceContext context, Dialect dialect,
+      boolean showSql) {
     this.connection = connection;
     this.context = context;
     this.dialect = dialect;
+    this.showSql = showSql;
   }
 
   /**
-   * Find by primary key. Search for an entity of the specified class and primary key. If the entity instance is contained in the
-   * persistence context, it is returned from there.
+   * Find by primary key. Search for an entity of the specified class and primary key. If the entity
+   * instance is contained in the persistence context, it is returned from there.
    *
    * @param cls      – entity class
    * @param id       - primary key
@@ -131,7 +135,8 @@ public class GenericDao {
    * @return the list of found entities or an empty list if no entities match the search criteria
    * @throws EntityQueryException if an error occurs during the search
    */
-  private <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue, LockType lockType) {
+  private <T> List<T> innerFindAllByFieldValue(Class<T> cls, String fieldName, Object fieldValue,
+      LockType lockType) {
     String tableName = getEntityTableName(cls);
     List<Field> columnFields = getClassColumnFields(cls);
 
@@ -139,8 +144,9 @@ public class GenericDao {
     String sql = SELECT_BY_FIELD_VALUE_QUERY.formatted(composeSelectBlockFromColumns(columnFields),
         tableName, fieldName, lockClause);
 
-    // TODO: show sql
-    log.info("Bibernate: {}", sql);
+    if (showSql) {
+      log.info("Bibernate, query: [{}]", sql);
+    }
     List<T> result = new ArrayList<>();
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setObject(1, fieldValue);
@@ -179,6 +185,9 @@ public class GenericDao {
     String sql = INSERT_ENTITY_QUERY.formatted(tableName,
         composeSelectBlockFromColumns(columnFields), questionMarks);
 
+    if (showSql) {
+      log.info("Bibernate, save entity: [{}]", sql);
+    }
     try (var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
@@ -186,8 +195,6 @@ public class GenericDao {
         // TODO: throws exception when entity has ANY association
         statement.setObject(i + 1, field.get(entity));
       }
-      // TODO: show sql
-      log.trace("Save entity: [{}]", sql);
       int result = statement.executeUpdate();
       if (result != 1) {
         throw new EntityQueryException(
@@ -231,13 +238,15 @@ public class GenericDao {
     Class<?> cls = entity.getClass();
     String tableName = getEntityTableName(cls);
     String deleteSql = DELETE_ENTITY_QUERY.formatted(tableName, findEntityIdFieldName(cls));
+    if (showSql) {
+      log.info("Bibernate, delete entity: [{}]", deleteSql);
+    }
     try (PreparedStatement statement = connection.prepareStatement(deleteSql)) {
       Object idObject = getEntityId(entity);
       if (idObject == null) {
         throw new EntityIdIsNullException("Entity ID is null for [%s]".formatted(entity));
       }
       statement.setObject(1, idObject);
-      log.trace("Delete entity: [{}]", deleteSql);
       int result = statement.executeUpdate();
       if (result != 1) {
         throw new EntityQueryException(
@@ -267,8 +276,9 @@ public class GenericDao {
     boolean isDynamicUpdate = EntityUtil.isDynamicUpdate(entityKey.entityClass());
     String updateSql =
         isDynamicUpdate ? prepareDynamicUpdateQuery(entityKey) : prepareUpdateQuery(entityKey);
-    // TODO: show sql
-    log.debug("Update entity: [{}]", updateSql);
+    if (showSql) {
+      log.info("Bibernate, update entity: [{}]", updateSql);
+    }
     try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
       setParameters(preparedStatement, entityKey.id(), parameters);
       return preparedStatement.executeUpdate();
@@ -477,20 +487,24 @@ public class GenericDao {
   }
 
   /**
-   * Executes a native SQL query and maps the result set to a list of entities of the specified class.
-   * This method prepares and executes the SQL query using a {@code PreparedStatement}, iterates over the
-   * {@code ResultSet}, and for each row, it maps the result to an instance of the specified entity class.
-   * The mapping is handled by the {@code mapResult} method. In case of SQL exceptions, a {@code BiQLException}
-   * is thrown, indicating failure to execute the query or map the results.
+   * Executes a native SQL query and maps the result set to a list of entities of the specified
+   * class. This method prepares and executes the SQL query using a {@code PreparedStatement},
+   * iterates over the {@code ResultSet}, and for each row, it maps the result to an instance of the
+   * specified entity class. The mapping is handled by the {@code mapResult} method. In case of SQL
+   * exceptions, a {@code BiQLException} is thrown, indicating failure to execute the query or map
+   * the results.
    *
-   * @param <T> the generic type of the entity class
-   * @param sql the SQL query to be executed
+   * @param <T>         the generic type of the entity class
+   * @param sql         the SQL query to be executed
    * @param entityClass the class of the entities in the result list
    * @return a list of entities of type {@code T}, mapped from the result set
    * @throws BiQLException if there is an error executing the query or mapping the results
    */
   public <T> List<T> executeNativeQuery(String sql, Class<T> entityClass) {
     List<T> result = new ArrayList<>();
+    if (showSql) {
+      log.info("Bibernate, query: [{}]", sql);
+    }
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       ResultSet resultSet = statement.executeQuery();
       while (resultSet.next()) {
