@@ -1,6 +1,7 @@
 package com.breskul.bibernate.data;
 
 import com.breskul.bibernate.annotation.Column;
+import com.breskul.bibernate.annotation.DynamicUpdate;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.Table;
@@ -11,9 +12,10 @@ import lombok.ToString;
 @Setter
 @Getter
 @ToString
+@DynamicUpdate
 @Entity
 @Table(name = "persons")
-public class Person {
+public class DynamicPerson {
 
   @Id
   private Long id;
@@ -23,19 +25,18 @@ public class Person {
   @Column(name = "last_name")
   private String lastName;
 
-  public Person() {
+  public DynamicPerson() {
 
   }
 
-  public Person(String firstName, String lastName) {
+  public DynamicPerson(String firstName, String lastName) {
     this.firstName = firstName;
     this.lastName = lastName;
   }
 
-  public Person(Long id, String firstName, String lastName) {
+  public DynamicPerson(Long id, String firstName, String lastName) {
     this.id = id;
     this.firstName = firstName;
     this.lastName = lastName;
   }
 }
-
