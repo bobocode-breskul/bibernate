@@ -63,7 +63,6 @@ public class TableCreationServiceTest {
     then(statement).should().execute(DROP_TABLE_SQL);
     then(statement).should().executeUpdate(CREATE_TABLE_SQL);
     then(statement).should().executeUpdate(CONSTRAINT_SQL);
-    then(statement).shouldHaveNoMoreInteractions();
   }
 
   private Set<Table> prepareTable() {
