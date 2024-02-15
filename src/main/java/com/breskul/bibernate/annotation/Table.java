@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
 public @interface Table {
 
   /**
-   * (Optional) The name of the table.
+   * The name of the table.
    * <p> Defaults to the entity name.
    */
   String name();
