@@ -18,11 +18,14 @@ import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.atteo.classindex.ClassIndex;
 import lombok.experimental.UtilityClass;
 
 
@@ -66,8 +69,8 @@ public class EntityUtil {
 
   /**
    * Retrieves the table name for the given entity class. If the class is annotated with the
-   * {@link Table} annotation, the table name from the annotation is returned. Otherwise, the class
-   * name is returned.
+   * {@link Table} annotation, the table name from the annotation is returned. Otherwise, generates
+   * name from class name.
    *
    * @param cls - The entity class
    * @return The table name for the entity class
@@ -75,7 +78,7 @@ public class EntityUtil {
   public static String getEntityTableName(Class<?> cls) {
     return Optional.ofNullable(cls.getAnnotation(Table.class))
         .map(Table::name)
-        .orElseGet(cls::getSimpleName);
+        .orElseGet(() -> generateTableName(cls.getSimpleName()));
   }
 
 
@@ -221,6 +224,7 @@ public class EntityUtil {
    *                              are marked with the 'Id' annotation
    */
   public static <T> String findEntityIdFieldName(Class<T> entityClass) {
+    // todo use resolveColumnName?
     return findEntityIdField(entityClass).getName();
   }
 
@@ -264,8 +268,24 @@ public class EntityUtil {
     } else if (field.isAnnotationPresent(JoinColumn.class)) {
       var columnName = field.getAnnotation(JoinColumn.class).name();
       return columnName.isBlank() ? field.getName() + "_id" : columnName;
+    } else if (!isSimpleColumn(field)) {
+      return field.getName() + "_id";
     }
     return field.getName();
+  }
+
+  private String generateTableName(String className) {
+    StringBuilder builder = new StringBuilder(className);
+    for ( int i = 1; i < builder.length() - 1; i++ ) {
+      if (isUnderscoreRequired(builder.charAt(i - 1), builder.charAt(i), builder.charAt(i + 1))) {
+        builder.insert(i++, '_');
+      }
+    }
+    return builder.toString();
+  }
+
+  private boolean isUnderscoreRequired(final char before, final char current, final char after) {
+    return Character.isLowerCase( before ) && Character.isUpperCase( current ) && Character.isLowerCase( after );
   }
 
   /**
@@ -435,6 +455,18 @@ public class EntityUtil {
     idField.setAccessible(true);
     Object idValue = ReflectionUtil.readFieldValue(sourceEntity, idField);
     ReflectionUtil.writeFieldValue(idField, targetEntity, idValue);
+  }
+
+
+  /**
+   * Retrieves all the classes annotated with the {@link Entity} annotation.
+   *
+   * @return A set of classes representing entities
+   */
+  public static Set<Class<?>> getAllEntitiesClasses() {
+    var entityClasses = new HashSet<Class<?>>();
+    ClassIndex.getAnnotated(Entity.class).forEach(entityClasses::add);
+    return entityClasses;
   }
 
   private static <T> Object readEntityColumnValue(T entity, Field field) {

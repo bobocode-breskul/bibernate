@@ -23,5 +23,4 @@ public @interface JoinColumn {
 
   boolean insertable() default true;
 
-  boolean updatable() default true;
 }
