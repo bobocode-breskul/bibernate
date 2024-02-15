@@ -9,12 +9,10 @@ import com.breskul.bibernate.metadata.dto.ForeignKey;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.sql.DataSource;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -53,14 +51,8 @@ public class TableCreationServiceTest {
   @InjectMocks
   private TableCreationService tableCreationService;
 
-//  drop table if exists TestCatalog.TestSchema.TestTable cascade
-
-
-
-
-
   @Test
-  public void testProcessDdl() throws SQLException {
+  public void given_existsTable_when_processDdl_then_executeDDLs() throws SQLException {
     // Arrange
     Mockito.when(entitiesMetadataPersistence.getTables())
         .thenReturn(prepareTable());

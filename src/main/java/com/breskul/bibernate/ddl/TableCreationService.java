@@ -56,8 +56,8 @@ public class TableCreationService {
   }
 
   private void dropAllTables() {
-    try(var connection = dataSource.getConnection()) {
-      Statement statement = connection.createStatement();
+    try(var connection = dataSource.getConnection();
+        Statement statement = connection.createStatement()) {
       for (Table table : entitiesMetadataPersistence.getTables()) {
         String dropSql = DROP_TABLE_SQL.formatted(table.getFullName());
         logger.info("Bibernate: " + dropSql);
@@ -69,8 +69,8 @@ public class TableCreationService {
   }
 
   private void createTables() {
-    try (var connection = dataSource.getConnection()) {
-      Statement statement = connection.createStatement();
+    try (var connection = dataSource.getConnection();
+        Statement statement = connection.createStatement()) {
       for (Table table : entitiesMetadataPersistence.getTables()) {
         String createQuery = generateCreateTableSql(table);
         logger.info("Bibernate: " + createQuery);
@@ -82,8 +82,8 @@ public class TableCreationService {
   }
 
   private void addForeignKeys() {
-    try (var connection = dataSource.getConnection()) {
-      Statement statement = connection.createStatement();
+    try (var connection = dataSource.getConnection();
+      Statement statement = connection.createStatement()) {
       for (Table table : entitiesMetadataPersistence.getTables()) {
         Set<ForeignKey> foreignKeys = table.getForeignKeys();
         if (!foreignKeys.isEmpty()) {
