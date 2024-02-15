@@ -95,7 +95,7 @@ class EntitiesMetadataPersistenceTest {
     assertThat(foreignKey.getFieldName()).isEqualTo(foreignKeyFieldName);
     assertThat(foreignKey.getTableName()).isEqualTo(TABLE_TWO_NAME);
     assertThat(foreignKey.getRelatedTableName()).isEqualTo(TABLE_THREE_NAME);
-    assertThat(foreignKey.getConstraintId()).startsWith("FK");
+    assertThat(foreignKey.getConstraintName()).startsWith("FK");
   }
 
   @Test
@@ -114,7 +114,7 @@ class EntitiesMetadataPersistenceTest {
     assertThat(foreignKey).isNotNull();
     assertThat(foreignKey.getTableName()).isEqualTo(TABLE_ONE_NAME);
     assertThat(foreignKey.getRelatedTableName()).isEqualTo(TABLE_TWO_NAME);
-    assertThat(foreignKey.getConstraintId()).startsWith("FK");
+    assertThat(foreignKey.getConstraintName()).startsWith("FK");
 
     Field secondEntityJoinField = Entity2.class.getDeclaredField("entity1");
     String secondEntityJoinColumnName = EntityUtil.resolveColumnName(secondEntityJoinField);
@@ -143,7 +143,7 @@ class EntitiesMetadataPersistenceTest {
     assertThat(foreignKey.getFieldName()).isEqualTo(fourEntityJoinColumnName);
     assertThat(foreignKey.getTableName()).isEqualTo(TABLE_FOUR_NAME);
     assertThat(foreignKey.getRelatedTableName()).isEqualTo(TABLE_TWO_NAME);
-    assertThat(foreignKey.getConstraintId()).startsWith("FK");
+    assertThat(foreignKey.getConstraintName()).startsWith("FK");
 
 
     Class<?> fourTableIdType = Entity4.class.getDeclaredField("id").getType();
@@ -159,7 +159,7 @@ class EntitiesMetadataPersistenceTest {
     assertThat(foreignKeyOpposite.getFieldName()).isEqualTo(secondEntityJoinColumnName);
     assertThat(foreignKeyOpposite.getTableName()).isEqualTo(TABLE_TWO_NAME);
     assertThat(foreignKeyOpposite.getRelatedTableName()).isEqualTo(TABLE_FOUR_NAME);
-    assertThat(foreignKeyOpposite.getConstraintId()).startsWith("FK");
+    assertThat(foreignKeyOpposite.getConstraintName()).startsWith("FK");
   }
 
 }

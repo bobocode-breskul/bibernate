@@ -7,7 +7,7 @@ public class ForeignKey {
   private String tableName;
   private String fieldName;
   private String relatedTableName;
-  private String constraintId;
+  private String constraintName;
 
   public String getTableName() {
     return tableName;
@@ -21,8 +21,8 @@ public class ForeignKey {
     return relatedTableName;
   }
 
-  public String getConstraintId() {
-    return constraintId;
+  public String getConstraintName() {
+    return constraintName;
   }
 
 }

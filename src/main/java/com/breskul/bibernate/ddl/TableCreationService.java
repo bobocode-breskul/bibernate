@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 public class TableCreationService {
   private static final Logger logger = LoggerFactory.getLogger(TableCreationService.class);
   public static final String CREATE_TABLES_PROPERTY_NAME = "bibernate.ddl.create_tables";
-  private static final String DROP_TABLE_SQL = "drop table if exists %s cascade";
+  private static final String DROP_TABLE_SQL = "DROP TABLE IF EXISTS %s CASCADE";
   private static final String UNIQUE = "UNIQUE";
   private static final String NOT_NULL = "NOT NULL";
   private static final String PRIMARY_KEY = "PRIMARY KEY";
@@ -100,12 +100,12 @@ public class TableCreationService {
   }
 
   private String generateFKeySQL(ForeignKey fk) {
-    return ADD_FOREIGN_KEY_SQL.formatted(fk.getTableName(), fk.getConstraintId(), fk.getFieldName(),
+    return ADD_FOREIGN_KEY_SQL.formatted(fk.getTableName(), fk.getConstraintName(), fk.getFieldName(),
             fk.getRelatedTableName());
 
   }
   private String generateCreateTableSql(Table table) {
-    StringBuilder sql = new StringBuilder("create table if not exists %s(".formatted(table.getFullName()));
+    StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS %s(".formatted(table.getFullName()));
     for (Column column: table.getColumns()) {
       sql.append(System.lineSeparator());
       sql.append("\t%s %s".formatted(column.getName(), column.getSqlTypeName()));
