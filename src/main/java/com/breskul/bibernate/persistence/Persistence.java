@@ -41,17 +41,14 @@ public class Persistence {
    *         and managing database sessions.
    */
   public static SessionFactory createSessionFactory() {
-    DataSourceProperties dataSourceProperties = ApplicationPropertiesReader.getInstance().readProperty();
-    var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(dataSourceProperties.type());
-    var dataSource = factory.createDataSource(dataSourceProperties);
+    PersistenceProperties persistenceProperties = ApplicationPropertiesReader.getInstance().readProperty();
+    var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(persistenceProperties.type());
+    var dataSource = factory.createDataSource(persistenceProperties);
+
     EntitiesMetadataPersistence entitiesMetadataPersistence = EntitiesMetadataPersistence.createInstance(
         EntityUtil::getAllEntitiesClasses);
     TableCreationService tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence);
     tableCreationService.processDdl();
-
-    PersistenceProperties persistenceProperties = ApplicationPropertiesReader.getInstance().readProperty();
-    var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(persistenceProperties.type());
-    var dataSource = factory.createDataSource(persistenceProperties);
 
     Dialect dialect = getDialectInstance(persistenceProperties);
     return new SessionFactory(dataSource, dialect);
