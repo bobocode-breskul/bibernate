@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
+import com.breskul.bibernate.persistence.datasource.PersistenceProperties;
 import com.breskul.bibernate.persistence.datasource.connectionpools.ApacheDBCP;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 public class ApacheDBCPTest {
   @Test
   void testCreateDataSource() {
-    DataSourceProperties mockProperties = mock(DataSourceProperties.class);
+    PersistenceProperties mockProperties = mock(PersistenceProperties.class);
     when(mockProperties.url()).thenReturn("jdbc:testdb:url");
     when(mockProperties.username()).thenReturn("testUser");
     when(mockProperties.password()).thenReturn("testPass");

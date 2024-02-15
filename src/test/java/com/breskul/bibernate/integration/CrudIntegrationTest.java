@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.breskul.bibernate.data.Person;
 import com.breskul.bibernate.exception.BibernateException;
+import com.breskul.bibernate.persistence.LockType;
 import com.breskul.bibernate.persistence.Persistence;
 import com.breskul.bibernate.persistence.Session;
 import java.sql.SQLException;
@@ -37,14 +38,27 @@ class CrudIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
-  @DisplayName("Select person by primary key twice when it exist in DB and return same instance of person from context")
-  void givenPerson_whenItRequestedSecondTimeFromDB_thenReturnSamePerson() {
+  @DisplayName("Find person by primary key when it exist in DB and used read lock")
+  void givenPersonInDb_whenFindByIdFromDb_thenReturnExpectedPersonWithReadLock() {
     Person expected = createRandomPersonInDb();
 
-    Person firstRequestResult = session.findById(Person.class, expected.getId());
-    Person secondRequestResult = session.findById(Person.class, expected.getId());
+    Person result = session.findById(Person.class, expected.getId(), LockType.PESSIMISTIC_READ);
 
-    assertThat(firstRequestResult).isSameAs(secondRequestResult);
+    assertThat(result.getId()).isEqualTo(expected.getId());
+    assertThat(result.getFirstName()).isEqualTo(expected.getFirstName());
+    assertThat(result.getLastName()).isEqualTo(expected.getLastName());
+  }
+
+  @Test
+  @DisplayName("Find person by primary key when it exist in DB and used write lock")
+  void givenPersonInDb_whenFindByIdFromDb_thenReturnExpectedPersonWithWriteLock() {
+    Person expected = createRandomPersonInDb();
+
+    Person result = session.findById(Person.class, expected.getId(), LockType.PESSIMISTIC_WRITE);
+
+    assertThat(result.getId()).isEqualTo(expected.getId());
+    assertThat(result.getFirstName()).isEqualTo(expected.getFirstName());
+    assertThat(result.getLastName()).isEqualTo(expected.getLastName());
   }
 
   @Test

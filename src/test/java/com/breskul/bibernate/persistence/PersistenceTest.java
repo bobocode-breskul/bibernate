@@ -1,6 +1,6 @@
 package com.breskul.bibernate.persistence;
 
-import com.breskul.bibernate.persistence.datasource.DataSourceProperties;
+import com.breskul.bibernate.persistence.datasource.PersistenceProperties;
 import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -12,7 +12,7 @@ public class PersistenceTest {
   @Test
   public
   void testCreateSessionFactory() {
-    DataSourceProperties properties = mock(DataSourceProperties.class);
+    PersistenceProperties properties = mock(PersistenceProperties.class);
     when(properties.type()).thenReturn("HikariCP");
     when(properties.url()).thenReturn("jdbc:h2:mem:test");
     when(properties.username()).thenReturn("sa");
