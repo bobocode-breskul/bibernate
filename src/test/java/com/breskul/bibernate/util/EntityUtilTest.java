@@ -1,17 +1,30 @@
 package com.breskul.bibernate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.breskul.bibernate.annotation.Column;
 import com.breskul.bibernate.annotation.DynamicUpdate;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
+import com.breskul.bibernate.annotation.JoinColumn;
 import com.breskul.bibernate.annotation.ManyToOne;
+import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.annotation.OneToOne;
+import com.breskul.bibernate.annotation.Table;
+import com.breskul.bibernate.exception.EntityParseException;
+import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -143,6 +156,180 @@ class EntityUtilTest {
   }
 
   @Test
+  void givenValidEntity_whenValidateIsEntity_thenShouldNotThrowError() {
+    assertDoesNotThrow(() -> EntityUtil.validateIsEntity(TestEntity.class));
+  }
+
+  @Test
+  void givenNotValidEntity_whenValidateIsEntity_thenShouldThrowEntityParseException() {
+    assertThatThrownBy(() -> EntityUtil.validateIsEntity(String.class))
+        .isInstanceOf(EntityParseException.class)
+        .hasMessage("Class should be marked with 'Entity' annotation");
+  }
+
+  @Test
+  void givenValidEntity_whenValidateColumnName_thenShouldNotThrowError() {
+    assertDoesNotThrow(() -> EntityUtil.validateColumnName(TestEntity.class, "name"));
+  }
+
+  @Test
+  void givenNotValidEntity_whenValidateColumnName_thenShouldThrowIllegalArgumentException() {
+    assertThatThrownBy(() -> EntityUtil.validateColumnName(TestEntity.class, "nonexistent"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Entity [class com.breskul.bibernate.util.EntityUtilTest$TestEntity] does not have a column: [nonexistent].");
+  }
+
+  @Test
+  void givenEntity_whenGetEntityTableName_thenhouldReturnEntityTableName() {
+    assertThat(EntityUtil.getEntityTableName(TestEntity.class)).isEqualTo("test_entity");
+  }
+
+  @Test
+  void givenEntityWithOutTableAnnotation_whenGetEntityTableName_thenhouldReturnEntityTableName() {
+    assertThat(EntityUtil.getEntityTableName(RelatedEntity.class)).isEqualTo("Related_Entity");
+  }
+
+  @Test
+  void givenEntity_whenGetEntitySimpleColumnValues_thenShouldReturnColumnValues() {
+    TestEntity testEntity = new TestEntity();
+    testEntity.setId(1);
+    testEntity.setName("John Doe");
+    testEntity.setAge(30);
+
+    List<EntityPropertySnapshot> propertySnapshots = EntityUtil.getEntitySimpleColumnValues(
+        testEntity);
+
+    assertThat(propertySnapshots.size()).isEqualTo(3);
+
+    assertThat(propertySnapshots.get(0).columnName()).isEqualTo("id");
+    assertThat(propertySnapshots.get(0).columnValue()).isEqualTo(1);
+
+    assertThat(propertySnapshots.get(1).columnName()).isEqualTo("name");
+    assertThat(propertySnapshots.get(1).columnValue()).isEqualTo("John Doe");
+
+    assertThat(propertySnapshots.get(2).columnName()).isEqualTo("age");
+    assertThat(propertySnapshots.get(2).columnValue()).isEqualTo(30);
+  }
+
+  @Test
+  void givenEntity_whenGetClassEntityFields_thenShouldReturnEntityFields() {
+    List<Field> entityFields = EntityUtil.getClassEntityFields(TestEntity.class);
+
+    assertThat(entityFields.size()).isEqualTo(4);
+
+    assertThat(entityFields).anyMatch(field -> field.getName().equals("id"));
+    assertThat(entityFields).anyMatch(field -> field.getName().equals("name"));
+    assertThat(entityFields).anyMatch(field -> field.getName().equals("age"));
+    assertThat(entityFields).anyMatch(field -> field.getName().equals("relatedEntity"));
+  }
+
+  @Test
+  void givenPredicate_whenGetClassColumnFieldsWithPredicate_thenShouldReturnFilteredFields() {
+    Predicate<Field> fieldPredicate = field -> !field.getName().equals("id");
+
+    List<Field> columnFields = EntityUtil.getClassColumnFields(TestEntity.class, fieldPredicate);
+
+    assertThat(columnFields).hasSize(3);
+
+    assertThat(columnFields).anyMatch(field -> field.getName().equals("name"));
+    assertThat(columnFields).anyMatch(field -> field.getName().equals("age"));
+    assertThat(columnFields).anyMatch(field -> field.getName().equals("relatedEntity"));
+    assertThat(columnFields).noneMatch(field -> field.getName().equals("id"));
+  }
+
+  @Test
+  void givenNoIdEntity_whenFindEntityIdFieldWithNoIdField_thenShouldThrowEntityParseException() {
+    List<Field> entityFields = List.of(NoIdEntity.class.getDeclaredFields());
+
+    assertThatExceptionOfType(EntityParseException.class)
+        .isThrownBy(() -> EntityUtil.findEntityIdField(entityFields))
+        .withMessage("Entity should define ID column marked with 'Id' annotation.");
+  }
+
+  @Test
+  void givenMultipleIdEntity_whenFindEntityIdFieldWithMultipleIdFields_thenShouldThrowEntityParseException() {
+    List<Field> entityFields = List.of(MultipleIdEntity.class.getDeclaredFields());
+
+    assertThatExceptionOfType(EntityParseException.class)
+        .isThrownBy(() -> EntityUtil.findEntityIdField(entityFields))
+        .withMessage("Only one field should be marked with 'Id' annotation.");
+  }
+
+  @Test
+  void givenEntity_whenFindEntityIdFieldName_thenShouldReturnEntityIdFieldName() {
+    String idFieldName = EntityUtil.findEntityIdFieldName(TestEntity.class);
+
+    assertThat(idFieldName).isEqualTo("id");
+  }
+
+  @Test
+  void givenEntity_whenGetEntityId_thenShouldReturnEntity() {
+    TestEntity testEntity = new TestEntity();
+    testEntity.setId(42);
+
+    Object entityId = EntityUtil.getEntityId(testEntity);
+
+    assertThat(entityId).isEqualTo(42);
+  }
+
+  @Test
+  void givenEntity_whenComposeSelectBlockFromColumns_thenShouldReturnComposeSelectBlockFromColumns() {
+    List<Field> columns = EntityUtil.getClassEntityFields(TestEntity.class);
+
+    String selectBlock = EntityUtil.composeSelectBlockFromColumns(columns);
+
+    assertThat(selectBlock).isEqualTo("id, name, age, related_entity_id");
+  }
+
+  @Test
+  void testResolveColumnName() throws NoSuchFieldException {
+    assertThat(EntityUtil.resolveColumnName(TestEntity.class.getDeclaredField("id")))
+        .isEqualTo("id");
+    assertThat(EntityUtil.resolveColumnName(TestEntity.class.getDeclaredField("name")))
+        .isEqualTo("name");
+    assertThat(EntityUtil.resolveColumnName(TestEntity.class.getDeclaredField("relatedEntity")))
+        .isEqualTo("related_entity_id");
+  }
+
+  @Test
+  void givenEntityWithRelatedEntity_whenGetJoinColumnName_thenShouldReturnJoinColumn() {
+    assertThat(EntityUtil.getJoinColumnName(TestEntity.class, RelatedEntity.class))
+        .isEqualTo("related_entity_id");
+  }
+
+  @Test
+  void givenEntityWithNotRelatedEntity_whenGetJoinColumnName_thenShouldThrowIllegalStateException() {
+    assertThatThrownBy(() -> EntityUtil.getJoinColumnName(TestEntity.class, NoIdEntity.class))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Can't find related entity [%s] field in [%s]."
+            .formatted(NoIdEntity.class, TestEntity.class));
+  }
+
+  @Test
+  void givenEntity_whenGetEntityCollectionElementType_thenShouldReturnCorrectElementType()
+      throws NoSuchFieldException {
+    Field stringListField = TestEntityCollection.class.getDeclaredField("stringList");
+    Field integerListField = TestEntityCollection.class.getDeclaredField("integerList");
+
+    assertThat(EntityUtil.getEntityCollectionElementType(stringListField)).isEqualTo(String.class);
+    assertThat(EntityUtil.getEntityCollectionElementType(integerListField)).isEqualTo(
+        Integer.class);
+  }
+
+  @Test
+  void givenEntityWithRelation_whenHasToOneRelations_thenShouldReturnTrue() {
+    assertThat(EntityUtil.hasToOneRelations(TestRelationEntity.class)).isTrue();
+  }
+
+  @Test
+  void givenEntityClasses_whenGetAllEntitiesClasses_shouldReturnAllEntityClasses() {
+    Set<Class<?>> entityClasses = EntityUtil.getAllEntitiesClasses();
+
+    assertThat(entityClasses).contains(TestEntity.class, RelatedEntity.class);
+  }
+
+  @Test
   @DisplayName("When entity annotated with @DynamicUpdate return true")
   @Order(8)
   void givenDynamicUpdateAnnotatedEntity_whenIsDynamicUpdate_thenReturnTrue() {
@@ -239,14 +426,73 @@ class EntityUtilTest {
    * This class represents a test entity.
    */
   @AllArgsConstructor
-  @NoArgsConstructor
   @Getter
   @Entity
-  public static class TestEntity {
+  @Table(name = "test_entity")
+  @Setter
+  private static class TestEntity {
 
     @Id
-    int id;
-    String name;
+    private int id;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "age")
+    private int age;
+
+    @ManyToOne
+    @JoinColumn(name = "related_entity_id")
+    private RelatedEntity relatedEntity;
+
+    public TestEntity() {
+
+    }
+  }
+
+  @Entity
+  private static class RelatedEntity {
+    @Id
+    private int id;
+
+    @Column(name = "description")
+    private String description;
+
+    public RelatedEntity() {
+
+    }
+  }
+
+  private static class NoIdEntity {
+
+    private Long entityId;
+    private String name;
+  }
+
+  private static class MultipleIdEntity {
+
+    @Id
+    private Long id1;
+
+    @Id
+    private Long id2;
+  }
+
+  private static class TestEntityCollection {
+
+    private List<String> stringList;
+    private List<Integer> integerList;
+  }
+
+  private static class TestRelationEntity {
+
+    private String simpleField;
+    @OneToMany
+    private List<String> oneToManyList;
+    @ManyToOne
+    private String manyToOneField;
+    @OneToOne
+    private String oneToOneField;
   }
 
   @DynamicUpdate
