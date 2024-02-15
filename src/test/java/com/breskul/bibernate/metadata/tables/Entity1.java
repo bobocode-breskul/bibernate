@@ -21,7 +21,7 @@ public class Entity1 {
   @Column
   private boolean basicClassWithColumn;
 
-  @Column(name = "name_from_col", unique = true, nullable = false, length = 20, precision = 10, scale = 5, columnDefinition = "def")
+  @Column(name = "name_from_col", unique = true, nullable = false, length = 20, precision = 10, scale = 5, columnDefinition = "boolean")
   private boolean columnWithOverrideProperties;
 
   @OneToOne

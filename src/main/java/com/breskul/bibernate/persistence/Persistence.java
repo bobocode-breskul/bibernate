@@ -1,5 +1,7 @@
 package com.breskul.bibernate.persistence;
 
+import static com.breskul.bibernate.ddl.TableCreationService.CREATE_TABLES_PROPERTY_NAME;
+
 import com.breskul.bibernate.config.PropertiesConfiguration;
 import com.breskul.bibernate.ddl.TableCreationService;
 import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
@@ -45,10 +47,15 @@ public class Persistence {
     var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(persistenceProperties.type());
     var dataSource = factory.createDataSource(persistenceProperties);
 
+
     EntitiesMetadataPersistence entitiesMetadataPersistence = EntitiesMetadataPersistence.createInstance(
         EntityUtil::getAllEntitiesClasses);
-    TableCreationService tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence);
-    tableCreationService.processDdl();
+    boolean createTables = Boolean.parseBoolean(
+        PropertiesConfiguration.getPropertyOrDefault(CREATE_TABLES_PROPERTY_NAME, "false"));
+    if (createTables){
+      TableCreationService tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence);
+      tableCreationService.processDdl();
+    }
 
     Dialect dialect = getDialectInstance(persistenceProperties);
     return new SessionFactory(dataSource, dialect);

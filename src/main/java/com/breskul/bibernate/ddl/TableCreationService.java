@@ -18,7 +18,7 @@ import org.slf4j.Logger;
  */
 public class TableCreationService {
   private static final Logger logger = LoggerFactory.getLogger(TableCreationService.class);
-  static final String CREATE_TABLES_PROPERTY_NAME = "bibernate.ddl.create_tables";
+  public static final String CREATE_TABLES_PROPERTY_NAME = "bibernate.ddl.create_tables";
   private static final String DROP_TABLE_SQL = "drop table if exists %s cascade";
   private static final String UNIQUE = "UNIQUE";
   private static final String NOT_NULL = "NOT NULL";
@@ -43,7 +43,6 @@ public class TableCreationService {
   /**
    * Processes Data Definition Language (DDL) statements to create tables and add foreign keys if specified by the configuration.
    * The process involves dropping all existing tables, creating new tables, and adding foreign keys if necessary.
-   * If the 'CREATE_TABLES_PROPERTY_NAME' property is set to 'true' in the configuration, the table creation process is executed.
    *
    * @see TableCreationService#dropAllTables()
    * @see TableCreationService#createTables()
@@ -51,13 +50,9 @@ public class TableCreationService {
    * @see PropertiesConfiguration#getPropertyOrDefault(String, String)
    */
   public void processDdl(){
-    boolean createTables = Boolean.parseBoolean(
-        PropertiesConfiguration.getPropertyOrDefault(CREATE_TABLES_PROPERTY_NAME, "false"));
-    if (createTables) {
       dropAllTables();
       createTables();
       addForeignKeys();
-    }
   }
 
   private void dropAllTables() {
@@ -110,7 +105,7 @@ public class TableCreationService {
 
   }
   private String generateCreateTableSql(Table table) {
-    StringBuilder sql = new StringBuilder("create table %s(".formatted(table.getFullName()));
+    StringBuilder sql = new StringBuilder("create table if not exists %s(".formatted(table.getFullName()));
     for (Column column: table.getColumns()) {
       sql.append(System.lineSeparator());
       sql.append("\t%s %s".formatted(column.getName(), column.getSqlTypeName()));
@@ -128,7 +123,6 @@ public class TableCreationService {
 
     sql.replace(sql.length() - 1, sql.length(), System.lineSeparator()); // change last "," on separate sign.
     sql.append(");");
-
 
     return sql.toString();
   }
