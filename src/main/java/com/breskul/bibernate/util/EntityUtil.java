@@ -19,6 +19,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -314,9 +315,9 @@ public class EntityUtil {
   }
 
   /**
-   * Checks if the specified entity class has any @OneToOne or @ManyToOne relations.
-   * This method examines the declared fields of the class to identify if any field
-   * is marked as a 'toOne' relation based on the presence of @OneToOne or @ManyToOne annotations.
+   * Checks if the specified entity class has any @OneToOne or @ManyToOne relations. This method
+   * examines the declared fields of the class to identify if any field is marked as a 'toOne'
+   * relation based on the presence of @OneToOne or @ManyToOne annotations.
    *
    * @param cls - The entity class to check for 'toOne' relations
    * @param <T> - The type of the entity class
@@ -332,7 +333,7 @@ public class EntityUtil {
    * indicating that dynamic update behavior is enabled for this entity.
    *
    * @param entityClass - The entity class to check for dynamic update annotation
-   * @param <T> - The type of the entity class
+   * @param <T>         - The type of the entity class
    * @return true if the entity class is annotated with {@link DynamicUpdate}, false otherwise
    */
   public static <T> boolean isDynamicUpdate(Class<T> entityClass) {
@@ -375,6 +376,65 @@ public class EntityUtil {
               relatedIdField != null ? getEntityId(relatedIdField) : null);
         })
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Copies the changed values from the sourceEntity to the targetEntity.
+   *
+   * @param <T> The type of the entities.
+   * @param sourceEntity The source entity from which to copy the values.
+   * @param targetEntity The target entity to which to copy the values.
+   */
+  public static <T> void copyChangedValues(T sourceEntity, T targetEntity) {
+    // TODO: no associations
+    List<Field> simpleColumnFields = EntityUtil.getEntitySimpleColumnFields(
+        sourceEntity.getClass());
+    for (Field simpleColumnField : simpleColumnFields) {
+      simpleColumnField.setAccessible(true);
+      Object sourceFieldValue = ReflectionUtil.readFieldValue(sourceEntity, simpleColumnField);
+      Object targetFieldValue = ReflectionUtil.readFieldValue(targetEntity, simpleColumnField);
+      if (!Objects.equals(sourceFieldValue, targetFieldValue)) {
+        ReflectionUtil.writeFieldValue(simpleColumnField, targetEntity, sourceFieldValue);
+      }
+    }
+  }
+
+  /**
+   * Creates a copy of the given entity object.
+   *
+   * @param entity the entity object to be copied
+   * @param <T> the type of the entity object
+   * @return a new instance of the entity object with the same field values as the original entity
+   */
+  @SuppressWarnings("unchecked")
+  public static  <T> T copyEntity(T entity) {
+    if (entity == null) {
+      throw new IllegalArgumentException("Source object should not be 'null'");
+    }
+    T entityCopy = (T) ReflectionUtil.createEntityInstance(entity.getClass());
+    Field[] entityFields = entityCopy.getClass().getDeclaredFields();
+    for (Field entityField : entityFields) {
+      entityField.setAccessible(true);
+      Object sourceValue = ReflectionUtil.readFieldValue(entity, entityField);
+      if (sourceValue != null) {
+        ReflectionUtil.writeFieldValue(entityField, entityCopy, sourceValue);
+      }
+    }
+    return entityCopy;
+  }
+
+  /**
+   * Copies the entity ID from the source entity to the target entity.
+   *
+   * @param <T>           the type of the entity
+   * @param sourceEntity  the source entity from which to copy the ID
+   * @param targetEntity  the target entity to which the ID will be copied
+   */
+  public static <T> void copyEntityId(T sourceEntity, T targetEntity) {
+    Field idField = EntityUtil.findEntityIdField(sourceEntity.getClass());
+    idField.setAccessible(true);
+    Object idValue = ReflectionUtil.readFieldValue(sourceEntity, idField);
+    ReflectionUtil.writeFieldValue(idField, targetEntity, idValue);
   }
 
   private static <T> Object readEntityColumnValue(T entity, Field field) {
