@@ -1,5 +1,6 @@
 package com.breskul.bibernate.proxy.collection;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Spliterator;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -176,4 +178,115 @@ class LazyListTest {
     assertEquals("[One, Two, Three]", lazyList.toString());
   }
 
+  @Test
+  void testLazyListClear() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test clear
+    lazyList.clear();
+    assertEquals(0, lazyList.size());
+    assertTrue(lazyList.isEmpty());
+  }
+
+  @Test
+  void testLazyListToArrayWithGenerator() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test toArray with generator
+    String[] array = lazyList.toArray(String[]::new);
+    assertNotNull(array);
+    assertArrayEquals(new String[]{"One", "Two", "Three"}, array);
+  }
+
+  @Test
+  void testLazyListContainsAll() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test containsAll
+    List<String> subList = Arrays.asList("Two", "Three");
+    assertTrue(lazyList.containsAll(subList));
+  }
+
+  @Test
+  void testLazyListSet() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test set
+    String replacedElement = lazyList.set(1, "NewTwo");
+    assertEquals("Two", replacedElement);
+    assertEquals("NewTwo", lazyList.get(1));
+  }
+
+  @Test
+  void testLazyListAddAtIndex() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test add at index
+    lazyList.add(1, "NewElement");
+    assertEquals(4, lazyList.size());
+    assertEquals("NewElement", lazyList.get(1));
+  }
+
+  @Test
+  void testLazyListRemoveAtIndex() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test remove at index
+    String removedElement = lazyList.remove(1);
+    assertEquals("Two", removedElement);
+    assertEquals(2, lazyList.size());
+    assertEquals("Three", lazyList.get(1));
+  }
+
+  @Test
+  void testLazyListListIterator() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test listIterator
+    ListIterator<String> iterator = lazyList.listIterator();
+    assertNotNull(iterator);
+    assertTrue(iterator.hasNext());
+    assertEquals("One", iterator.next());
+  }
+
+  @Test
+  void testLazyListListIteratorWithIndex() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test listIterator with index
+    ListIterator<String> iterator = lazyList.listIterator(1);
+    assertNotNull(iterator);
+    assertTrue(iterator.hasNext());
+    assertEquals("Two", iterator.next());
+  }
+
+  @Test
+  void testLazyListToArrayWithIntFunction() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test toArray with IntFunction
+    String[] array = lazyList.toArray(String[]::new);
+    assertNotNull(array);
+    assertArrayEquals(new String[]{"One", "Two", "Three"}, array);
+  }
+
+  @Test
+  void testLazyListToArrayWithArray() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazyList<String> lazyList = new LazyList<>(supplier);
+
+    // Test toArray with array
+    String[] array = lazyList.toArray(new String[0]);
+    assertNotNull(array);
+    assertArrayEquals(new String[]{"One", "Two", "Three"}, array);
+  }
 }

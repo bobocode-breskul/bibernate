@@ -151,4 +151,25 @@ class LazySetTest {
     assertNotNull(array);
     assertArrayEquals(new String[]{"One", "Two", "Three"}, array);
   }
+
+  @Test
+  void testLazySetContainsAll() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazySet<String> lazySet = new LazySet<>(supplier);
+
+    // Test containsAll
+    List<String> subList = Arrays.asList("Two", "Three");
+    assertTrue(lazySet.containsAll(subList));
+  }
+
+  @Test
+  void testLazySetToArrayWithArray() {
+    Supplier<Collection<? extends String>> supplier = () -> Arrays.asList("One", "Two", "Three");
+    LazySet<String> lazySet = new LazySet<>(supplier);
+
+    // Test toArray with array
+    String[] array = lazySet.toArray(new String[0]);
+    assertNotNull(array);
+    assertArrayEquals(new String[]{"One", "Two", "Three"}, array);
+  }
 }
