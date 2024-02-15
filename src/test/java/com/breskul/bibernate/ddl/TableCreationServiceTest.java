@@ -24,11 +24,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class TableCreationServiceTest {
 
   public static final String DROP_TABLE_SQL = "DROP TABLE IF EXISTS TestCatalog.TestSchema.TestTable CASCADE";
-  public static final String CREATE_TABLE_SQL = """
-      CREATE TABLE IF NOT EXISTS TestCatalog.TestSchema.TestTable(
-      	id INTEGER PRIMARY KEY,
-      	name2 VARCHAR UNIQUE NOT NULL
-      );""";
+  public static final String CREATE_TABLE_SQL = "CREATE TABLE IF NOT EXISTS TestCatalog.TestSchema.TestTable(" + System.lineSeparator()
+      	+ "\tid INTEGER PRIMARY KEY," + System.lineSeparator()
+      	+ "\tname2 VARCHAR UNIQUE NOT NULL" + System.lineSeparator()
+      + ");";
 
   private static final String CONSTRAINT_SQL =""" 
   ALTER TABLE IF EXISTS TestTable
