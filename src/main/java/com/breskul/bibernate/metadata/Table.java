@@ -10,7 +10,6 @@ import lombok.Data;
 /**
  * Table metadata.
  */
-@Data
 public class Table {
   private String catalog;
   private String schema;
@@ -68,5 +67,41 @@ public class Table {
    */
   public Set<ForeignKey> getForeignKeys() {
     return new LinkedHashSet<>(foreignKeys.values());
+  }
+
+  public String getCatalog() {
+    return catalog;
+  }
+
+  public void setCatalog(String catalog) {
+    this.catalog = catalog;
+  }
+
+  public String getSchema() {
+    return schema;
+  }
+
+  public void setSchema(String schema) {
+    this.schema = schema;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getFullName() {
+    return fullName;
+  }
+
+  public void setFullName(String fullName) {
+    this.fullName = fullName;
+  }
+
+  public void setColumns(Map<String, Column> columns) {
+    this.columns = columns;
   }
 }

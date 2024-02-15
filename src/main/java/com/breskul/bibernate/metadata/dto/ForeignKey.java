@@ -3,11 +3,42 @@ package com.breskul.bibernate.metadata.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-@Data
 @AllArgsConstructor
 public class ForeignKey {
-  String tableName;
-  String fieldName;
-  String relatedTableName;
-  String constraintId;
+  private String tableName;
+  private String fieldName;
+  private String relatedTableName;
+  private String constraintId;
+
+  public String getTableName() {
+    return tableName;
+  }
+
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
+  }
+
+  public String getFieldName() {
+    return fieldName;
+  }
+
+  public void setFieldName(String fieldName) {
+    this.fieldName = fieldName;
+  }
+
+  public String getRelatedTableName() {
+    return relatedTableName;
+  }
+
+  public void setRelatedTableName(String relatedTableName) {
+    this.relatedTableName = relatedTableName;
+  }
+
+  public String getConstraintId() {
+    return constraintId;
+  }
+
+  public void setConstraintId(String constraintId) {
+    this.constraintId = constraintId;
+  }
 }
