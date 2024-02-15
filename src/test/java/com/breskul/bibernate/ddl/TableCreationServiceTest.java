@@ -54,10 +54,10 @@ public class TableCreationServiceTest {
   @Test
   public void given_existsTable_when_processDdl_then_executeDDLs() throws SQLException {
     // Arrange
-    Mockito.when(entitiesMetadataPersistence.getTables())
-        .thenReturn(prepareTable());
+    Mockito.when(entitiesMetadataPersistence.getTables()).thenReturn(prepareTable());
     Mockito.when(dataSource.getConnection()).thenReturn(connection);
     Mockito.when(connection.createStatement()).thenReturn(statement);
+
     tableCreationService.processDdl();
 
     then(statement).should().execute(DROP_TABLE_SQL);
