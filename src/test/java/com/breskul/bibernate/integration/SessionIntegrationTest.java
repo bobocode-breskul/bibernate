@@ -2,17 +2,25 @@ package com.breskul.bibernate.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import com.breskul.bibernate.data.DynamicPerson;
 import com.breskul.bibernate.data.Person;
 import com.breskul.bibernate.exception.BiQLException;
+import com.breskul.bibernate.persistence.EntityKey;
 import com.breskul.bibernate.persistence.Persistence;
 import com.breskul.bibernate.persistence.Session;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class SessionIntegrationTest extends AbstractIntegrationTest {
 
@@ -25,7 +33,6 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
   void before() throws SQLException {
     this.session = Persistence.createSessionFactory().openSession();
     person = prepareRandomPerson();
-
   }
 
   @Test
@@ -91,7 +98,8 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
 
     assertThatThrownBy(() -> session.executeNativeQuery(invalidQuery, Person.class))
         .isInstanceOf(BiQLException.class)
-        .hasMessage("Could not execute native query [%s] for entity [%s]".formatted(invalidQuery, Person.class));
+        .hasMessage("Could not execute native query [%s] for entity [%s]".formatted(invalidQuery,
+            Person.class));
   }
 
   @Test
@@ -112,6 +120,42 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
     assertThat(unFlushedPerson.getFirstName()).isEqualTo(createdPerson.getFirstName());
     assertThat(unFlushedPerson.getLastName()).isEqualTo(createdPerson.getLastName());
   }
+
+  @Test
+  void givenPersonInDb_WhenFindPersonAndUpdateNameAndFlush_thenDirtyCheckingFlushesChanges()
+      throws SQLException {
+    //given
+    Person createdPerson = prepareRandomPerson();
+    Person person = session.findById(Person.class, createdPerson.getId());
+
+    //when
+    person.setFirstName("Mike");
+    session.flush();
+
+    //then
+    session = Persistence.createSessionFactory().openSession();
+    Person updatedPerson = session.findById(Person.class, createdPerson.getId());
+    assertThat(updatedPerson.getFirstName()).isEqualTo("Mike");
+  }
+
+  @SneakyThrows
+  @Test
+  void given_DynamicUpdateEntityInDb_WhenFindPersonAndUpdateNameAndFlush_thenDirtyCheckingFlushesChangesWithDynamicQuery() {
+    // given
+    DynamicPerson dynamicPerson = new DynamicPerson(ids.incrementAndGet(), "John", "Doe");
+    createDynamicPerson(dynamicPerson);
+    DynamicPerson person = session.findById(DynamicPerson.class, dynamicPerson.getId());
+
+    // when
+    person.setFirstName("Mike");
+    session.flush();
+
+    // then
+    session = Persistence.createSessionFactory().openSession();
+    DynamicPerson updatedPerson = session.findById(DynamicPerson.class, dynamicPerson.getId());
+    assertThat(updatedPerson.getFirstName()).isEqualTo("Mike");
+  }
+
 
   private Person prepareRandomPerson() {
     long id = ids.incrementAndGet();

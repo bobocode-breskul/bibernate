@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.breskul.bibernate.annotation.Column;
+import com.breskul.bibernate.annotation.DynamicUpdate;
 import com.breskul.bibernate.annotation.Entity;
 import com.breskul.bibernate.annotation.Id;
 import com.breskul.bibernate.annotation.JoinColumn;
@@ -15,10 +16,12 @@ import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.annotation.Table;
 import com.breskul.bibernate.exception.EntityParseException;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
+import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.assertj.core.api.Assertions;
@@ -149,6 +152,99 @@ class EntityUtilTest {
     EntityUtil.copyEntityId(sourceEntity, targetEntity);
     // verify
     assertThat(targetEntity.id).isEqualTo(42);
+  }
+
+
+  @Test
+  @DisplayName("When entity annotated with @DynamicUpdate return true")
+  @Order(8)
+  void givenDynamicUpdateAnnotatedEntity_whenIsDynamicUpdate_thenReturnTrue() {
+    // given
+    DynamicUpdateEntity entity = new DynamicUpdateEntity();
+
+    // when
+    boolean result = EntityUtil.isDynamicUpdate(entity.getClass());
+
+    // then
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  @DisplayName("When entity is not annotated with @DynamicUpdate return false")
+  @Order(9)
+  void givenEntity_whenIsDynamicUpdate_thenReturnFalse() {
+    // given
+    TestEntity entity = new TestEntity();
+
+    // when
+    boolean result = EntityUtil.isDynamicUpdate(entity.getClass());
+
+    // then
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  @DisplayName("When get entity column values then all values returned including relation entity id")
+  @Order(10)
+  void givenEntityWithRelation_whenGetEntityColumnValues_ThenReturnAllValues() {
+    // given
+    RelatedEntity relatedEntity = new RelatedEntity(1, "test");
+    TestEntity testEntity = new TestEntity(1, "John", 20, relatedEntity);
+
+    //when
+    Object[] values = EntityUtil.getEntityColumnValues(testEntity);
+
+    //then
+    assertThat(values).containsExactly(testEntity.getId(), testEntity.getName(), testEntity.getAge(),
+        testEntity.getRelatedEntity().getId());
+  }
+
+  @Test
+  @DisplayName("When get entity 'toOne' relation values for then return snapshot")
+  @Order(11)
+  void givenEntityWithRelation_whenGetEntityToOneRelationValues_ThenReturnToOneRelationSnapshots() {
+    // given
+    RelatedEntity relatedEntity = new RelatedEntity(1, "test");
+    TestEntity testEntity = new TestEntity(1, "John", 20, relatedEntity);
+
+    // when
+    List<EntityRelationSnapshot> result =
+        EntityUtil.getEntityToOneRelationValues(testEntity);
+
+    // then
+    var data = EntityRelationSnapshot.of(RelatedEntity.class, "related_entity_id", 1);
+    assertThat(result).containsExactlyInAnyOrder(data);
+  }
+
+  @Test
+  @DisplayName("When get entity 'toOne' relation values for nullable relation then return snapshot of nullable id")
+  @Order(12)
+  void givenEntityWithNullRelation_whenGetEntityToOneRelationValues_thenReturnToOneRelationSnapshotWithNullableId() {
+    // given
+    TestEntity entityWithRelation = new TestEntity(1, "Mike", 20, null);
+
+    // when
+    List<EntityRelationSnapshot> result =
+        EntityUtil.getEntityToOneRelationValues(entityWithRelation);
+
+    // then
+    var data = EntityRelationSnapshot.of(RelatedEntity.class, "related_entity_id", null);
+    assertThat(result).containsExactlyInAnyOrder(data);
+  }
+
+
+  @Test
+  @DisplayName("When get enity columns names then all columns names returned")
+  @Order(13)
+  void givenEntity_whenGetEntityColumnNames_thenReturnColumnNames(){
+    // given
+    var entityClass= TestEntity.class;
+
+    //when
+    List<String> result = EntityUtil.getEntityColumnNames(entityClass);
+
+    //then
+    assertThat(result).containsExactlyInAnyOrder("id", "name", "age", "related_entity_id");
   }
 
   @Test
@@ -328,9 +424,10 @@ class EntityUtilTest {
   /**
    * This class represents a test entity.
    */
+  @AllArgsConstructor
+  @Getter
   @Entity
   @Table(name = "test_entity")
-  @Getter
   @Setter
   private static class TestEntity {
 
@@ -355,6 +452,7 @@ class EntityUtilTest {
   @Entity
   private static class RelatedEntity {
     @Id
+    @Getter
     private int id;
 
     @Column(name = "description")
@@ -362,6 +460,11 @@ class EntityUtilTest {
 
     public RelatedEntity() {
 
+    }
+
+    public RelatedEntity(int id, String description) {
+      this.id = id;
+      this.description = description;
     }
   }
 
@@ -395,5 +498,11 @@ class EntityUtilTest {
     private String manyToOneField;
     @OneToOne
     private String oneToOneField;
+  }
+
+  @DynamicUpdate
+  @Entity
+  static class DynamicUpdateEntity {
+
   }
 }
