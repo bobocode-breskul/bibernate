@@ -1,11 +1,16 @@
 package com.breskul.bibernate.persistence;
 
+import static com.breskul.bibernate.ddl.TableCreationService.CREATE_TABLES_PROPERTY_NAME;
+
 import com.breskul.bibernate.config.PropertiesConfiguration;
+import com.breskul.bibernate.ddl.TableCreationService;
+import com.breskul.bibernate.metadata.EntitiesMetadataPersistence;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.persistence.datasource.BibernateDataSource;
 import com.breskul.bibernate.persistence.datasource.connectionpools.CentralConnectionPoolFactory;
 import com.breskul.bibernate.persistence.datasource.PersistenceProperties;
 import com.breskul.bibernate.persistence.datasource.propertyreader.ApplicationPropertiesReader;
+import com.breskul.bibernate.util.EntityUtil;
 import com.breskul.bibernate.persistence.dialect.Dialect;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -42,6 +47,16 @@ public class Persistence {
     var factory = CentralConnectionPoolFactory.getConnectionPoolFactory(persistenceProperties.type());
     var dataSource = factory.createDataSource(persistenceProperties);
 
+
+    EntitiesMetadataPersistence entitiesMetadataPersistence = EntitiesMetadataPersistence.createInstance(
+        EntityUtil::getAllEntitiesClasses);
+    boolean createTables = Boolean.parseBoolean(
+        PropertiesConfiguration.getPropertyOrDefault(CREATE_TABLES_PROPERTY_NAME, "false"));
+    if (createTables){
+      TableCreationService tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence);
+      tableCreationService.processDdl();
+    }
+
     Dialect dialect = getDialectInstance(persistenceProperties);
     return new SessionFactory(dataSource, dialect);
   }
@@ -72,3 +87,4 @@ public class Persistence {
     }
   }
 }
+

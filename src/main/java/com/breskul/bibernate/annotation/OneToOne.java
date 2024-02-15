@@ -29,5 +29,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface OneToOne {
 
-  // TODO: add attributes
+  /**
+   * (Optional) The field that owns the relationship. This
+   * element is only specified on the inverse (non-owning)
+   * side of the association.
+   */
+  String mappedBy() default "";
 }
