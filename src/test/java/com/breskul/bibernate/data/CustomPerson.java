@@ -16,7 +16,7 @@ import lombok.ToString;
 @ToString
 @Entity
 @Table(name = "persons")
-public class Person2 {
+public class CustomPerson {
 
   @Id
   private Long id;
@@ -27,18 +27,18 @@ public class Person2 {
   private String lastName;
 
   @OneToMany
-  private List<Note2> notes = new ArrayList<>();
+  private List<CustomNote> notes = new ArrayList<>();
 
-  public Person2() {
+  public CustomPerson() {
 
   }
 
-  public Person2(String firstName, String lastName) {
+  public CustomPerson(String firstName, String lastName) {
     this.firstName = firstName;
     this.lastName = lastName;
   }
 
-  public Person2(Long id, String firstName, String lastName) {
+  public CustomPerson(Long id, String firstName, String lastName) {
     this.id = id;
     this.firstName = firstName;
     this.lastName = lastName;

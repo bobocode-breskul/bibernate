@@ -19,7 +19,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Entity
 @Table(name = "notes")
-public class Note2 {
+public class CustomNote {
 
   @Id
   private Long id;
@@ -31,6 +31,6 @@ public class Note2 {
 
   @ManyToOne
   @JoinColumn(name = "person_id")
-  private Person2 person;
+  private CustomPerson person;
 }
 

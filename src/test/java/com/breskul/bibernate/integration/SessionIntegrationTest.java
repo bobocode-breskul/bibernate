@@ -3,10 +3,10 @@ package com.breskul.bibernate.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.breskul.bibernate.data.CustomPerson;
 import com.breskul.bibernate.data.DynamicPerson;
 import com.breskul.bibernate.data.Note;
 import com.breskul.bibernate.data.Person;
-import com.breskul.bibernate.data.Person2;
 import com.breskul.bibernate.exception.BiQLException;
 import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.persistence.Persistence;
@@ -192,10 +192,10 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
   void givenPersonWithNoteInDb1_whenExecuteNativeQuery_thenReturnPersonWithNote() {
     prepareRandomNote(person);
 
-    List<Person2> result =
+    List<CustomPerson> result =
         session.executeNativeQuery(
             "select * from persons left join notes ON notes.person_id=persons.id order by id asc;",
-            Person2.class);
+            CustomPerson.class);
 
     assertThat(result).hasSizeGreaterThan(0);
 
