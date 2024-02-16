@@ -50,10 +50,79 @@ Follow these steps to integrate Bibernate Framework into your project:
   <version>2.0</version>
 </dependency>
 ```
+3. Add `application.properties` file.
+```properties
+# Connection pool type: HikariCP, Apache, c3p0, or leave blank for default DataSource
+bibernate.datasource.type=HikariCP
+
+# Database connection details
+bibernate.connection.url=jdbc:postgresql://localhost:5432/postgres
+bibernate.connection.username=postgres
+bibernate.connection.password=postgres
+bibernate.connection.driver_class=org.postgresql.Driver
+bibernate.dialect=com.breskul.bibernate.persistence.dialect.H2Dialect
+
+# Option available to suppress notifications for executed SQL queries
+bibernate.show_sql=true
+
+# Enabling create_tables property will drop tables and create them from entities
+bibernate.ddl.create_tables=true
+```
+
 Now you are ready to use Bibernate framework features.
 
 ## Demo examples
 You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
+
+#### CRUD example:
+```java
+public class Main {
+
+  public static void main(String[] args) {
+    SessionFactory sessionFactory = Persistence.createSessionFactory();
+    try (Session session = sessionFactory.openSession()) {
+
+      // Create
+      Person firstPerson = new Person("Ivan", "Franko", 59);
+      Person secondPerson = new Person("Taras", "Shevchenko", 47);
+      session.persist(firstPerson);
+      session.persist(secondPerson);
+
+      // Find by ID
+      Person foundPerson = session.findById(Person.class, firstPerson.getId());
+
+      // Update
+      foundPerson.setAge(40);
+
+      // Delete
+      session.delete(foundPerson);
+      session.flush();
+
+      // Use @OneToMany @ManyToOne @OneToOne relations
+      Note note1 = new Note("First note", secondPerson);
+      Note note2 = new Note("Second note", secondPerson);
+      session.persist(note1);
+      session.persist(note2);
+
+      // Execute queries using BiQL
+      String biQLQuery = "from Person";
+      List<Person> personList = session.executeBiQLQuery(biQLQuery, Person.class);
+      for (Person person : personList) {
+        System.out.println(person);
+      }
+
+      // Execute queries using native queries
+      String nativeQuery = "SELECT * FROM notes";
+      List<Note> notes = session.executeNativeQuery(nativeQuery, Note.class);
+      for (Note note : notes) {
+        System.out.println(note);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+```
 
 ### Entity declaration example:
 
@@ -110,56 +179,6 @@ public class Note {
   public Note(String note, Person persons) {
     this.note = note;
     this.persons = persons;
-  }
-}
-```
-
-#### CRUD example:
-```java
-public class Main {
-
-  public static void main(String[] args) {
-    SessionFactory sessionFactory = Persistence.createSessionFactory();
-    try (Session session = sessionFactory.openSession()) {
-
-      // Create
-      Person firstPerson = new Person("Ivan", "Franko", 59);
-      Person secondPerson = new Person("Taras", "Shevchenko", 47);
-      session.persist(firstPerson);
-      session.persist(secondPerson);
-
-      // Find by ID
-      Person foundPerson = session.findById(Person.class, firstPerson.getId());
-
-      // Update
-      foundPerson.setAge(40);
-
-      // Delete
-      session.delete(foundPerson);
-      session.flush();
-
-      // Use @OneToMany @ManyToOne @OneToOne relations
-      Note note1 = new Note("First note", secondPerson);
-      Note note2 = new Note("Second note", secondPerson);
-      session.persist(note1);
-      session.persist(note2);
-
-      // Execute queries using BiQL
-      String biQLQuery = "from Person";
-      List<Person> personList = session.executeBiQLQuery(biQLQuery, Person.class);
-      for (Person person : personList) {
-        System.out.println(person);
-      }
-
-      // Execute queries using native queries
-      String nativeQuery = "SELECT * FROM notes";
-      List<Note> notes = session.executeNativeQuery(nativeQuery, Note.class);
-      for (Note note : notes) {
-        System.out.println(note);
-      }
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
   }
 }
 ```
