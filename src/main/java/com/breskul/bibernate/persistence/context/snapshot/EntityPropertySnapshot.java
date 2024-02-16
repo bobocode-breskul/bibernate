@@ -1,8 +1,8 @@
 package com.breskul.bibernate.persistence.context.snapshot;
 
 /**
- * A snapshot of an entity property, representing a single column of an entity. This record contains
- * the name of the column and its corresponding value.
+ * A snapshot of an entity property, representing a single column of an entity. This record contains the name of the column and its
+ * corresponding value.
  */
 public record EntityPropertySnapshot(String columnName, Object columnValue) {
 

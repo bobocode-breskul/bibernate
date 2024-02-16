@@ -100,12 +100,11 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Merges the provided entity with the existing entity in the persistence context or database. If
-   * the entity is already present in the persistence context, it copies the changed values from the
-   * provided entity to the existing entity. If the entity is not present in the persistence
-   * context, it attempts to find the entity in the database and copies the changed values from the
-   * provided entity to the found entity. If the entity is not found in the database, it persists a
-   * copy of the provided entity. Provided entity object never becomes managed.
+   * Merges the provided entity with the existing entity in the persistence context or database. If the entity is already present in the
+   * persistence context, it copies the changed values from the provided entity to the existing entity. If the entity is not present in the
+   * persistence context, it attempts to find the entity in the database and copies the changed values from the provided entity to the found
+   * entity. If the entity is not found in the database, it persists a copy of the provided entity. Provided entity object never becomes
+   * managed.
    *
    * @param mergeEntity The entity to be merged.
    * @param <T>         The type of the entity.
@@ -132,8 +131,7 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Makes a copy of the provided entity and persists it. Provided entity object ID value will be
-   * changed too.
+   * Makes a copy of the provided entity and persists it. Provided entity object ID value will be changed too.
    *
    * @param mergeEntity The entity to be persisted and copied.
    * @param <T>         The type of the entity.
@@ -172,6 +170,7 @@ public class Session implements AutoCloseable {
   }
 
   //TODO: write tests
+
   /**
    * Returns session transaction. If session does not have it or transaction was completed or rolled back then creates new
    * {@link Transaction}
@@ -219,8 +218,7 @@ public class Session implements AutoCloseable {
   }
 
   /**
-   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified
-   * type.
+   * Converts a BiQL query to SQL and executes it, returning the results as a list of the specified type.
    *
    * @param <T>         the type of the result list
    * @param bglString   the BiQL query string

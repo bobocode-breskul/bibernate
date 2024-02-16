@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class DataType {
+
   private String name;
 
   public String getName() {

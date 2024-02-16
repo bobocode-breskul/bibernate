@@ -6,13 +6,11 @@ package com.breskul.bibernate.annotation;
  */
 public enum FetchType {
   /**
-   * Specifies that the associated entity or collection should be eagerly
-   * fetched when the owning entity is fetched.
+   * Specifies that the associated entity or collection should be eagerly fetched when the owning entity is fetched.
    */
   EAGER,
   /**
-   * Specifies that the associated entity or collection should be lazily
-   * fetched when the owning entity is fetched.
+   * Specifies that the associated entity or collection should be lazily fetched when the owning entity is fetched.
    */
   LAZY
 }

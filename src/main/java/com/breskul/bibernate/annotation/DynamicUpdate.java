@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specifies that SQL update statements for the annotated entity are generated dynamically, and only
- * include columns which are actually being updated.
+ * Specifies that SQL update statements for the annotated entity are generated dynamically, and only include columns which are actually
+ * being updated.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

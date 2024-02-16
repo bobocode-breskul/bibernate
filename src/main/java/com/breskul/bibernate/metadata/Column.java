@@ -4,6 +4,7 @@ package com.breskul.bibernate.metadata;
  * Represents a column metadata.
  */
 public class Column {
+
   private Integer length;
   private Integer precision;
   private Integer scale;

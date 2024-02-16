@@ -16,8 +16,8 @@ import java.util.stream.Stream;
 
 
 /**
- * LazyList represents a lazily initialized list that delegates its operations to another list. The
- * delegate list is supplied by a supplier, which allows for lazy initialization.
+ * LazyList represents a lazily initialized list that delegates its operations to another list. The delegate list is supplied by a supplier,
+ * which allows for lazy initialization.
  *
  * @param <T> the type of elements in the list
  */

@@ -35,8 +35,7 @@ public class AssociationUtil {
   }
 
   /**
-   * Retrieves an instance of the Collection class based on the given Field representing a
-   * collection.
+   * Retrieves an instance of the Collection class based on the given Field representing a collection.
    *
    * @param collectionField - The Field representing the collection
    * @return An instance of the Collection class
@@ -48,8 +47,7 @@ public class AssociationUtil {
 
 
   /**
-   * Retrieves an instance of the Collection class based on the given Field representing a
-   * collection.
+   * Retrieves an instance of the Collection class based on the given Field representing a collection.
    *
    * @param collectionField - The Field representing the collection
    * @param source          - The source collection used to initialize the new collection instance
@@ -81,12 +79,10 @@ public class AssociationUtil {
 
 
   /**
-   * Retrieves a lazy instance of a Collection based on the given Field representing the
-   * collection.
+   * Retrieves a lazy instance of a Collection based on the given Field representing the collection.
    *
    * @param collectionField  The Field representing the collection.
-   * @param delegateSupplier The Supplier providing the delegate collection for lazy
-   *                         initialization.
+   * @param delegateSupplier The Supplier providing the delegate collection for lazy initialization.
    * @return An instance of the Collection class.
    * @throws AssociationException if the collection type is unsupported.
    */
@@ -119,8 +115,7 @@ public class AssociationUtil {
    * @param field            The Field representing the object.
    * @param delegateSupplier The Supplier providing the delegate object for lazy initialization.
    * @return a proxy instance of the object class.
-   * @throws AssociationException If the object type is unsupported or if there are errors in the
-   *                              proxy creation process.
+   * @throws AssociationException If the object type is unsupported or if there are errors in the proxy creation process.
    */
   public static Object getLazyObjectProxy(Field field, Supplier<?> delegateSupplier) {
     Class<?> objectType = field.getType();
