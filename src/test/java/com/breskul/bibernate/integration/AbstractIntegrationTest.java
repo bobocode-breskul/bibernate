@@ -39,7 +39,7 @@ public abstract class AbstractIntegrationTest {
     this.connection = Mockito.spy(dataSource.getConnection());
     this.connection.setAutoCommit(true);
     this.persistenceContext = new PersistenceContext();
-    this.genericDao = new GenericDao(connection, persistenceContext, new H2Dialect());
+    this.genericDao = new GenericDao(connection, persistenceContext, new H2Dialect(), true);
   }
 
   @AfterEach
