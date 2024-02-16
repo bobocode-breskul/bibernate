@@ -92,7 +92,7 @@ public class EntityUtil {
    */
   public static <T> List<String> getEntityColumnNames(Class<? extends T> entityClass) {
     return Arrays.stream(entityClass.getDeclaredFields())
-        .filter(field -> !EntityUtil.isCollectionEntityField(field))
+        .filter(EntityUtil::isColumnField)
         .map(EntityUtil::resolveColumnName)
         .collect(Collectors.toList());
   }
@@ -105,7 +105,7 @@ public class EntityUtil {
    */
   public static List<Field> getClassColumnFields(Class<?> cls) {
     return Arrays.stream(cls.getDeclaredFields())
-        .filter(field -> !isCollectionEntityField(field))
+        .filter(EntityUtil::isColumnField)
         .toList();
   }
 
@@ -149,6 +149,16 @@ public class EntityUtil {
         || field.isAnnotationPresent(ManyToMany.class);
   }
 
+  private static boolean isColumnField(Field field) {
+    if (isCollectionEntityField(field)) {
+      return false;
+    }
+    if (field.isAnnotationPresent(OneToOne.class) || field.isAnnotationPresent(ManyToOne.class)) {
+      return isToOneRelation(field);
+    }
+    return true;
+  }
+
   /**
    * Determines if the given field is a @OneToOne or @ManyToOne relation entity field.
    *
@@ -156,7 +166,14 @@ public class EntityUtil {
    * @return true if the field is a 'toOne' relation entity field, false otherwise
    */
   public static boolean isToOneRelation(Field field) {
-    return field.isAnnotationPresent(ManyToOne.class) || field.isAnnotationPresent(OneToOne.class);
+    if(field.isAnnotationPresent(ManyToOne.class)) {
+      return true;
+    }
+    if (field.isAnnotationPresent(OneToOne.class)) {
+      var annotation = field.getAnnotation(OneToOne.class);
+      return annotation.mappedBy().isEmpty();
+    }
+    return false;
   }
 
   /**
