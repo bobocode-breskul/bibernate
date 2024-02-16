@@ -51,6 +51,76 @@ Follow these steps to integrate Bibernate Framework into your project:
 ```
 Now you are ready to use Bibernate framework features.
 
+## Demo examples
+### Entity declaration example:
+
+```java
+@Data
+@NoArgsConstructor
+@Entity
+@Table(name = "persons")
+public class Person {
+
+  @Id
+  private Long id;
+
+  @Column(name = "first_name")
+  private String firstName;
+
+  @Column(name = "last_name")
+  private String lastName;
+
+  @Column(name = "age")
+  private Integer age;
+
+  public Person(String firstName, String lastName, Integer age) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.age = age;
+  }
+  @Override
+  public String toString() {
+    return "Person{" +
+        "id=" + id +
+        ", firstName='" + firstName + '\'' +
+        ", lastName='" + lastName + '\'' +
+        ", age=" + age +
+        '}';
+  }
+}
+```
+
+#### CRUD example:
+```java
+public class Main {
+
+  public static void main(String[] args) {
+    SessionFactory sessionFactory = Persistence.createSessionFactory();
+    try (Session session = sessionFactory.openSession()) {
+
+      // Create
+      Person person = new Person("Ivan", "Franko", 59);
+      Person person2 = new Person("Taras", "Shevchenko", 47);
+      session.persist(person);
+      session.persist(person2);
+
+      // Find
+      Person foundPerson = session.findById(Person.class, person.getId());
+      
+      // Update
+      foundPerson.setAge(40);
+    
+      // Delete
+      session.delete(foundPerson);
+      session.flush();
+      
+      printPersons(session);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+```
+
 You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
 ## Contributing
 We welcome contributions!
