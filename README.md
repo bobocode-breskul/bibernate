@@ -15,18 +15,26 @@ Bibernate implements JPA, the standard API for object/relational persistence in 
 - [Introduction](#introduction)
 - [Requirements](#requirements)
 - [Getting Started](#getting-started)
-- [Features](#features)
-- [Annotations](#annotations)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Introduction
 
-Bibernate is an object-relational mapping (ORM) framework for Java that provides a programming
-paradigm for mapping Java objects to relational database tables and vice versa. It is an open-source
-framework that simplifies database programming in Java applications by handling the details of
-database interactions, allowing developers to focus on writing Java code without having to deal
-extensively with SQL and database-specific details.
+Bibernate is a conceptual Object/Relational Mapping (ORM) framework tailored for Java applications, designed to streamline the interaction between Java objects and relational databases. It abstracts the complexity of database access, allowing developers to work with database entities as if they were Java objects. Here's a more detailed look at its features, with an emphasis on language support:
+
+- **Action Queue:** Manages the order of database operations (inserts, updates, deletes) to ensure transactional integrity.
+- **Annotations:** Used to define how Java classes and fields map to database tables and columns without verbose XML configuration files.
+- **Connection Pool:** A cache of database connections that allows for reuse, improving performance by reducing the overhead of establishing connections.
+- **CRUD Operations:** Simplifies Create, Read, Update, and Delete operations with straightforward methods, abstracting the underlying SQL.
+- **Dirty Checking:** Automatically detects changes in entities since the last synchronization with the database, minimizing unnecessary updates.
+- **Dive into Bibernate:** Explores Bibernate's internals, including its architecture, how it processes transactions, and manages sessions and caches.
+- **First Level Cache:** A per-session cache that reduces database hits by storing entities retrieved during the session's lifetime.
+- **Lazy Loading:** Delays the loading of certain properties or collections of an entity until they are explicitly accessed, optimizing resource usage.
+- **Pessimistic Locking:** Locks data at the database level to prevent concurrent modifications, ensuring data consistency in high-concurrency environments.
+- **Query Language (Native Query BiQL):** A custom query language or API designed for efficient and flexible database querying beyond standard SQL capabilities.
+- **Transaction:** Supports transactions to ensure data integrity, allowing multiple operations to be executed as a single atomic action.
+
+Bibernate aims to reduce the boilerplate associated with database programming in Java and potentially other JVM languages, offering a developer-friendly API and improving application performance through efficient data management practices. Its design reflects a commitment to flexibility, performance, and ease of use in the development of Java-based applications and beyond.
 
 ## Requirements
 Make sure that you are using Java 17
@@ -48,173 +56,7 @@ Now you are ready to use Bibernate framework features.
 
 You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
 
-## Features
--   CRUD Operations
--   Query Language
--   LazyLoading
--   Caching
-    - Level 1
-    - Level 2
--   Write Behind Cache actionQueue
--   DDL by annotations/xml
--   DirtyChecking
--   Concurrency Control
--   Cascade Operations
 
-## Annotations
-<details>
-  <summary>@Entity</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@Table(String name)</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@Id</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@GenerationStratagy</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@Column(String name, Constraints)</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@OneToMany</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@ManyToOne</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@OneToOne</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@JoinColumn</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@MapsId</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@Embadded</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary> @Enumerated</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@ManyToMany</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
-
-<details>
-  <summary>@JoinTable</summary>
-  
-  ### Example
-  ```java
-  public void example() {
-    // TODO: add code example
-  }
-  ```
-</details>
 
 ## Contributing
 We welcome contributions!
