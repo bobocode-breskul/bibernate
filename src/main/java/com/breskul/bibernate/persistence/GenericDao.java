@@ -13,6 +13,7 @@ import static com.breskul.bibernate.util.EntityUtil.getEntityId;
 import static com.breskul.bibernate.util.EntityUtil.getEntityTableName;
 import static com.breskul.bibernate.util.EntityUtil.getJoinColumnName;
 import static com.breskul.bibernate.util.EntityUtil.isSimpleColumn;
+import static com.breskul.bibernate.util.EntityUtil.isToOneRelation;
 import static com.breskul.bibernate.util.EntityUtil.resolveColumnName;
 import static com.breskul.bibernate.util.EntityUtil.validateColumnName;
 import static com.breskul.bibernate.util.ReflectionUtil.createEntityInstance;
@@ -23,6 +24,7 @@ import static java.util.stream.Stream.generate;
 import com.breskul.bibernate.annotation.FetchType;
 import com.breskul.bibernate.annotation.ManyToOne;
 import com.breskul.bibernate.annotation.OneToMany;
+import com.breskul.bibernate.annotation.OneToOne;
 import com.breskul.bibernate.config.LoggerFactory;
 import com.breskul.bibernate.exception.BiQLException;
 import com.breskul.bibernate.exception.BibernateException;
@@ -175,7 +177,9 @@ public class GenericDao {
     Class<?> cls = entity.getClass();
     String tableName = getEntityTableName(cls);
     Field idField = findEntityIdField(cls);
-    List<Field> columnFields = getClassColumnFields(cls, field -> !field.equals(idField));
+    List<Field> columnFields = getClassColumnFields(cls, field -> !field.equals(idField)).stream()
+        .filter(field1 -> EntityUtil.isSimpleColumn(field1) || EntityUtil.isToOneRelation(field1))
+        .toList();
 
     String questionMarks = generate(() -> "?")
         .limit(columnFields.size())
@@ -190,7 +194,10 @@ public class GenericDao {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
         field.setAccessible(true);
-        statement.setObject(i + 1, field.get(entity));
+        Object parameter = EntityUtil.isToOneRelation(field)
+            ? EntityUtil.getEntityId(field.get(entity))
+            : field.get(entity);
+        statement.setObject(i + 1, parameter);
       }
       int result = statement.executeUpdate();
       if (result != 1) {
@@ -370,6 +377,8 @@ public class GenericDao {
           mapManyToOneRelationship(resultSet, field, entity);
         } else if (field.isAnnotationPresent(OneToMany.class)) {
           mapOneToManyRelationship(resultSet, cls, field, entity);
+        } else if (field.isAnnotationPresent(OneToOne.class)) {
+          mapOneToOneRelationship(resultSet, field, entity);
         }
       }
 
@@ -384,6 +393,26 @@ public class GenericDao {
     }
   }
 
+  private <T> void mapOneToOneRelationship(ResultSet resultSet, Field field, T entity)
+      throws SQLException {
+    String joinColumnName = resolveColumnName(field);
+    Field relatedEntityIdField = findEntityIdField(field.getType());
+
+    if (isToOneRelation(field)) {
+      Object relatedEntityId = resultSet.getObject(joinColumnName);
+      String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
+      writeFieldValue(field, entity,
+          createAssocitatedObject(field, relatedEntityIdColumnName, relatedEntityId, field.getType()));
+    } else {
+      Field id = EntityUtil.findEntityIdField(entity.getClass());
+      String idColumnName = resolveColumnName(id);
+      Object entityId = resultSet.getObject(idColumnName);
+      joinColumnName = getJoinColumnName(field.getType(), entity.getClass());
+      writeFieldValue(field, entity,
+          createAssocitatedObject(field, joinColumnName, entityId, field.getType()));
+    }
+  }
+
   private <T> void mapManyToOneRelationship(ResultSet resultSet, Field field, T entity)
       throws SQLException {
     String joinColumnName = resolveColumnName(field);
@@ -391,7 +420,7 @@ public class GenericDao {
     Object relatedEntityId = resultSet.getObject(joinColumnName);
     String relatedEntityIdColumnName = resolveColumnName(relatedEntityIdField);
     writeFieldValue(field, entity,
-        createAssocitatedObject(field, relatedEntityIdColumnName, relatedEntityId));
+        createAssocitatedObject(field, relatedEntityIdColumnName, relatedEntityId, field.getType()));
   }
 
   private <T> void mapOneToManyRelationship(ResultSet resultSet, Class<T> cls, Field field,
@@ -419,25 +448,31 @@ public class GenericDao {
   }
 
   private Object createAssocitatedObject(Field field, String relatedEntityIdColumnName,
-      Object relatedEntityId) {
-    FetchType fetchType = field.getAnnotation(ManyToOne.class).fetch();
+      Object relatedEntityId, Class<?> clz) {
+
+    FetchType fetchType = field.isAnnotationPresent(ManyToOne.class)
+        ? field.getAnnotation(ManyToOne.class).fetch()
+        : field.getAnnotation(OneToOne.class).fetch();
     log.debug(
         "Resolving [{}] parent object for [{}.{}.{}] field by related column [{}] with value [{}]",
         fetchType, field.getDeclaringClass().getPackageName(),
         field.getDeclaringClass().getSimpleName(), field.getName(), relatedEntityIdColumnName,
         relatedEntityId);
     return switch (fetchType) {
-      case EAGER -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId);
+      case EAGER -> fetchRelatedEntity(clz, relatedEntityIdColumnName, relatedEntityId);
       case LAZY -> getLazyObjectProxy(field,
-          () -> fetchRelatedEntity(field, relatedEntityIdColumnName, relatedEntityId));
+          () -> fetchRelatedEntity(clz, relatedEntityIdColumnName, relatedEntityId));
     };
   }
 
-  private Object fetchRelatedEntity(Field field, String columnName, Object id) {
-    var relatedEntity = context.getEntity(field.getType(), id);
+  private Object fetchRelatedEntity(Class<?> clz, String columnName, Object id) {
+    var relatedEntity = context.getEntity(clz, id);
     if (relatedEntity == null) {
-      relatedEntity = innerFindAllByFieldValue(field.getType(), columnName, id).get(0);
-      relatedEntity = context.put(relatedEntity);
+      var relatedEntities = innerFindAllByFieldValue(clz, columnName, id);
+      if (!relatedEntities.isEmpty()) {
+        relatedEntity = relatedEntities.get(0);
+        relatedEntity = context.put(relatedEntity);
+      }
     }
     return relatedEntity;
   }

@@ -1,5 +1,7 @@
 package com.breskul.bibernate.annotation;
 
+import static com.breskul.bibernate.annotation.FetchType.LAZY;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,4 +31,13 @@ public @interface OneToOne {
    * (Optional) The field that owns the relationship. This element is only specified on the inverse (non-owning) side of the association.
    */
   String mappedBy() default "";
+
+  /**
+   * (Optional) Whether the association should be lazily
+   * loaded or must be eagerly fetched. The EAGER
+   * strategy is a requirement on the persistence provider runtime that
+   * the associated entity must be eagerly fetched. The LAZY
+   * strategy is a hint to the persistence provider runtime.
+   */
+  FetchType fetch() default LAZY;
 }
