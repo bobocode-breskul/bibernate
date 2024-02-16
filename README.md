@@ -85,6 +85,7 @@ public class Main {
       // Create
       Person firstPerson = new Person("Ivan", "Franko", 59);
       Person secondPerson = new Person("Taras", "Shevchenko", 47);
+
       session.persist(firstPerson);
       session.persist(secondPerson);
 
@@ -98,11 +99,28 @@ public class Main {
       session.delete(foundPerson);
       session.flush();
 
-      // Use @OneToMany @ManyToOne @OneToOne relations
+      // Use @OneToMany, @ManyToOne, @OneToOne relations
       Note note1 = new Note("First note", secondPerson);
       Note note2 = new Note("Second note", secondPerson);
+
       session.persist(note1);
       session.persist(note2);
+
+      // Use transactions
+      Transaction transaction = session.getTransaction();
+      try {
+        transaction.begin();
+
+        Person thirdPerson = new Person("Ivan", "Kotliarevsky", 69);
+        Person fourthPerson = new Person("Larysa", "Kosach", 42);
+
+        session.persist(thirdPerson);
+        session.persist(fourthPerson);
+
+        transaction.commit();
+      } catch (Exception e) {
+        transaction.rollback();
+      }
 
       // Execute queries using BiQL
       String biQLQuery = "from Person";
@@ -117,6 +135,10 @@ public class Main {
       for (Note note : notes) {
         System.out.println(note);
       }
+
+      // Use pessimistic locking
+      Person lockedUser = session.findById(Person.class, secondPerson.getId(), LockType.PESSIMISTIC_READ);
+      System.out.println(lockedUser);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -182,6 +204,8 @@ public class Note {
   }
 }
 ```
+
+Explore additional features in the [Introduction](#introduction) section. There's more to uncover!
 
 ## Contributing
 We welcome contributions!
