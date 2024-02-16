@@ -47,22 +47,27 @@ Follow these steps to integrate Bibernate Framework into your project:
 <dependency>
   <groupId>io.github.bobocode-breskul</groupId>
   <artifactId>bibernate</artifactId>
-  <version>1.0</version>
+  <version>2.0</version>
 </dependency>
 ```
 Now you are ready to use Bibernate framework features.
 
 ## Demo examples
+You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
+
 ### Entity declaration example:
 
 ```java
 @Data
 @NoArgsConstructor
 @Entity
+@DynamicUpdate
 @Table(name = "persons")
+@ToString
 public class Person {
 
   @Id
+  @Column(columnDefinition = "BIGSERIAL")
   private Long id;
 
   @Column(name = "first_name")
@@ -74,19 +79,37 @@ public class Person {
   @Column(name = "age")
   private Integer age;
 
+  @OneToMany
+  private List<Note> noteList;
+
   public Person(String firstName, String lastName, Integer age) {
     this.firstName = firstName;
     this.lastName = lastName;
     this.age = age;
   }
-  @Override
-  public String toString() {
-    return "Person{" +
-        "id=" + id +
-        ", firstName='" + firstName + '\'' +
-        ", lastName='" + lastName + '\'' +
-        ", age=" + age +
-        '}';
+}
+```
+
+```java
+@Data
+@Entity
+@Table(name = "notes")
+@NoArgsConstructor
+public class Note {
+
+  @Id
+  @Column(columnDefinition = "BIGSERIAL")
+  private Long id;
+
+  private String note;
+
+  @ManyToOne
+  @ToString.Exclude
+  private Person persons;
+
+  public Note(String note, Person persons) {
+    this.note = note;
+    this.persons = persons;
   }
 }
 ```
@@ -100,29 +123,47 @@ public class Main {
     try (Session session = sessionFactory.openSession()) {
 
       // Create
-      Person person = new Person("Ivan", "Franko", 59);
-      Person person2 = new Person("Taras", "Shevchenko", 47);
-      session.persist(person);
-      session.persist(person2);
+      Person firstPerson = new Person("Ivan", "Franko", 59);
+      Person secondPerson = new Person("Taras", "Shevchenko", 47);
+      session.persist(firstPerson);
+      session.persist(secondPerson);
 
-      // Find
-      Person foundPerson = session.findById(Person.class, person.getId());
-      
+      // Find by ID
+      Person foundPerson = session.findById(Person.class, firstPerson.getId());
+
       // Update
       foundPerson.setAge(40);
-    
+
       // Delete
       session.delete(foundPerson);
       session.flush();
-      
-      printPersons(session);
+
+      // Use @OneToMany @ManyToOne @OneToOne relations
+      Note note1 = new Note("First note", secondPerson);
+      Note note2 = new Note("Second note", secondPerson);
+      session.persist(note1);
+      session.persist(note2);
+
+      // Execute queries using BiQL
+      String biQLQuery = "from Person";
+      List<Person> personList = session.executeBiQLQuery(biQLQuery, Person.class);
+      for (Person person : personList) {
+        System.out.println(person);
+      }
+
+      // Execute queries using native queries
+      String nativeQuery = "SELECT * FROM notes";
+      List<Note> notes = session.executeNativeQuery(nativeQuery, Note.class);
+      for (Note note : notes) {
+        System.out.println(note);
+      }
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
+}
 ```
 
-You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
 ## Contributing
 We welcome contributions!
 If you'd like to contribute to Bibernate, please contact with the team Breskul.
