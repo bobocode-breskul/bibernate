@@ -100,8 +100,8 @@ public class Main {
       session.flush();
 
       // Use @OneToMany, @ManyToOne, @OneToOne relations
-      Note note1 = new Note("First note", secondPerson);
-      Note note2 = new Note("Second note", secondPerson);
+      Note note1 = new Note("Svitaye, kray neba palaye", secondPerson);
+      Note note2 = new Note("Meni trynadtsyatyy mynalo", secondPerson);
 
       session.persist(note1);
       session.persist(note2);
