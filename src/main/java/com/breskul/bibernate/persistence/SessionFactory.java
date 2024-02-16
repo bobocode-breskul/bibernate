@@ -4,7 +4,6 @@ import com.breskul.bibernate.persistence.dialect.Dialect;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 
-// TODO: javadoc
 public class SessionFactory {
 
   private final DataSource dataSource;
@@ -17,7 +16,6 @@ public class SessionFactory {
     this.showSql = showSql;
   }
 
-  // TODO: javaDoc
   public Session openSession() throws SQLException {
     return new Session(dataSource, dialect, showSql);
   }

@@ -8,8 +8,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 
-//TODO: write tests
-
 /**
  * Class used to control transactions over session resource-local entity managers.  The {@link Session#getTransaction} method returns the
  * <code>Transaction</code>.

@@ -2,7 +2,6 @@ package com.breskul.bibernate.persistence;
 
 import static com.breskul.bibernate.util.EntityUtil.getEntityId;
 
-// todo: docs
 public record EntityKey<T>(Class<T> entityClass, Object id) {
 
   public static <T> EntityKey<T> of(Class<T> entityClass, Object id) {

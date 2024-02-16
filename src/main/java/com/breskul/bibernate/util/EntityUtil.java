@@ -394,7 +394,6 @@ public class EntityUtil {
    * @param targetEntity The target entity to which to copy the values.
    */
   public static <T> void copyChangedValues(T sourceEntity, T targetEntity) {
-    // TODO: no associations
     List<Field> simpleColumnFields = EntityUtil.getEntitySimpleColumnFields(
         sourceEntity.getClass());
     for (Field simpleColumnField : simpleColumnFields) {

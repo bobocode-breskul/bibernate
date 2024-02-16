@@ -16,7 +16,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface JoinColumn {
 
-  // todo add documentation for fields
   String name() default "";
 
   boolean unique() default false;

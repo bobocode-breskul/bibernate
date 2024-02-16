@@ -57,7 +57,6 @@ public class GenericDao {
 
   private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
-  // TODO: change to select '*'
   private static final String SELECT_BY_FIELD_VALUE_QUERY = "SELECT %s FROM %s WHERE %s = ? %s";
   private static final String UPDATE_SQL = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String INSERT_ENTITY_QUERY = "INSERT INTO %s (%s) VALUES (%s);";
@@ -191,7 +190,6 @@ public class GenericDao {
       for (int i = 0; i < columnFields.size(); i++) {
         Field field = columnFields.get(i);
         field.setAccessible(true);
-        // TODO: throws exception when entity has ANY association
         statement.setObject(i + 1, field.get(entity));
       }
       int result = statement.executeUpdate();
@@ -257,7 +255,6 @@ public class GenericDao {
     }
   }
 
-  // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
 
   /**
    * Executes an update query for the specified entity key with the given parameters. This method dynamically determines whether to use a
@@ -341,7 +338,6 @@ public class GenericDao {
     String primaryKeyName = EntityUtil.findEntityIdFieldName(entityClass);
     return UPDATE_SQL.formatted(tableName, setUpdatedColumnsSql, primaryKeyName);
   }
-  // todo add logic for relation annotations - @ManyToMany, @OneToOne
 
   /**
    * Maps the results from a ResultSet object to an entity object of the specified class and add the entity to context. Recursively fetch
