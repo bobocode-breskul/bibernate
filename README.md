@@ -32,6 +32,7 @@ Bibernate is a conceptual Object/Relational Mapping (ORM) framework tailored for
 - **[Pessimistic Locking:](https://github.com/bobocode-breskul/bibernate/wiki/Pessimistic-Locking)** Locks data at the database level to prevent concurrent modifications, ensuring data consistency in high-concurrency environments.
 - **[Query Language (Native Query BiQL):](https://github.com/bobocode-breskul/bibernate/wiki/Query-Language-(Native-Query---BiQL))** A custom query language or API designed for efficient and flexible database querying beyond standard SQL capabilities.
 - **[Transaction:](https://github.com/bobocode-breskul/bibernate/wiki/Transaction)** Supports transactions to ensure data integrity, allowing multiple operations to be executed as a single atomic action.
+- **[DDL table creation:]([https://github.com/bobocode-breskul/bibernate/wiki/Transaction](https://github.com/bobocode-breskul/bibernate/wiki/DDL-table-creation-on-startup))** Supports automates table creation for entities annotated with `@Entity`, managing SQL types and constraints, and supports relationships except for `@ManyToMany`, enhancing database schema management with a simple property configuration.
 
 Bibernate aims to reduce the boilerplate associated with database programming in Java and potentially other JVM languages, offering a developer-friendly API and improving application performance through efficient data management practices. Its design reflects a commitment to flexibility, performance, and ease of use in the development of Java-based applications and beyond.
 
