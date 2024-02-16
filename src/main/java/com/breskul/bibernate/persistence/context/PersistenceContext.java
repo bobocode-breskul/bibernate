@@ -1,6 +1,7 @@
 package com.breskul.bibernate.persistence.context;
 
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.persistence.EntityKey;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
 import com.breskul.bibernate.persistence.context.snapshot.EntityRelationSnapshot;
@@ -94,6 +95,23 @@ public class PersistenceContext {
    */
   public <T> List<EntityPropertySnapshot> getEntityPropertySnapshot(EntityKey<T> entityKey) {
     return entitySnapshots.get(entityKey);
+  }
+
+
+  /**
+   * Retrieves the {@link EntityPropertySnapshot} associated with the specified {@link EntityKey} and column name.
+   *
+   * @param <T>         the type of entity
+   * @param entityKey   the entity key to identify the entity
+   * @param columnName  the name of the column
+   * @return the {@link EntityPropertySnapshot} corresponding to the specified entity key and column name
+   * @throws BibernateException if no snapshot is found by the provided entity key and column name
+   */
+  public <T> EntityPropertySnapshot getEntityPropertySnapshotByColumnName(EntityKey<T> entityKey, String columnName) {
+    return entitySnapshots.get(entityKey).stream()
+        .filter(snapshot -> columnName.equals(snapshot.columnName()))
+        .findFirst()
+        .orElseThrow(() -> new BibernateException("No snapshot found by key [%s] and column name [%s]".formatted(entityKey, columnName)));
   }
 
   /**
