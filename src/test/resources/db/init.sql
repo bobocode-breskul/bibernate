@@ -7,18 +7,10 @@ create table if not exists persons
 
 create table if not exists account
 (
-    id
-    bigint
-    auto_increment
-    primary
-    key,
-    nick
-    varchar
-(
-    256
-),
+    id bigint auto_increment primary key,
+    nick varchar(256),
     person_id bigint references persons
-    );
+);
 
 create table if not exists notes
 (
