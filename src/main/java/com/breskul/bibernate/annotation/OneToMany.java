@@ -30,5 +30,12 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface OneToMany {
 
+  /**
+   * (Optional) Whether the association should be lazily
+   * loaded or must be eagerly fetched. The EAGER
+   * strategy is a requirement on the persistence provider runtime that
+   * the associated entity must be eagerly fetched. The LAZY
+   * strategy is a hint to the persistence provider runtime.
+   */
   FetchType fetch() default LAZY;
 }
