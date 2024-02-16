@@ -32,12 +32,14 @@ public class TableCreationService {
 
   private final DataSource dataSource;
   private final EntitiesMetadataPersistence entitiesMetadataPersistence;
+  private final boolean showSql;
 
 
-
-  public TableCreationService(DataSource dataSource, EntitiesMetadataPersistence entitiesMetadataPersistence) {
+  public TableCreationService(DataSource dataSource, EntitiesMetadataPersistence entitiesMetadataPersistence,
+      boolean showSql) {
     this.dataSource = dataSource;
     this.entitiesMetadataPersistence = entitiesMetadataPersistence;
+    this.showSql = showSql;
   }
 
   /**
@@ -60,7 +62,9 @@ public class TableCreationService {
         Statement statement = connection.createStatement()) {
       for (Table table : entitiesMetadataPersistence.getTables()) {
         String dropSql = DROP_TABLE_SQL.formatted(table.getFullName());
-        logger.info("Bibernate: " + dropSql);
+        if (showSql) {
+          logger.info("Bibernate, DDL: [{}]", dropSql);
+        }
         statement.execute(dropSql);
       }
     } catch (SQLException e) {
@@ -73,7 +77,9 @@ public class TableCreationService {
         Statement statement = connection.createStatement()) {
       for (Table table : entitiesMetadataPersistence.getTables()) {
         String createQuery = generateCreateTableSql(table);
-        logger.info("Bibernate: " + createQuery);
+        if (showSql) {
+          logger.info("Bibernate, DDL: [{}]", createQuery);
+        }
         statement.executeUpdate(createQuery);
       }
     } catch (SQLException e) {
@@ -89,7 +95,9 @@ public class TableCreationService {
         if (!foreignKeys.isEmpty()) {
           for (ForeignKey fk: foreignKeys) {
             String createQuery = generateFKeySQL(fk);
-            logger.info("Bibernate: " + createQuery);
+            if (showSql) {
+              logger.info("Bibernate, DDL: [{}]", createQuery);
+            }
             statement.executeUpdate(createQuery);
           }
         }

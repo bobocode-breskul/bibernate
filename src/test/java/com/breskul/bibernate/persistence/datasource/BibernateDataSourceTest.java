@@ -12,7 +12,7 @@ class BibernateDataSourceTest {
 
   @Test
   void given_persistenceProperties_when_propertiesValid_then_successfullyCreateDataSource() {
-    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", null, null, null);
+    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", null, null, null, true);
 
     new BibernateDataSource().createDataSource(properties);
 
@@ -21,7 +21,7 @@ class BibernateDataSourceTest {
 
   @Test
   void given_persistenceProperties_when_urlNotValid_then_successfullyCreateDataSource() {
-    PersistenceProperties properties = new PersistenceProperties("jdbc:myOwn:file:~/tmp/test", "sa", "", null, null, null);
+    PersistenceProperties properties = new PersistenceProperties("jdbc:myOwn:file:~/tmp/test", "sa", "", null, null, null, true);
 
     assertThatThrownBy(() -> new BibernateDataSource().createDataSource(properties))
         .hasMessage("Failed to get driver instance for jdbcUrl=jdbc:myOwn:file:~/tmp/test");
@@ -29,7 +29,7 @@ class BibernateDataSourceTest {
 
   @Test
   void given_persistenceProperties_when_withValidCustomDriverClass_then_successfullyCreateDataSource() {
-    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", "org.h2.Driver", null, null);
+    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", "org.h2.Driver", null, null, true);
 
     new BibernateDataSource().createDataSource(properties);
 
@@ -38,7 +38,7 @@ class BibernateDataSourceTest {
 
   @Test
   void given_persistenceProperties_when_withInvalidCustomDriverClass_then_successfullyCreateDataSource() {
-    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", "org.h3.Driver", null, null);
+    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", "org.h3.Driver", null, null, true);
 
     assertThatThrownBy(() -> new BibernateDataSource().createDataSource(properties))
         .hasMessage("Error loading the Driver class: org.h3.Driver");
@@ -47,7 +47,7 @@ class BibernateDataSourceTest {
   @SneakyThrows
   @Test
   void given_persistenceProperties_when_propertiesValid_then_allParentMethodsWorkAsExpected() {
-    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", null, null, null);
+    PersistenceProperties properties = new PersistenceProperties("jdbc:h2:file:~/tmp/test", "sa", "", null, null, null, true);
 
     AbstractDataSource dataSource = new BibernateDataSource().createDataSource(properties);
 

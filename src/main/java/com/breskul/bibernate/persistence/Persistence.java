@@ -53,12 +53,13 @@ public class Persistence {
     boolean createTables = Boolean.parseBoolean(
         PropertiesConfiguration.getPropertyOrDefault(CREATE_TABLES_PROPERTY_NAME, "false"));
     if (createTables){
-      TableCreationService tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence);
+      TableCreationService tableCreationService = new TableCreationService(dataSource, entitiesMetadataPersistence,
+          persistenceProperties.showSql());
       tableCreationService.processDdl();
     }
 
     Dialect dialect = getDialectInstance(persistenceProperties);
-    return new SessionFactory(dataSource, dialect);
+    return new SessionFactory(dataSource, dialect, persistenceProperties.showSql());
   }
 
   private static Dialect getDialectInstance(PersistenceProperties persistenceProperties) {
