@@ -3,6 +3,7 @@ package com.breskul.bibernate.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.breskul.bibernate.data.AccountPerson;
 import com.breskul.bibernate.data.CustomPerson;
 import com.breskul.bibernate.data.DynamicPerson;
 import com.breskul.bibernate.data.Note;
@@ -202,6 +203,22 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
     assertThat(result.get(0).getFirstName()).isEqualTo(person.getFirstName());
     assertThat(result.get(0).getLastName()).isEqualTo(person.getLastName());
     assertThat(result.get(0).getNotes()).hasSizeGreaterThan(0);
+  }
+
+  @Test
+  void givenPersonWithAccount_whenExecuteNativeQuery_thenReturnPersonWithNote() {
+    prepareRandomNote(person);
+
+    List<AccountPerson> result =
+        session.executeNativeQuery(
+            "select * from persons left join account ON account.person_id=persons.id order by id asc;",
+            AccountPerson.class);
+
+    assertThat(result).hasSizeGreaterThan(0);
+
+    assertThat(result.get(0).getFirstName()).isEqualTo(person.getFirstName());
+    assertThat(result.get(0).getLastName()).isEqualTo(person.getLastName());
+    assertThat(result.get(0).getAccount()).isNotNull();
   }
 
 
