@@ -46,8 +46,10 @@ public class ApplicationPropertiesReader implements PropertyReader {
   @Override
   public PersistenceProperties readProperty() {
     String url = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_URL), "Connection URL cannot be null");
-    String username = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_USERNAME), "Connection username cannot be null");
-    String password = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_PASSWORD), "Connection password cannot be null");
+    String username = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_USERNAME),
+        "Connection username cannot be null");
+    String password = Objects.requireNonNull(PropertiesConfiguration.getProperty(CONNECTION_PASSWORD),
+        "Connection password cannot be null");
     String type = Objects.requireNonNull(PropertiesConfiguration.getProperty(DATASOURCE_TYPE), "Datasource type cannot be null");
     String driverClass = PropertiesConfiguration.getPropertyOrDefault(CONNECTION_DRIVER_CLASS, null);
     String dialectClass = PropertiesConfiguration.getPropertyOrDefault(DIALECT_CLASS, null);

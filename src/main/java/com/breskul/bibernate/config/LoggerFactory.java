@@ -13,8 +13,7 @@ public class LoggerFactory {
 
 
   /**
-   * Return a logger named corresponding to the class passed as parameter, using the statically
-   * bound {@link ILoggerFactory} instance.
+   * Return a logger named corresponding to the class passed as parameter, using the statically bound {@link ILoggerFactory} instance.
    *
    * @param clazz the returned logger will be named after clazz
    * @return logger

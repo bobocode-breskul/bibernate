@@ -24,8 +24,8 @@ import java.util.function.Supplier;
 
 
 /**
- * The EntitiesMetadataPersistence class represents the persistence mechanism for storing and retrieving metadata about entities.
- * It initializes and maintains a collection of Table objects that represent the entity tables in the database.
+ * The EntitiesMetadataPersistence class represents the persistence mechanism for storing and retrieving metadata about entities. It
+ * initializes and maintains a collection of Table objects that represent the entity tables in the database.
  */
 public class EntitiesMetadataPersistence {
 
@@ -38,8 +38,8 @@ public class EntitiesMetadataPersistence {
   }
 
   /**
-   * Creates an instance of EntitiesMetadataPersistence by using the provided entitiesSupplier to retrieve the set of entity classes.
-   * The method initializes the EntitiesMetadataPersistence object by populating the metadata for each entity class.
+   * Creates an instance of EntitiesMetadataPersistence by using the provided entitiesSupplier to retrieve the set of entity classes. The
+   * method initializes the EntitiesMetadataPersistence object by populating the metadata for each entity class.
    *
    * @param entitiesSupplier the supplier function to retrieve the set of entity classes
    * @return the initialized EntitiesMetadataPersistence object
@@ -47,6 +47,7 @@ public class EntitiesMetadataPersistence {
   public static EntitiesMetadataPersistence createInstance(Supplier<Set<Class<?>>> entitiesSupplier) {
     return new EntitiesMetadataPersistence(entitiesSupplier).init();
   }
+
   /**
    * Retrieves all the Table objects in the EntitiesMetadataPersistence.
    *
@@ -73,7 +74,7 @@ public class EntitiesMetadataPersistence {
    */
   private EntitiesMetadataPersistence init() {
     Set<Class<?>> entities = entitiesSupplier.get();
-    for (Class<?> entity: entities) {
+    for (Class<?> entity : entities) {
       Table table = new Table();
       String tableName = getEntityTableName(entity);
       table.setName(tableName);
@@ -108,7 +109,7 @@ public class EntitiesMetadataPersistence {
     List<Field> simpleFields = getClassEntityFields(entity);
     Map<String, Column> columns = new LinkedHashMap<>();
     Set<ForeignKey> foreignKeys = new LinkedHashSet<>();
-    for (Field field: simpleFields) {
+    for (Field field : simpleFields) {
       Column column;
       if (EntityUtil.isSimpleColumn(field)) {
         column = createColumn(field);
@@ -205,7 +206,7 @@ public class EntitiesMetadataPersistence {
         || fieldType.equals(byte.class);
   }
 
-  private record GeneratedColumnsData(Map<String, Column> columns, Set<ForeignKey> foreignKeys){
+  private record GeneratedColumnsData(Map<String, Column> columns, Set<ForeignKey> foreignKeys) {
 
   }
 }

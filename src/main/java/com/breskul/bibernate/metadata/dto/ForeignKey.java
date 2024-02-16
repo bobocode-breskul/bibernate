@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class ForeignKey {
+
   private String tableName;
   private String fieldName;
   private String relatedTableName;

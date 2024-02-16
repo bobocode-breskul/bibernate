@@ -50,9 +50,8 @@ import org.slf4j.Logger;
 
 
 /**
- * Provides generic data access operations for entities, including retrieval by primary key or
- * column value, saving entities, and executing updates. Facilitates efficient and consistent
- * database interactions across various entity types.
+ * Provides generic data access operations for entities, including retrieval by primary key or column value, saving entities, and executing
+ * updates. Facilitates efficient and consistent database interactions across various entity types.
  */
 public class GenericDao {
 
@@ -80,8 +79,8 @@ public class GenericDao {
   }
 
   /**
-   * Find by primary key. Search for an entity of the specified class and primary key. If the entity
-   * instance is contained in the persistence context, it is returned from there.
+   * Find by primary key. Search for an entity of the specified class and primary key. If the entity instance is contained in the
+   * persistence context, it is returned from there.
    *
    * @param cls      – entity class
    * @param id       - primary key
@@ -97,8 +96,8 @@ public class GenericDao {
   }
 
   /**
-   * Find by primary key. Search for entities of the specified class filtered by column. If the
-   * entities contained in the persistence context, they returned from there.
+   * Find by primary key. Search for entities of the specified class filtered by column. If the entities contained in the persistence
+   * context, they returned from there.
    *
    * @param cls         – entity class
    * @param columnName  - column name
@@ -164,8 +163,8 @@ public class GenericDao {
   }
 
   /**
-   * Saves a given entity. Use the returned instance for further operations as the save operation
-   * might have changed the entity instance completely.
+   * Saves a given entity. Use the returned instance for further operations as the save operation might have changed the entity instance
+   * completely.
    *
    * @param entity must not be {@literal null}.
    * @return the saved entity; will never be {@literal null}.
@@ -223,14 +222,12 @@ public class GenericDao {
   }
 
   /**
-   * Deletes an entity from the database using its ID. This method finds the entity's ID field,
-   * constructs a DELETE SQL query, and executes it. The entity must not be null and must have a
-   * non-null ID.
+   * Deletes an entity from the database using its ID. This method finds the entity's ID field, constructs a DELETE SQL query, and executes
+   * it. The entity must not be null and must have a non-null ID.
    *
    * @param <T>    the type of the entity
    * @param entity the entity to be deleted
-   * @throws EntityQueryException     if there's an error during deletion or if the entity or its ID
-   *                                  is null
+   * @throws EntityQueryException     if there's an error during deletion or if the entity or its ID is null
    * @throws IllegalArgumentException if the entity is null
    */
   public <T> void delete(T entity) {
@@ -263,8 +260,8 @@ public class GenericDao {
   // todo add logic for relation annotations - @OneToMany, @ManyToOne, @ManyToMany
 
   /**
-   * Executes an update query for the specified entity key with the given parameters. This method
-   * dynamically determines whether to use a dynamic update query based on the entity class.
+   * Executes an update query for the specified entity key with the given parameters. This method dynamically determines whether to use a
+   * dynamic update query based on the entity class.
    *
    * @param <T>        the type of the entity
    * @param entityKey  the entity key representing the entity to update
@@ -289,8 +286,8 @@ public class GenericDao {
   }
 
   /**
-   * Prepares an update query for the specified entity key. This method constructs an update SQL
-   * query string to update all columns of the entity.
+   * Prepares an update query for the specified entity key. This method constructs an update SQL query string to update all columns of the
+   * entity.
    *
    * @param <T>       the type of the entity
    * @param entityKey the entity key representing the entity to update
@@ -307,9 +304,8 @@ public class GenericDao {
   }
 
   /**
-   * Prepares a dynamic update query for the specified entity key. This method constructs an update
-   * SQL query string only for columns that were actually updated  based on the differences between
-   * the initial and current states of the entity.
+   * Prepares a dynamic update query for the specified entity key. This method constructs an update SQL query string only for columns that
+   * were actually updated  based on the differences between the initial and current states of the entity.
    *
    * @param <T>       the type of the entity
    * @param entityKey the entity key representing the entity to update
@@ -348,9 +344,8 @@ public class GenericDao {
   // todo add logic for relation annotations - @ManyToMany, @OneToOne
 
   /**
-   * Maps the results from a ResultSet object to an entity object of the specified class and add the
-   * entity to context. Recursively fetch all related entities and add them to context. Returns the
-   * mapped entity object.
+   * Maps the results from a ResultSet object to an entity object of the specified class and add the entity to context. Recursively fetch
+   * all related entities and add them to context. Returns the mapped entity object.
    *
    * @param resultSet - The ResultSet object containing the data to be mapped
    * @param cls       - The class of the entity object
@@ -487,12 +482,10 @@ public class GenericDao {
   }
 
   /**
-   * Executes a native SQL query and maps the result set to a list of entities of the specified
-   * class. This method prepares and executes the SQL query using a {@code PreparedStatement},
-   * iterates over the {@code ResultSet}, and for each row, it maps the result to an instance of the
-   * specified entity class. The mapping is handled by the {@code mapResult} method. In case of SQL
-   * exceptions, a {@code BiQLException} is thrown, indicating failure to execute the query or map
-   * the results.
+   * Executes a native SQL query and maps the result set to a list of entities of the specified class. This method prepares and executes the
+   * SQL query using a {@code PreparedStatement}, iterates over the {@code ResultSet}, and for each row, it maps the result to an instance
+   * of the specified entity class. The mapping is handled by the {@code mapResult} method. In case of SQL exceptions, a
+   * {@code BiQLException} is thrown, indicating failure to execute the query or map the results.
    *
    * @param <T>         the generic type of the entity class
    * @param sql         the SQL query to be executed

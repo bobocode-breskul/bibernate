@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 
 /**
- * A persistence context that manages first-level caching of entities and their snapshots. This
- * class provides methods for retrieving, caching, and managing entity snapshots.
+ * A persistence context that manages first-level caching of entities and their snapshots. This class provides methods for retrieving,
+ * caching, and managing entity snapshots.
  */
 public class PersistenceContext {
 
@@ -86,8 +86,7 @@ public class PersistenceContext {
   }
 
   /**
-   * Retrieves the snapshot of entity properties associated with the specified entity key, including
-   * property names.
+   * Retrieves the snapshot of entity properties associated with the specified entity key, including property names.
    *
    * @param entityKey The key representing the entity.
    * @param <T>       The type of the entity.
@@ -101,9 +100,9 @@ public class PersistenceContext {
   /**
    * Retrieves the {@link EntityPropertySnapshot} associated with the specified {@link EntityKey} and column name.
    *
-   * @param <T>         the type of entity
-   * @param entityKey   the entity key to identify the entity
-   * @param columnName  the name of the column
+   * @param <T>        the type of entity
+   * @param entityKey  the entity key to identify the entity
+   * @param columnName the name of the column
    * @return the {@link EntityPropertySnapshot} corresponding to the specified entity key and column name
    * @throws BibernateException if no snapshot is found by the provided entity key and column name
    */
@@ -153,8 +152,8 @@ public class PersistenceContext {
   }
 
   /**
-   * Checks if the entity associated with the specified key has changed by comparing the initial
-   * snapshot and the current state in the first-level cache.
+   * Checks if the entity associated with the specified key has changed by comparing the initial snapshot and the current state in the
+   * first-level cache.
    *
    * @param entityKey The key representing the entity.
    * @return {@code true} if the entity has changed, {@code false} otherwise.
@@ -220,8 +219,8 @@ public class PersistenceContext {
   }
 
   /**
-   * Checks if the entity associated with the specified key has changed by comparing the initial
-   * snapshot and the current state in the first-level cache.
+   * Checks if the entity associated with the specified key has changed by comparing the initial snapshot and the current state in the
+   * first-level cache.
    *
    * @param entityKey The key representing the entity.
    * @param <T>       The type of the entity.

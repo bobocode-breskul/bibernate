@@ -14,11 +14,9 @@ import org.slf4j.Logger;
 
 
 /**
- * A utility class for converting BiQL (a hypothetical query language) to standard SQL queries.
- * This class provides static methods to parse BiQL strings and transform them into SQL syntax
- * based on entity class mappings and field annotations. The conversion process takes into account
- * the structure and semantics of BiQL to ensure the generated SQL queries accurately represent
- * the original intent.
+ * A utility class for converting BiQL (a hypothetical query language) to standard SQL queries. This class provides static methods to parse
+ * BiQL strings and transform them into SQL syntax based on entity class mappings and field annotations. The conversion process takes into
+ * account the structure and semantics of BiQL to ensure the generated SQL queries accurately represent the original intent.
  */
 public class BiQLMapper {
 
@@ -31,9 +29,9 @@ public class BiQLMapper {
   }
 
   /**
-   * Converts a BiQL query string to an SQL query string, based on the provided entity class.
-   * This method interprets the BiQL syntax, translates entity class references to table names,
-   * and converts entity field names to their corresponding column names in the SQL query.
+   * Converts a BiQL query string to an SQL query string, based on the provided entity class. This method interprets the BiQL syntax,
+   * translates entity class references to table names, and converts entity field names to their corresponding column names in the SQL
+   * query.
    *
    * @param <T>         The type of the entity class associated with the BiQL query.
    * @param bgl         The BiQL query string to be converted.
@@ -88,13 +86,12 @@ public class BiQLMapper {
   }
 
   /**
-   * Validates the given BiQL query to ensure it meets the required syntax and contains the necessary
-   * references to the entity class. This method checks for the presence of the entity class within the
-   * BiQL query and ensures the query is not null or empty.
+   * Validates the given BiQL query to ensure it meets the required syntax and contains the necessary references to the entity class. This
+   * method checks for the presence of the entity class within the BiQL query and ensures the query is not null or empty.
    *
-   * @param bql             The BiQL query string to validate.
-   * @param entityClass     The entity class expected to be referenced in the query.
-   * @throws BiQLException  If the entityClass is null, the BiQL query is invalid, null, or does not reference the expected entity class.
+   * @param bql         The BiQL query string to validate.
+   * @param entityClass The entity class expected to be referenced in the query.
+   * @throws BiQLException If the entityClass is null, the BiQL query is invalid, null, or does not reference the expected entity class.
    */
   private static <T> void validateBiQL(String bql, Class<T> entityClass) {
     log.trace("Starting to validate bql:[{}] for entity:[{}]", bql, entityClass);

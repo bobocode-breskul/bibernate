@@ -25,8 +25,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.atteo.classindex.ClassIndex;
 import lombok.experimental.UtilityClass;
+import org.atteo.classindex.ClassIndex;
 
 
 /**
@@ -48,8 +48,7 @@ public class EntityUtil {
   }
 
   /**
-   * Validates if the given column exists in the entity class. Throws an exception if the column
-   * does not exist.
+   * Validates if the given column exists in the entity class. Throws an exception if the column does not exist.
    *
    * @param cls        - The entity class
    * @param columnName - The column name to validate
@@ -68,9 +67,8 @@ public class EntityUtil {
 
 
   /**
-   * Retrieves the table name for the given entity class. If the class is annotated with the
-   * {@link Table} annotation, the table name from the annotation is returned. Otherwise, generates
-   * name from class name.
+   * Retrieves the table name for the given entity class. If the class is annotated with the {@link Table} annotation, the table name from
+   * the annotation is returned. Otherwise, generates name from class name.
    *
    * @param cls - The entity class
    * @return The table name for the entity class
@@ -83,11 +81,11 @@ public class EntityUtil {
 
 
   /**
-   * Retrieves a list of column names from the fields of the provided entity class.
-   * The method filters out fields representing collections of other entities.
+   * Retrieves a list of column names from the fields of the provided entity class. The method filters out fields representing collections
+   * of other entities.
    *
    * @param entityClass - The entity class for which to retrieve column names
-   * @param <T> - The type of the entity class
+   * @param <T>         - The type of the entity class
    * @return A list of column names representing non-collection fields in the entity class
    * @see EntityUtil#isCollectionEntityField(Field)
    * @see EntityUtil#resolveColumnName(Field)
@@ -112,8 +110,7 @@ public class EntityUtil {
   }
 
   /**
-   * Retrieves a list of fields that represent columns without relations tp other entities in the
-   * given class.
+   * Retrieves a list of fields that represent columns without relations tp other entities in the given class.
    *
    * @param cls - The class for which to retrieve column fields
    * @return A list of fields representing simple columns (without relations) in the class
@@ -125,11 +122,11 @@ public class EntityUtil {
   }
 
   /**
-   * Retrieves a list of pairs containing column names and their corresponding values from the provided entity.
-   * The method filters out fields representing relations to other entities, returning only simple columns.
+   * Retrieves a list of pairs containing column names and their corresponding values from the provided entity. The method filters out
+   * fields representing relations to other entities, returning only simple columns.
    *
    * @param entity - The entity object from which to retrieve simple column values
-   * @param <T> - The type of the entity
+   * @param <T>    - The type of the entity
    * @return A list of pairs, where each pair consists of a column name and its corresponding value
    * @see #getEntitySimpleColumnFields(Class)
    * @see #resolveColumnName(Field)
@@ -184,8 +181,7 @@ public class EntityUtil {
    *
    * @param fields - The list of fields to search
    * @return The entity ID field
-   * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *                              are marked with the 'Id' annotation
+   * @throws EntityParseException if the entity does not define an ID column or if multiple fields are marked with the 'Id' annotation
    */
   public static Field findEntityIdField(List<Field> fields) {
     List<Field> idFields = fields.stream()
@@ -205,8 +201,7 @@ public class EntityUtil {
    *
    * @param cls - The entity class
    * @return The entity ID field
-   * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *                              are marked with the 'Id' annotation
+   * @throws EntityParseException if the entity does not define an ID column or if multiple fields are marked with the 'Id' annotation
    */
   public static Field findEntityIdField(Class<?> cls) {
     validateIsEntity(cls);
@@ -214,14 +209,13 @@ public class EntityUtil {
   }
 
   /**
-   * Finds and returns the name of the entity ID field for the given entity class. The entity ID
-   * field is determined based on the presence of the 'Id' annotation.
+   * Finds and returns the name of the entity ID field for the given entity class. The entity ID field is determined based on the presence
+   * of the 'Id' annotation.
    *
    * @param entityClass - The entity class for which to find the ID field name
    * @param <T>         - The type of the entity class
    * @return The name of the entity ID field
-   * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *                              are marked with the 'Id' annotation
+   * @throws EntityParseException if the entity does not define an ID column or if multiple fields are marked with the 'Id' annotation
    */
   public static <T> String findEntityIdFieldName(Class<T> entityClass) {
     return resolveColumnName(findEntityIdField(entityClass));
@@ -232,8 +226,7 @@ public class EntityUtil {
    *
    * @param entity - The entity object
    * @return The ID value of the entity object
-   * @throws EntityParseException if the entity does not define an ID column or if multiple fields
-   *                              are marked with the 'Id' annotation
+   * @throws EntityParseException if the entity does not define an ID column or if multiple fields are marked with the 'Id' annotation
    */
   public static Object getEntityId(Object entity) {
     var idField = findEntityIdField(entity.getClass());
@@ -254,8 +247,7 @@ public class EntityUtil {
 
 
   /**
-   * Resolves the column name for the given field, from field annotations or return field name if
-   * column annotation is absent.
+   * Resolves the column name for the given field, from field annotations or return field name if column annotation is absent.
    *
    * @param field - The field for which to resolve the column name
    * @return The resolved column name
@@ -275,7 +267,7 @@ public class EntityUtil {
 
   private String generateTableName(String className) {
     StringBuilder builder = new StringBuilder(className);
-    for ( int i = 1; i < builder.length() - 1; i++ ) {
+    for (int i = 1; i < builder.length() - 1; i++) {
       if (isUnderscoreRequired(builder.charAt(i - 1), builder.charAt(i), builder.charAt(i + 1))) {
         builder.insert(i++, '_');
       }
@@ -284,7 +276,7 @@ public class EntityUtil {
   }
 
   private boolean isUnderscoreRequired(final char before, final char current, final char after) {
-    return Character.isLowerCase( before ) && Character.isUpperCase( current ) && Character.isLowerCase( after );
+    return Character.isLowerCase(before) && Character.isUpperCase(current) && Character.isLowerCase(after);
   }
 
   /**
@@ -334,9 +326,8 @@ public class EntityUtil {
   }
 
   /**
-   * Checks if the specified entity class has any @OneToOne or @ManyToOne relations. This method
-   * examines the declared fields of the class to identify if any field is marked as a 'toOne'
-   * relation based on the presence of @OneToOne or @ManyToOne annotations.
+   * Checks if the specified entity class has any @OneToOne or @ManyToOne relations. This method examines the declared fields of the class
+   * to identify if any field is marked as a 'toOne' relation based on the presence of @OneToOne or @ManyToOne annotations.
    *
    * @param cls - The entity class to check for 'toOne' relations
    * @param <T> - The type of the entity class
@@ -348,8 +339,8 @@ public class EntityUtil {
   }
 
   /**
-   * Checks if the specified entity class is marked with the {@link DynamicUpdate} annotation,
-   * indicating that dynamic update behavior is enabled for this entity.
+   * Checks if the specified entity class is marked with the {@link DynamicUpdate} annotation, indicating that dynamic update behavior is
+   * enabled for this entity.
    *
    * @param entityClass - The entity class to check for dynamic update annotation
    * @param <T>         - The type of the entity class
@@ -360,9 +351,8 @@ public class EntityUtil {
   }
 
   /**
-   * Retrieves an array of column values from the provided entity object including toOne relation
-   * columns. The method extracts values from all the columns of the entity based on its class
-   * definition.
+   * Retrieves an array of column values from the provided entity object including toOne relation columns. The method extracts values from
+   * all the columns of the entity based on its class definition.
    *
    * @param entity - The entity object from which to retrieve column values
    * @param <T>    - The type of the entity
@@ -375,13 +365,12 @@ public class EntityUtil {
   }
 
   /**
-   * Retrieves a list of pairs containing the types and associated ID values of the 'toOne' relation
-   * fields from the provided entity.
+   * Retrieves a list of pairs containing the types and associated ID values of the 'toOne' relation fields from the provided entity.
    *
    * @param entity - The entity object from which to retrieve 'toOne' relation values
    * @param <T>    - The type of the entity
-   * @return A list of pairs, where each pair consists of the 'toOne' relation field type and its
-   * associated ID value (or null if the field value is null)
+   * @return A list of pairs, where each pair consists of the 'toOne' relation field type and its associated ID value (or null if the field
+   * value is null)
    * @see EntityUtil#isToOneRelation(Field)
    * @see ReflectionUtil#readFieldValue(Object, Field)
    * @see #getEntityId(Object)
@@ -400,7 +389,7 @@ public class EntityUtil {
   /**
    * Copies the changed values from the sourceEntity to the targetEntity.
    *
-   * @param <T> The type of the entities.
+   * @param <T>          The type of the entities.
    * @param sourceEntity The source entity from which to copy the values.
    * @param targetEntity The target entity to which to copy the values.
    */
@@ -422,11 +411,11 @@ public class EntityUtil {
    * Creates a copy of the given entity object.
    *
    * @param entity the entity object to be copied
-   * @param <T> the type of the entity object
+   * @param <T>    the type of the entity object
    * @return a new instance of the entity object with the same field values as the original entity
    */
   @SuppressWarnings("unchecked")
-  public static  <T> T copyEntity(T entity) {
+  public static <T> T copyEntity(T entity) {
     if (entity == null) {
       throw new IllegalArgumentException("Source object should not be 'null'");
     }
@@ -445,9 +434,9 @@ public class EntityUtil {
   /**
    * Copies the entity ID from the source entity to the target entity.
    *
-   * @param <T>           the type of the entity
-   * @param sourceEntity  the source entity from which to copy the ID
-   * @param targetEntity  the target entity to which the ID will be copied
+   * @param <T>          the type of the entity
+   * @param sourceEntity the source entity from which to copy the ID
+   * @param targetEntity the target entity to which the ID will be copied
    */
   public static <T> void copyEntityId(T sourceEntity, T targetEntity) {
     Field idField = EntityUtil.findEntityIdField(sourceEntity.getClass());

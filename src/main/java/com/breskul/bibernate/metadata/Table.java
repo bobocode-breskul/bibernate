@@ -10,6 +10,7 @@ import java.util.Set;
  * Table metadata.
  */
 public class Table {
+
   private String catalog;
   private String schema;
   private String name;

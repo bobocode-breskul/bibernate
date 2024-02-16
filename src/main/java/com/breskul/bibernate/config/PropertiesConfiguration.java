@@ -3,13 +3,11 @@ package com.breskul.bibernate.config;
 import com.breskul.bibernate.exception.InvalidPropertyValueException;
 import com.breskul.bibernate.exception.LoadingPropertiesFailedException;
 import com.breskul.bibernate.exception.PropertyNotFoundException;
-
 import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * PropertiesConfiguration class stores properties from configuration file and provides an API to
- * get property as string or integer value.
+ * PropertiesConfiguration class stores properties from configuration file and provides an API to get property as string or integer value.
  */
 public class PropertiesConfiguration {
 
@@ -38,8 +36,7 @@ public class PropertiesConfiguration {
   }
 
   /**
-   * Method returns property string value loaded from configuration file. If property does not exist
-   * throws PropertyNotFoundException.
+   * Method returns property string value loaded from configuration file. If property does not exist throws PropertyNotFoundException.
    *
    * @param propertyName property key name
    * @return string property value
@@ -54,8 +51,7 @@ public class PropertiesConfiguration {
   }
 
   /**
-   * Method returns property string value loaded from configuration file or returns default value if
-   * property doesn't exist.
+   * Method returns property string value loaded from configuration file or returns default value if property doesn't exist.
    *
    * @param propertyName property key name
    * @param defaultValue property default value
@@ -67,8 +63,7 @@ public class PropertiesConfiguration {
   }
 
   /**
-   * Method returns property integer value loaded from configuration file. If property does not
-   * exist throws PropertyNotFoundException.
+   * Method returns property integer value loaded from configuration file. If property does not exist throws PropertyNotFoundException.
    *
    * @param propertyName property key name
    * @return integer property value
@@ -88,8 +83,7 @@ public class PropertiesConfiguration {
   }
 
   /**
-   * Method returns property integer value loaded from configuration file or returns default value
-   * if property doesn't exist.
+   * Method returns property integer value loaded from configuration file or returns default value if property doesn't exist.
    *
    * @param propertyName property key name
    * @param defaultValue property default value

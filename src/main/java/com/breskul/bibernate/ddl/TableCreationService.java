@@ -17,6 +17,7 @@ import org.slf4j.Logger;
  * The TableCreationService class is responsible for creating, dropping, and adding foreign keys to database tables.
  */
 public class TableCreationService {
+
   private static final Logger logger = LoggerFactory.getLogger(TableCreationService.class);
   public static final String CREATE_TABLES_PROPERTY_NAME = "bibernate.ddl.create_tables";
   private static final String DROP_TABLE_SQL = "DROP TABLE IF EXISTS %s CASCADE";
@@ -24,11 +25,11 @@ public class TableCreationService {
   private static final String NOT_NULL = "NOT NULL";
   private static final String PRIMARY_KEY = "PRIMARY KEY";
   String ADD_FOREIGN_KEY_SQL = """
-        ALTER TABLE IF EXISTS %s
-        ADD CONSTRAINT %s
-        FOREIGN KEY (%s)
-        REFERENCES %s
-        """;
+      ALTER TABLE IF EXISTS %s
+      ADD CONSTRAINT %s
+      FOREIGN KEY (%s)
+      REFERENCES %s
+      """;
 
   private final DataSource dataSource;
   private final EntitiesMetadataPersistence entitiesMetadataPersistence;
@@ -43,22 +44,22 @@ public class TableCreationService {
   }
 
   /**
-   * Processes Data Definition Language (DDL) statements to create tables and add foreign keys if specified by the configuration.
-   * The process involves dropping all existing tables, creating new tables, and adding foreign keys if necessary.
+   * Processes Data Definition Language (DDL) statements to create tables and add foreign keys if specified by the configuration. The
+   * process involves dropping all existing tables, creating new tables, and adding foreign keys if necessary.
    *
    * @see TableCreationService#dropAllTables()
    * @see TableCreationService#createTables()
    * @see TableCreationService#addForeignKeys()
    * @see PropertiesConfiguration#getPropertyOrDefault(String, String)
    */
-  public void processDdl(){
-      dropAllTables();
-      createTables();
-      addForeignKeys();
+  public void processDdl() {
+    dropAllTables();
+    createTables();
+    addForeignKeys();
   }
 
   private void dropAllTables() {
-    try(var connection = dataSource.getConnection();
+    try (var connection = dataSource.getConnection();
         Statement statement = connection.createStatement()) {
       for (Table table : entitiesMetadataPersistence.getTables()) {
         String dropSql = DROP_TABLE_SQL.formatted(table.getFullName());
@@ -89,11 +90,11 @@ public class TableCreationService {
 
   private void addForeignKeys() {
     try (var connection = dataSource.getConnection();
-      Statement statement = connection.createStatement()) {
+        Statement statement = connection.createStatement()) {
       for (Table table : entitiesMetadataPersistence.getTables()) {
         Set<ForeignKey> foreignKeys = table.getForeignKeys();
         if (!foreignKeys.isEmpty()) {
-          for (ForeignKey fk: foreignKeys) {
+          for (ForeignKey fk : foreignKeys) {
             String createQuery = generateFKeySQL(fk);
             if (showSql) {
               logger.info("Bibernate, DDL: [{}]", createQuery);
@@ -109,12 +110,13 @@ public class TableCreationService {
 
   private String generateFKeySQL(ForeignKey fk) {
     return ADD_FOREIGN_KEY_SQL.formatted(fk.getTableName(), fk.getConstraintName(), fk.getFieldName(),
-            fk.getRelatedTableName());
+        fk.getRelatedTableName());
 
   }
+
   private String generateCreateTableSql(Table table) {
     StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS %s(".formatted(table.getFullName()));
-    for (Column column: table.getColumns()) {
+    for (Column column : table.getColumns()) {
       sql.append(System.lineSeparator());
       sql.append("\t%s %s".formatted(column.getName(), column.getSqlTypeName()));
       if (column.isUnique()) {

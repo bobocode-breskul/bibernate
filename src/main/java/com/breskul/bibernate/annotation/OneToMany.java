@@ -12,14 +12,13 @@ import java.lang.annotation.Target;
  * Specifies a many-valued association with one-to-many multiplicity.
  *
  * <p> If the collection is defined using generics to specify the
- * element type, the associated target entity type need not be specified; otherwise the target
- * entity class must be specified. If the relationship is bidirectional, the
+ * element type, the associated target entity type need not be specified; otherwise the target entity class must be specified. If the
+ * relationship is bidirectional, the
  * <code>mappedBy</code> element must be used to specify the relationship field or
  * property of the entity that is the owner of the relationship.
  *
  * <p> The <code>OneToMany</code> annotation may be used within an embeddable class
- * contained within an entity class to specify a relationship to a collection of entities. If the
- * relationship is bidirectional, the
+ * contained within an entity class to specify a relationship to a collection of entities. If the relationship is bidirectional, the
  * <code> mappedBy</code> element must be used to specify the relationship field or
  * property of the entity that is the owner of the relationship.
  * <p>
@@ -30,6 +29,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface OneToMany {
+
   FetchType fetch() default LAZY;
-    // TODO: add attributes
 }

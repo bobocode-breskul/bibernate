@@ -19,19 +19,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CommonSQLTypesConverter {
+
   static final int DEFAULT_VARCHAR_LENGTH = 255;
 
   /**
-   * The assumption that real and double precision have exactly 24 and 53 bits in the mantissa
-   * respectively is correct for IEEE-standard floating point implementations. On non-IEEE platforms
-   * it may be off a little, but for simplicity the same ranges of p are used on all platforms.
+   * The assumption that real and double precision have exactly 24 and 53 bits in the mantissa respectively is correct for IEEE-standard
+   * floating point implementations. On non-IEEE platforms it may be off a little, but for simplicity the same ranges of p are used on all
+   * platforms.
    */
   private static final int FLOAT_PRECISION_THRESHOLD = 24;
   private static final int DOUBLE_PRECISION_THRESHOLD = 53;
   private static final int DEFAULT_NUMERIC_PRECISION = 38;
   private static final int DEFAULT_BIG_INTEGER_SCALE = 0;
   private static final int DEFAULT_BIG_DECIMAL_SCALE = 2;
-  private static final double LOG_BASE2OF10 = log(10)/log(2);
+  private static final double LOG_BASE2OF10 = log(10) / log(2);
 
   static final String SCALE_IN_FLOAT_ERR_MSG = "Scale has no meaning for floating point numbers";
 
@@ -62,9 +63,8 @@ public class CommonSQLTypesConverter {
 
 
   /**
-   * Retrieves the SQL data type of given field.
-   * If {@code @Column.columnDefinition() } is overridden than sql method will return data from it,
-   * otherwise sql type calculates by {@code ColumnDefinitionHandler's} from the given field
+   * Retrieves the SQL data type of given field. If {@code @Column.columnDefinition() } is overridden than sql method will return data from
+   * it, otherwise sql type calculates by {@code ColumnDefinitionHandler's} from the given field
    *
    * @param field the field whose SQL data type needs to be retrieved
    * @return the SQL data type of the field
@@ -86,6 +86,7 @@ public class CommonSQLTypesConverter {
   }
 
   static class LongColumnHandler implements ColumnDefinitionHandler {
+
     @Override
     public DataType resolveDataType(Field field) {
       return new DataType(BIGINT.getName());
@@ -136,7 +137,7 @@ public class CommonSQLTypesConverter {
         if (fieldAnnotation.precision() != 0) {
           // convert from base 10 (as specified in @Column) to base 2 (as specified by SQL)
           // using the magic of high school math: log_2(10^n) = n*log_2(10) = n*ln(10)/ln(2)
-          precision = (int) ceil( precision * LOG_BASE2OF10 );
+          precision = (int) ceil(precision * LOG_BASE2OF10);
           if (precision <= FLOAT_PRECISION_THRESHOLD) {
             return new DataType(REAL.getName());
           }
@@ -151,6 +152,7 @@ public class CommonSQLTypesConverter {
   }
 
   static class BooleanConverter implements ColumnDefinitionHandler {
+
     @Override
     public DataType resolveDataType(Field field) {
       return new DataType(JDBCType.BOOLEAN.getName());
@@ -158,6 +160,7 @@ public class CommonSQLTypesConverter {
   }
 
   static class ByteArrayConverter implements ColumnDefinitionHandler {
+
     @Override
     public DataType resolveDataType(Field field) {
       return new DataType("BYTEA");
