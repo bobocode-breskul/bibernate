@@ -60,7 +60,7 @@ bibernate.connection.url=jdbc:postgresql://localhost:5432/postgres
 bibernate.connection.username=postgres
 bibernate.connection.password=postgres
 bibernate.connection.driver_class=org.postgresql.Driver
-bibernate.dialect=com.breskul.bibernate.persistence.dialect.H2Dialect
+bibernate.dialect=com.breskul.bibernate.persistence.dialect.PostgresDialect
 
 # Option available to suppress notifications for executed SQL queries
 bibernate.show_sql=true
