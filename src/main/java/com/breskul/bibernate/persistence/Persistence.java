@@ -73,15 +73,24 @@ public class Persistence {
       }
       throw new BibernateException("Provided dialect class '%s' is not a instance of Dialect interface".formatted(dialectClassName));
     } catch (ClassNotFoundException e) {
-      throw new BibernateException("Provided dialect class '%s' is not found in classPath", e);
+      throw new BibernateException(
+          "Provided dialect class '%s' is not found in classPath".formatted(dialectClassName), e);
     } catch (NoSuchMethodException e) {
-      throw new BibernateException("Provided dialect class '%s' is not have required default constructor", e);
+      throw new BibernateException(
+          "Provided dialect class '%s' is not have required default constructor".formatted(
+              dialectClassName), e);
     } catch (InvocationTargetException e) {
-      throw new BibernateException("Creation of dialect class '%s' failed due to exception inside of constructor", e);
+      throw new BibernateException(
+          "Creation of dialect class '%s' failed due to exception inside of constructor".formatted(
+              dialectClassName), e);
     } catch (InstantiationException e) {
-      throw new BibernateException("Default constructor of dialect class '%s' represents an abstract class", e);
+      throw new BibernateException(
+          "Default constructor of dialect class '%s' represents an abstract class".formatted(
+              dialectClassName), e);
     } catch (IllegalAccessException e) {
-      throw new BibernateException("Creation of dialect class '%s' failed due to parameter issue", e);
+      throw new BibernateException(
+          "Creation of dialect class '%s' failed due to parameter issue".formatted(
+              dialectClassName), e);
     }
   }
 }
