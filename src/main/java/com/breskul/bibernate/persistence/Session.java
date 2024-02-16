@@ -1,5 +1,6 @@
 package com.breskul.bibernate.persistence;
 
+import static com.breskul.bibernate.util.EntityUtil.findEntityIdFieldName;
 import static java.util.Comparator.comparing;
 
 import com.breskul.bibernate.action.Action;
@@ -7,6 +8,7 @@ import com.breskul.bibernate.action.DeleteAction;
 import com.breskul.bibernate.action.InsertAction;
 import com.breskul.bibernate.action.UpdateAction;
 import com.breskul.bibernate.config.LoggerFactory;
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.exception.EntityIsNotManagedException;
 import com.breskul.bibernate.persistence.context.PersistenceContext;
 import com.breskul.bibernate.persistence.context.snapshot.EntityPropertySnapshot;
@@ -275,13 +277,27 @@ public class Session implements AutoCloseable {
    */
   private <T> void flushChanges(EntityKey<T> entityKey) {
     log.debug("Found not flushed changes in the cache");
-    // todo: if ID was altered - throw exception
+    checkIdNotAltered(entityKey);
     T updatedEntity = persistenceContext.getEntity(entityKey);
     Object[] parameters = EntityUtil.getEntityColumnValues(updatedEntity);
     if (EntityUtil.isDynamicUpdate(entityKey.entityClass())) {
       parameters = prepareDynamicParameters(entityKey, updatedEntity);
     }
     actionQueue.offer(new UpdateAction<>(genericDao, entityKey, parameters));
+  }
+
+  private <T> void checkIdNotAltered(EntityKey<T> entityKey) {
+    T currentState = persistenceContext.getEntity(entityKey);
+    Object currentIdValue = EntityUtil.getEntityId(currentState);
+    Class<T> entityClass = entityKey.entityClass();
+    EntityPropertySnapshot idFieldSnapshot =
+        persistenceContext.getEntityPropertySnapshotByColumnName(entityKey, findEntityIdFieldName(
+            entityClass));
+    if (!Objects.equals(currentIdValue, idFieldSnapshot.columnValue())) {
+      throw new BibernateException(
+          "identifier of an instance of %s was altered from %s to %s".formatted(
+              entityClass.getName(), idFieldSnapshot.columnValue(), currentIdValue));
+    }
   }
 
   /**

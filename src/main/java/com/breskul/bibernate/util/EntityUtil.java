@@ -224,8 +224,7 @@ public class EntityUtil {
    *                              are marked with the 'Id' annotation
    */
   public static <T> String findEntityIdFieldName(Class<T> entityClass) {
-    // todo use resolveColumnName?
-    return findEntityIdField(entityClass).getName();
+    return resolveColumnName(findEntityIdField(entityClass));
   }
 
   /**

@@ -7,8 +7,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.breskul.bibernate.data.DynamicPerson;
+import com.breskul.bibernate.data.Note;
 import com.breskul.bibernate.data.Person;
 import com.breskul.bibernate.exception.BiQLException;
+import com.breskul.bibernate.exception.BibernateException;
 import com.breskul.bibernate.persistence.EntityKey;
 import com.breskul.bibernate.persistence.Persistence;
 import com.breskul.bibernate.persistence.Session;
@@ -138,6 +140,41 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
     assertThat(updatedPerson.getFirstName()).isEqualTo("Mike");
   }
 
+  @Test
+  void givenPersonWithNoteInDb_WhenFindNoteAndUpdatePersonAndFlush_thenDirtyCheckingFlushesChangesForRelation()
+      throws SQLException {
+    //given
+    Person createdPerson = prepareRandomPerson();
+    Person newPerson = prepareRandomPerson();
+    Note createdNote = prepareRandomNote(person);
+    Note note = session.findById(Note.class, createdNote.getId());
+
+    //when
+    note.setPerson(newPerson);
+    session.flush();
+
+    //then
+    session = Persistence.createSessionFactory().openSession();
+    Note updatedNote = session.findById(Note.class, createdNote.getId());
+    assertThat(updatedNote.getPerson().getId()).isNotEqualTo(createdPerson.getId());
+  }
+
+  @Test
+  void givenPersonInDb_WhenFindPersonAndUpdateId_thenThrowException()
+      throws SQLException {
+    //given
+    Person createdPerson = prepareRandomPerson();
+    Person person = session.findById(Person.class, createdPerson.getId());
+
+    //when
+    person.setId(1L);
+
+    //then
+    assertThatThrownBy(() -> session.flush())
+        .isInstanceOf(BibernateException.class)
+        .hasMessage("identifier of an instance of %s was altered from %s to %s".formatted(Person.class.getName(), createdPerson.getId(), 1));
+  }
+
   @SneakyThrows
   @Test
   void given_DynamicUpdateEntityInDb_WhenFindPersonAndUpdateNameAndFlush_thenDirtyCheckingFlushesChangesWithDynamicQuery() {
@@ -165,5 +202,12 @@ class SessionIntegrationTest extends AbstractIntegrationTest {
     person.setLastName("Filimonov" + id);
     createPerson(person);
     return person;
+  }
+
+  private Note prepareRandomNote(Person person) {
+    long id = ids.incrementAndGet();
+    Note note = new Note(id, "hello", "hello", person);
+    createNote(note);
+    return note;
   }
 }
