@@ -231,7 +231,7 @@ public class Session implements AutoCloseable {
     persistenceContext.clear();
     actionQueue.clear();
 
-    if (transaction != null) {
+    if (transaction != null && transaction.getStatus().canRollback()) {
       transaction.rollback();
     }
 
