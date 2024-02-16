@@ -5,6 +5,8 @@
     </encoder>
   </appender>
 
+  <logger name="com.zaxxer.hikari" level="OFF"/>
+
   <root level="trace">
     <appender-ref ref="console"/>
   </root>
