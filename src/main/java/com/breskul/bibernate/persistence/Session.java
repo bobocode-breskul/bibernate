@@ -110,9 +110,7 @@ public class Session implements AutoCloseable {
    * @param <T>         The type of the entity.
    * @return The updated managed entity.
    */
-  // todo: tests
   public <T> T mergeEntity(T mergeEntity) {
-    // TODO: no associations
     var mergeEntityKey = EntityKey.valueOf(mergeEntity);
     if (persistenceContext.contains(mergeEntity)) {
       T cachedEntity = persistenceContext.getEntity(mergeEntityKey);
@@ -148,15 +146,12 @@ public class Session implements AutoCloseable {
     persistenceContext.put(entity);
   }
 
-  // TODO add test
-
   /**
    * Make an instance managed and persistent.
    *
    * @param entity entity instance
    */
   public <T> void persist(T entity) {
-    // TODO: throw exception if entity has ID value
     verifyIsSessionOpen();
     new InsertAction(genericDao, entity).execute();
     persistenceContext.put(entity);
@@ -168,8 +163,6 @@ public class Session implements AutoCloseable {
   public boolean isOpen() {
     return sessionStatus;
   }
-
-  //TODO: write tests
 
   /**
    * Returns session transaction. If session does not have it or transaction was completed or rolled back then creates new
