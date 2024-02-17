@@ -72,7 +72,7 @@ bibernate.ddl.create_tables=true
 
 Now you are ready to use Bibernate framework features.
 
-## Demo examples
+## Demo Examples
 You can find the example of a Bibernate application [here](https://github.com/bobocode-breskul/bibernate-usage-example).
 
 #### CRUD example:
